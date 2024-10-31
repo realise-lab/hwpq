@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Wed Oct 30 19:01:54 2024
+# Process ID: 5751
+# Current directory: /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1
+# Command line: vivado -log tmp_open_list_queue.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source tmp_open_list_queue.tcl
+# Log file: /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1/tmp_open_list_queue.vds
+# Journal file: /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1/vivado.jou
+# Running On        :charliePC
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 22.04.5 LTS
+# Processor Detail  :12th Gen Intel(R) Core(TM) i9-12900KF
+# CPU Frequency     :3187.199 MHz
+# CPU Physical cores:12
+# CPU Logical cores :24
+# Host memory       :16682 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20977 MB
+# Available Virtual :18173 MB
+#-----------------------------------------------------------
+source tmp_open_list_queue.tcl -notrace

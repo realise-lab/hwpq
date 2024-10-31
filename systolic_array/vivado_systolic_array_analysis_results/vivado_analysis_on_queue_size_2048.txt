@@ -1,0 +1,8 @@
+Frequency: 100 MHz -> Synthesis: 9m 54s -> 594s
+Frequency: 100 MHz -> Implementation: 21m 41s -> 1301s
+Frequency: 100 MHz -> Power: 11.919 W
+Frequency: 100 MHz -> LUTs Util%: 24.17 %
+Frequency: 100 MHz -> WNS: 2.934 ns
+Frequency: 100 MHz -> Achieved Frequency: 141.523 MHz
+
+

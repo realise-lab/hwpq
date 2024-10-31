@@ -1,0 +1,40 @@
+-------------------------------------
+| Tool Version : Vivado v.2024.1
+| Date         : Mon Sep  2 01:15:27 2024
+| Host         : archlinux
+| Design       : design_1
+| Device       : xcu250-figd2104-2L-E-
+-------------------------------------
+
+For more information on clockInfo.txt clock routing debug file see https://support.xilinx.com/s/article/000035660?language=en_US
+
+***********************
+Running Pre-CRP Checker
+***********************
+Number of global clocks: 1
+	Number of BUFGCE: 1
+	Number of BUFGCE_HDIO: 0
+	Number of BUFG_CTRL: 0
+	Number of BUFGCE_DIV: 0
+	Number of BUFG_GT: 0
+	Number of BUFG_PS: 0
+	Number of BUFG_FABRIC: 0
+	Running suboptimal placement checker for 1 clocks (and their loads) which do not have the CLOCK_LOW_FANOUT property but have a fanout less than 2000...
+Pre-CRP Checker took 0 secs
+
+********************************
+Clock Net Route Info (CRP Input)
+********************************
+Clock 1: clk_IBUF_BUFG
+	Clock source type: BUFGCE
+	Clock source region: X4Y7
+	initial rect ((4, 6), (4, 7))
+
+
+
+*****************
+User Constraints:
+*****************
+No user constraints found
+
+

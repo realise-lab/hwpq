@@ -1,0 +1,56 @@
+Frequency: 100 MHz -> Synthesis: 33s -> 33s
+Frequency: 100 MHz -> Implementation: 2m 15s -> 135s
+Frequency: 100 MHz -> Power: 3.045 W
+Frequency: 100 MHz -> LUTs Util%: 0.26 %
+Frequency: 100 MHz -> WNS: 6.222 ns
+Frequency: 100 MHz -> Achieved Frequency: 264.690 MHz
+
+
+Frequency: 150 MHz -> Synthesis: 33s -> 33s
+Frequency: 150 MHz -> Implementation: 2m 15s -> 135s
+Frequency: 150 MHz -> Power: 3.093 W
+Frequency: 150 MHz -> LUTs Util%: 0.26 %
+Frequency: 150 MHz -> WNS: 2.489 ns
+Frequency: 150 MHz -> Achieved Frequency: 239.368 MHz
+
+
+Frequency: 200 MHz -> Synthesis: 32s -> 32s
+Frequency: 200 MHz -> Implementation: 2m 15s -> 135s
+Frequency: 200 MHz -> Power: 3.139 W
+Frequency: 200 MHz -> LUTs Util%: 0.26 %
+Frequency: 200 MHz -> WNS: 0.848 ns
+Frequency: 200 MHz -> Achieved Frequency: 240.848 MHz
+
+
+Frequency: 250 MHz -> Synthesis: 33s -> 33s
+Frequency: 250 MHz -> Implementation: 2m 14s -> 134s
+Frequency: 250 MHz -> Power: 3.186 W
+Frequency: 250 MHz -> LUTs Util%: 0.26 %
+Frequency: 250 MHz -> WNS: 0.645 ns
+Frequency: 250 MHz -> Achieved Frequency: 298.063 MHz
+
+
+Frequency: 300 MHz -> Synthesis: 32s -> 32s
+Frequency: 300 MHz -> Implementation: 2m 15s -> 135s
+Frequency: 300 MHz -> Power: 3.233 W
+Frequency: 300 MHz -> LUTs Util%: 0.26 %
+Frequency: 300 MHz -> WNS: 0.196 ns
+Frequency: 300 MHz -> Achieved Frequency: 318.742 MHz
+
+
+Frequency: 350 MHz -> Synthesis: 33s -> 33s
+Frequency: 350 MHz -> Implementation: 2m 15s -> 135s
+Frequency: 350 MHz -> Power: 3.284 W
+Frequency: 350 MHz -> LUTs Util%: 0.26 %
+Frequency: 350 MHz -> WNS: 0.205 ns
+Frequency: 350 MHz -> Achieved Frequency: 377.054 MHz
+
+
+Frequency: 400 MHz -> Synthesis: 32s -> 32s
+Frequency: 400 MHz -> Implementation: 2m 17s -> 137s
+Frequency: 400 MHz -> Power: 3.329 W
+Frequency: 400 MHz -> LUTs Util%: 0.26 %
+Frequency: 400 MHz -> WNS: 0.109 ns
+Frequency: 400 MHz -> Achieved Frequency: 418.235 MHz
+
+

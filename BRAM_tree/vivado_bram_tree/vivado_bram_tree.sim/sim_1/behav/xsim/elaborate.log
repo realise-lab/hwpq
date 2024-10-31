@@ -1,0 +1,24 @@
+Vivado Simulator v2024.1
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: /opt/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/xelab --incr --debug typical --relax --mt 8 -L xil_defaultlib -L uvm -L unisims_ver -L unimacro_ver -L secureip --snapshot bram_tree_tb_behav xil_defaultlib.bram_tree_tb xil_defaultlib.glbl -log elaborate.log 
+Using 8 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 2 for port 'addra' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:40]
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 2 for port 'addrb' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:41]
+Completed static elaboration
+Starting simulation data flow analysis
+WARNING: [XSIM 43-4100] "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.xilinx_true_dual_port_read_first...
+Compiling module xil_defaultlib.xilinx_true_dual_port_read_first...
+Compiling module xil_defaultlib.xilinx_true_dual_port_read_first...
+Compiling module xil_defaultlib.xilinx_true_dual_port_read_first...
+Compiling module xil_defaultlib.comparator
+Compiling module xil_defaultlib.bram_tree_default
+Compiling module xil_defaultlib.bram_tree_tb
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot bram_tree_tb_behav

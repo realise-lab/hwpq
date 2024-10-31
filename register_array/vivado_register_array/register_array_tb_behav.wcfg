@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="register_array_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="register_array_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="37.041 ns"></ZoomEndTime>
+      <Cursor1Time time="0.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="206"></NameColumnWidth>
+      <ValueColumnWidth column_width="156"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="11" />
+   <wvobject type="logic" fp_name="/register_array_tb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/register_array_tb/rst">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/register_array_tb/replace">
+      <obj_property name="ElementShortName">replace</obj_property>
+      <obj_property name="ObjectShortName">replace</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/new_item">
+      <obj_property name="ElementShortName">new_item[31:0]</obj_property>
+      <obj_property name="ObjectShortName">new_item[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/top_item">
+      <obj_property name="ElementShortName">top_item[31:0]</obj_property>
+      <obj_property name="ObjectShortName">top_item[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/dut/register">
+      <obj_property name="ElementShortName">register[0:14][31:0]</obj_property>
+      <obj_property name="ObjectShortName">register[0:14][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/dut/tmp_register">
+      <obj_property name="ElementShortName">tmp_register[0:14][31:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp_register[0:14][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/dut/max">
+      <obj_property name="ElementShortName">max[0:6][31:0]</obj_property>
+      <obj_property name="ObjectShortName">max[0:6][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/dut/min">
+      <obj_property name="ElementShortName">min[0:6][31:0]</obj_property>
+      <obj_property name="ObjectShortName">min[0:6][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/ref_items">
+      <obj_property name="ElementShortName">ref_items[0:14][31:0]</obj_property>
+      <obj_property name="ObjectShortName">ref_items[0:14][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/register_array_tb/expected_top_item">
+      <obj_property name="ElementShortName">expected_top_item[31:0]</obj_property>
+      <obj_property name="ObjectShortName">expected_top_item[31:0]</obj_property>
+   </wvobject>
+</wave_config>

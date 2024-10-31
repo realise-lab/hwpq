@@ -1,0 +1,202 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Wed Sep 25 12:26:03 2024
+# Process ID: 2106116
+# Current directory: /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1
+# Command line: vivado -log bram_tree.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source bram_tree.tcl
+# Log file: /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/bram_tree.vds
+# Journal file: /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/vivado.jou
+# Running On        :archlinux
+# Platform          :Arch
+# Operating System  :Arch Linux
+# Processor Detail  :12th Gen Intel(R) Core(TM) i9-12900KF
+# CPU Frequency     :4989.549 MHz
+# CPU Physical cores:16
+# CPU Logical cores :24
+# Host memory       :33479 MB
+# Swap memory       :4294 MB
+# Total Virtual     :37774 MB
+# Available Virtual :28217 MB
+#-----------------------------------------------------------
+source bram_tree.tcl -notrace
+Command: synth_design -top bram_tree -part xcu250-figd2104-2L-e
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xcu250'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcu250'
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 2106206
+---------------------------------------------------------------------------------
+Starting Synthesize : Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1804.000 ; gain = 390.746 ; free physical = 18216 ; free virtual = 25793
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'bram_tree' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:1]
+INFO: [Synth 8-6157] synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+	Parameter RAM_WIDTH bound to: 32 - type: integer 
+	Parameter RAM_DEPTH bound to: 1 - type: integer 
+	Parameter RAM_PERFORMANCE bound to: LOW_LATENCY - type: string 
+	Parameter INIT_FILE bound to: (null) - type: string 
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+INFO: [Synth 8-6155] done synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+WARNING: [Synth 8-689] width (32) of port connection 'addra' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:40]
+WARNING: [Synth 8-689] width (32) of port connection 'addrb' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:41]
+INFO: [Synth 8-6157] synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized0' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+	Parameter RAM_WIDTH bound to: 32 - type: integer 
+	Parameter RAM_DEPTH bound to: 2 - type: integer 
+	Parameter RAM_PERFORMANCE bound to: LOW_LATENCY - type: string 
+	Parameter INIT_FILE bound to: (null) - type: string 
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+INFO: [Synth 8-6155] done synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized0' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+WARNING: [Synth 8-689] width (32) of port connection 'addra' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized0' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:40]
+WARNING: [Synth 8-689] width (32) of port connection 'addrb' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized0' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:41]
+INFO: [Synth 8-6157] synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized1' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+	Parameter RAM_WIDTH bound to: 32 - type: integer 
+	Parameter RAM_DEPTH bound to: 4 - type: integer 
+	Parameter RAM_PERFORMANCE bound to: LOW_LATENCY - type: string 
+	Parameter INIT_FILE bound to: (null) - type: string 
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+INFO: [Synth 8-6155] done synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized1' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+WARNING: [Synth 8-689] width (32) of port connection 'addra' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized1' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:40]
+WARNING: [Synth 8-689] width (32) of port connection 'addrb' does not match port width (2) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized1' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:41]
+INFO: [Synth 8-6157] synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized2' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+	Parameter RAM_WIDTH bound to: 32 - type: integer 
+	Parameter RAM_DEPTH bound to: 8 - type: integer 
+	Parameter RAM_PERFORMANCE bound to: LOW_LATENCY - type: string 
+	Parameter INIT_FILE bound to: (null) - type: string 
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+WARNING: [Synth 8-11581] system function call 'urandom_range' not supported [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:44]
+INFO: [Synth 8-6155] done synthesizing module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized2' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv:9]
+WARNING: [Synth 8-689] width (32) of port connection 'addra' does not match port width (3) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized2' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:40]
+WARNING: [Synth 8-689] width (32) of port connection 'addrb' does not match port width (3) of module 'xilinx_true_dual_port_read_first_1_clock_ram__parameterized2' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:41]
+INFO: [Synth 8-6157] synthesizing module 'comparator' [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/comparator.sv:1]
+	Parameter DATA_WIDTH bound to: 32 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'comparator' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/comparator.sv:1]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 4 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 5 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 6 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 7 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 8 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 9 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 10 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 11 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 12 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 13 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 14 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:90]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:91]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:92]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:93]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:94]
+WARNING: [Synth 8-324] index 15 out of range [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:95]
+INFO: [Synth 8-6155] done synthesizing module 'bram_tree' (0#1) [/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv:1]
+WARNING: [Synth 8-4767] Trying to implement RAM 'BRAM_reg' in registers. Block RAM or DRAM implementation is not possible; see log for reasons.
+Reason is one or more of the following :
+	1: Only 1 word in RAM 
+WARNING: [Synth 8-4557] Cannot dissolve ram 'BRAM_reg' to registers because of more than 1 writes
+ERROR: [Synth 8-2913] Unsupported Dual Port Block-RAM template for BRAM_reg
+---------------------------------------------------------------------------------
+Finished Synthesize : Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 1879.969 ; gain = 466.715 ; free physical = 18129 ; free virtual = 25707
+---------------------------------------------------------------------------------
+synthesize failed
+INFO: [Common 17-83] Releasing license: Synthesis
+17 Infos, 127 Warnings, 0 Critical Warnings and 2 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Vivado Synthesis failed
+INFO: [Common 17-206] Exiting Vivado at Wed Sep 25 12:26:10 2024...

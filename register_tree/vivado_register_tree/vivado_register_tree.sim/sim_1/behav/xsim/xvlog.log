@@ -1,0 +1,6 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/comparator.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module comparator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module register_tree
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree_tb.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module register_tree_tb

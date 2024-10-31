@@ -1,0 +1,12 @@
+Time resolution is 1 ps
+Replaced top item with 62, New top item is 150
+Replaced top item with 58, New top item is 140
+Replaced top item with 11, New top item is 130
+Replaced top item with 55, New top item is 120
+Replaced top item with 29, New top item is 110
+Replaced top item with 69, New top item is 100
+Replaced top item with 91, New top item is 90
+Replaced top item with 42, New top item is 91
+Replaced top item with 83, New top item is 80
+Replaced top item with 5, New top item is 83
+$finish called at time : 715 ns : File "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_array/register_array_tb.sv" Line 116
