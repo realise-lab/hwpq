@@ -1,5 +1,5 @@
 module register_tree #(
-    parameter TREE_DEPTH = 4,
+    parameter TREE_DEPTH = 2,
     parameter DATA_WIDTH = 32
 ) (
     input wire clk,

@@ -1,10 +1,8 @@
 import os
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
 import numpy as np
 
 plt.rcParams.update({"font.size": 16})
-
 
 def parse_achieved_frequencies(file_path):
     """
@@ -68,9 +66,7 @@ def process_register_array_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(
-            ".txt"
-        ):
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
             queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             frequencies, achieved_frequencies = parse_achieved_frequencies(file_path)
@@ -87,9 +83,7 @@ def process_register_tree_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_tree_depth") and file_name.endswith(
-            ".txt"
-        ):
+        if file_name.startswith("vivado_analysis_on_tree_depth") and file_name.endswith(".txt"):
             tree_depth = int(file_name.split("_")[-1].split(".")[0])
             queue_size = (1 << tree_depth) - 1  # Convert tree depth to queue size
             file_path = os.path.join(log_dir, file_name)
@@ -99,7 +93,7 @@ def process_register_tree_log_directory(log_dir):
 
 
 # Function to process log files in a directory
-def process_open_list_log_directory(log_dir):
+def process_systolic_array_log_directory(log_dir):
     """
     Processes log files in the given directory and returns a dictionary of data.
     """
@@ -107,8 +101,8 @@ def process_open_list_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("pq_analysis_") and file_name.endswith(".txt"):
-            queue_size = file_name.split("_")[-1].split(".")[0]
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
+            queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             frequencies, achieved_frequencies = parse_achieved_frequencies(file_path)
             data[queue_size] = (frequencies, achieved_frequencies)
@@ -118,7 +112,7 @@ def process_open_list_log_directory(log_dir):
 # Define log directories for both register array and register tree
 register_array_log_dir = "register_array/vivado_register_array_analysis_results/"
 register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results/"
-open_list_log_dir = "../vivado_dir/zhou_2020_hwpq/zhou_2020_hwpq.logs/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results/"
 
 # Process log files for register array
 all_data_array = process_register_array_log_directory(register_array_log_dir)
@@ -126,18 +120,14 @@ all_data_array = process_register_array_log_directory(register_array_log_dir)
 # Process log files for register tree
 all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
 
-# Process log files for register tree
-all_data_systolic = {
-    k: v
-    for k, v in process_open_list_log_directory(open_list_log_dir).items()
-    if int(k) not in [4, 8]
-}
+# Process log files for systolic array
+all_data_systolic = process_systolic_array_log_directory(systolic_array_log_dir)
 
 # Calculate final achieved frequencies for register array
 final_achieved_frequencies_array = {}
 for queue_size, (frequencies, achieved_frequencies) in all_data_array.items():
     final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=1
+        achieved_frequencies, num_points=3
     )
     final_achieved_frequencies_array[queue_size] = final_achieved_frequency
 
@@ -145,7 +135,7 @@ for queue_size, (frequencies, achieved_frequencies) in all_data_array.items():
 final_achieved_frequencies_tree = {}
 for queue_size, (frequencies, achieved_frequencies) in all_data_tree.items():
     final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=1
+        achieved_frequencies, num_points=3
     )
     final_achieved_frequencies_tree[queue_size] = final_achieved_frequency
 
@@ -153,14 +143,14 @@ for queue_size, (frequencies, achieved_frequencies) in all_data_tree.items():
 final_achieved_frequencies_systolic = {}
 for queue_size, (frequencies, achieved_frequencies) in all_data_systolic.items():
     final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=1
+        achieved_frequencies, num_points=3
     )
     final_achieved_frequencies_systolic[queue_size] = final_achieved_frequency
 
 # Plot the final achieved frequencies for both register array and register tree together
 plt.figure(figsize=(10, 6))
 
-# Plot for OPEN List
+# Plot for Systolic Array
 queue_sizes_systolic = [
     int(size) for size in final_achieved_frequencies_systolic.keys()
 ]
@@ -198,7 +188,7 @@ plt.ylabel("Maximum Frequency (MHz)", fontsize=20)
 plt.xscale("log", base=2)
 
 # Set axis ticks manually
-plt.xticks([8, 16, 32, 64, 128, 256, 512, 1024])
+plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024])
 plt.yticks(np.arange(0, 500, 50))
 
 # plt.title("Final Achieved Frequency vs QUEUE_SIZE")

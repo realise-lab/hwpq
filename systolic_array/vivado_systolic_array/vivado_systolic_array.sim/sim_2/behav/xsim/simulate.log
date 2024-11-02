@@ -8,7 +8,7 @@ Test Case 3: Replace Test
 
 Test Case 4: Stress Test
 WARNING: Bounded queue full, writing is ignored  Process: /tmp_open_list_queue_tb/enqueue_node
-  File: /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv:123
+  File: /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv:123
 WARNING: Bounded queue full, writing is ignored  Process: /tmp_open_list_queue_tb/enqueue_node
-  File: /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv:123
-$finish called at time : 5295 ns : File "/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv" Line 109
+  File: /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv:123
+$finish called at time : 5295 ns : File "/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv" Line 109

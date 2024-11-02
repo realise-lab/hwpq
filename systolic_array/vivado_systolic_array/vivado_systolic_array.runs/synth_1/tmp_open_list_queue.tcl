@@ -4,7 +4,7 @@
 
 set TIME_start [clock seconds] 
 namespace eval ::optrace {
-  variable script "/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1/tmp_open_list_queue.tcl"
+  variable script "/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1/tmp_open_list_queue.tcl"
   variable category "vivado_synth"
 }
 
@@ -57,20 +57,20 @@ if {$::dispatch::connected} {
 
 OPTRACE "synth_1" START { ROLLUP_AUTO }
 OPTRACE "Creating in-memory project" START { }
-create_project -in_memory -part xcu250-figd2104-2L-e
+create_project -in_memory -part xcvu19p-fsva3824-1-e
 
 set_param project.singleFileAddWarning.threshold 0
 set_param project.compositeFile.enableAutoGeneration 0
 set_param synth.vivado.isSynthRun true
-set_property webtalk.parent_dir /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.cache/wt [current_project]
-set_property parent.project_path /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.xpr [current_project]
+set_property webtalk.parent_dir /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.cache/wt [current_project]
+set_property parent.project_path /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.xpr [current_project]
 set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
-set_property ip_output_repo /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.cache/ip [current_project]
+set_property ip_output_repo /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.cache/ip [current_project]
 set_property ip_cache_permissions {read write} [current_project]
 OPTRACE "Creating in-memory project" END { }
 OPTRACE "Adding files" START { }
-read_verilog -library xil_defaultlib -sv /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv
+read_verilog -library xil_defaultlib -sv /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv
 OPTRACE "Adding files" END { }
 # Mark all dcp files as not used in implementation to prevent them from being
 # stitched into the results of this synthesis run. Any black boxes in the
@@ -80,14 +80,14 @@ OPTRACE "Adding files" END { }
 foreach dcp [get_files -quiet -all -filter file_type=="Design\ Checkpoint"] {
   set_property used_in_implementation false $dcp
 }
-read_xdc /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc
-set_property used_in_implementation false [get_files /home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
+read_xdc /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc
+set_property used_in_implementation false [get_files /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
 
 set_param ips.enableIPCacheLiteLoad 1
 close [open __synthesis_is_running__ w]
 
 OPTRACE "synth_design" START { }
-synth_design -top tmp_open_list_queue -part xcu250-figd2104-2L-e
+synth_design -top tmp_open_list_queue -part xcvu19p-fsva3824-1-e
 OPTRACE "synth_design" END { }
 if { [get_msg_config -count -severity {CRITICAL WARNING}] > 0 } {
  send_msg_id runtcl-6 info "Synthesis results are not added to the cache due to CRITICAL_WARNING"

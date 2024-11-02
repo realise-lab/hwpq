@@ -21,7 +21,7 @@ else
 fi
 export LD_LIBRARY_PATH
 
-HD_PWD='/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1'
+HD_PWD='/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.runs/synth_1'
 cd "$HD_PWD"
 
 HD_LOG=runme.log

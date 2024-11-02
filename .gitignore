@@ -81,4 +81,7 @@ _xmsgs/
 .venv/
 .python-version
 
-*/vivado_systolic_array_tcl/
+# Vivado analysis tcl files
+vivado_systolic_array_tcl/
+vivado_register_array_tcl/
+vivado_register_tree_tcl/

@@ -7,68 +7,68 @@
   **** SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
   **** IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
   **** SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
-  **** Start of session at: Wed Oct 30 19:01:54 2024
+  **** Start of session at: Thu Oct 31 22:29:10 2024
     ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
     ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 
 source tmp_open_list_queue.tcl -notrace
-Command: synth_design -top tmp_open_list_queue -part xcu250-figd2104-2L-e
+Command: synth_design -top tmp_open_list_queue -part xcvu19p-fsva3824-1-e
 Starting synth_design
-Attempting to get a license for feature 'Synthesis' and/or device 'xcu250'
-INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcu250'
-INFO: [Device 21-403] Loading part xcu250-figd2104-2L-e
+Attempting to get a license for feature 'Synthesis' and/or device 'xcvu19p'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcvu19p'
+INFO: [Device 21-403] Loading part xcvu19p-fsva3824-1-e
 INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
 INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
-INFO: [Synth 8-7075] Helper process launched with PID 5801
+INFO: [Synth 8-7075] Helper process launched with PID 626450
 ---------------------------------------------------------------------------------
-Starting RTL Elaboration : Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 2980.711 ; gain = 404.715 ; free physical = 8904 ; free virtual = 15054
+Starting RTL Elaboration : Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 3105.270 ; gain = 399.746 ; free physical = 9535 ; free virtual = 14345
 ---------------------------------------------------------------------------------
-INFO: [Synth 8-6157] synthesizing module 'tmp_open_list_queue' [/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv:1]
-INFO: [Synth 8-6155] done synthesizing module 'tmp_open_list_queue' (0#1) [/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv:1]
+INFO: [Synth 8-6157] synthesizing module 'tmp_open_list_queue' [/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv:1]
+INFO: [Synth 8-6155] done synthesizing module 'tmp_open_list_queue' (0#1) [/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv:1]
 ---------------------------------------------------------------------------------
-Finished RTL Elaboration : Time (s): cpu = 00:00:27 ; elapsed = 00:00:27 . Memory (MB): peak = 4469.648 ; gain = 1893.652 ; free physical = 7359 ; free virtual = 13533
+Finished RTL Elaboration : Time (s): cpu = 00:00:27 ; elapsed = 00:00:26 . Memory (MB): peak = 4596.207 ; gain = 1890.684 ; free physical = 8009 ; free virtual = 12843
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:00:29 ; elapsed = 00:00:29 . Memory (MB): peak = 4469.648 ; gain = 1893.652 ; free physical = 7361 ; free virtual = 13535
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:28 ; elapsed = 00:00:27 . Memory (MB): peak = 4596.207 ; gain = 1890.684 ; free physical = 8009 ; free virtual = 12843
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:29 ; elapsed = 00:00:29 . Memory (MB): peak = 4469.648 ; gain = 1893.652 ; free physical = 7361 ; free virtual = 13535
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:28 ; elapsed = 00:00:27 . Memory (MB): peak = 4596.207 ; gain = 1890.684 ; free physical = 8009 ; free virtual = 12843
 ---------------------------------------------------------------------------------
-Netlist sorting complete. Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 4515.930 ; gain = 0.000 ; free physical = 7312 ; free virtual = 13486
+Netlist sorting complete. Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 4644.770 ; gain = 0.000 ; free physical = 7961 ; free virtual = 12796
 INFO: [Project 1-570] Preparing netlist for logic optimization
 
 Processing XDC Constraints
 Initializing timing engine
-Parsing XDC File [/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
-Finished Parsing XDC File [/home/charlielinux/Workspace/Research/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
+Parsing XDC File [/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
+Finished Parsing XDC File [/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.srcs/constrs_1/new/hwpq_systolic_array.xdc]
 Completed Processing XDC Constraints
 
-Netlist sorting complete. Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.01 . Memory (MB): peak = 5083.211 ; gain = 0.000 ; free physical = 6783 ; free virtual = 12980
+Netlist sorting complete. Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 5238.324 ; gain = 0.000 ; free physical = 7449 ; free virtual = 12314
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
 ---------------------------------------------------------------------------------
-Finished Constraint Validation : Time (s): cpu = 00:01:10 ; elapsed = 00:00:57 . Memory (MB): peak = 5095.133 ; gain = 2519.137 ; free physical = 3416 ; free virtual = 9614
+Finished Constraint Validation : Time (s): cpu = 00:01:09 ; elapsed = 00:00:55 . Memory (MB): peak = 5250.246 ; gain = 2544.723 ; free physical = 4000 ; free virtual = 8868
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Loading Part and Timing Information
 ---------------------------------------------------------------------------------
-Loading part: xcu250-figd2104-2L-e
+Loading part: xcvu19p-fsva3824-1-e
 INFO: [Synth 8-6742] Reading net delay rules and data
 ---------------------------------------------------------------------------------
-Finished Loading Part and Timing Information : Time (s): cpu = 00:01:10 ; elapsed = 00:00:57 . Memory (MB): peak = 5099.219 ; gain = 2523.223 ; free physical = 3415 ; free virtual = 9613
+Finished Loading Part and Timing Information : Time (s): cpu = 00:01:09 ; elapsed = 00:00:55 . Memory (MB): peak = 5254.332 ; gain = 2548.809 ; free physical = 3997 ; free virtual = 8865
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying 'set_property' XDC Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:10 ; elapsed = 00:00:57 . Memory (MB): peak = 5099.219 ; gain = 2523.223 ; free physical = 3414 ; free virtual = 9612
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:09 ; elapsed = 00:00:55 . Memory (MB): peak = 5254.332 ; gain = 2548.809 ; free physical = 3995 ; free virtual = 8863
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 2 : Time (s): cpu = 00:03:43 ; elapsed = 00:03:24 . Memory (MB): peak = 5170.223 ; gain = 2594.227 ; free physical = 304 ; free virtual = 4569
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:03:45 ; elapsed = 00:03:22 . Memory (MB): peak = 5296.336 ; gain = 2590.812 ; free physical = 176 ; free virtual = 4142
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start RTL Component Statistics 
@@ -86,8 +86,8 @@ Finished RTL Component Statistics
 Start Part Resource Summary
 ---------------------------------------------------------------------------------
 Part Resources:
-DSPs: 12288 (col length:96)
-BRAMs: 5376 (col length: RAMB18 384 RAMB36 192)
+DSPs: 3840 (col length:120)
+BRAMs: 4320 (col length: RAMB18 480 RAMB36 240)
 ---------------------------------------------------------------------------------
 Finished Part Resource Summary
 ---------------------------------------------------------------------------------
@@ -95,16 +95,27 @@ Finished Part Resource Summary
 Start Cross Boundary and Area Optimization
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:06:43 ; elapsed = 00:07:17 . Memory (MB): peak = 5375.023 ; gain = 2799.027 ; free physical = 487 ; free virtual = 1249
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:06:42 ; elapsed = 00:07:05 . Memory (MB): peak = 5508.145 ; gain = 2802.621 ; free physical = 180 ; free virtual = 707
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying XDC Timing Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Applying XDC Timing Constraints : Time (s): cpu = 00:06:59 ; elapsed = 00:07:36 . Memory (MB): peak = 5410.680 ; gain = 2834.684 ; free physical = 154 ; free virtual = 1211
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:06:58 ; elapsed = 00:07:24 . Memory (MB): peak = 5576.863 ; gain = 2871.340 ; free physical = 186 ; free virtual = 641
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Timing Optimization
 ---------------------------------------------------------------------------------
-/tools/Xilinx/Vivado/2024.1/bin/rdiArgs.sh: line 387:  5751 Killed                  "$RDI_PROG" "$@"
-Parent process (pid 5751) has died. This helper process will now exit
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:07:28 ; elapsed = 00:07:53 . Memory (MB): peak = 5652.230 ; gain = 2946.707 ; free physical = 208 ; free virtual = 567
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+/tools/Xilinx/Vivado/2024.1/bin/rdiArgs.sh: line 387: 626428 Killed                  "$RDI_PROG" "$@"
+Parent process (pid 626428) has died. This helper process will now exit
+segfault in /tools/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/vivado -exec vivado -notrace -mode batch -source /tools/Xilinx/Vivado/2024.1/scripts/rt/data/task_worker.tcl -nolog -nojournal -tclargs SYNTH_DESIGN_PARENT626428_0_1730428212_cfg SYNTH_DESIGN_PARENT626428_0_1730428212_buf SYNTH_DESIGN_PARENT626428_1730428212 xcvu19p-fsva3824-1-e, exiting...
+/tools/Xilinx/Vivado/2024.1/bin/rdiArgs.sh: line 387: 626487 Segmentation fault      "$RDI_PROG" "$@"
+segfault in /tools/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/parallel_synth_helper -exec vivado -exec parallel_synth_helper --key LaunchHelperProcessKey_626428_1730428164 --partid xcvu19p-fsva3824-1-e --parent_pid 626428 --parent_exe vivado, exiting...
+segfault in /tools/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/vivado -exec vivado -notrace -mode batch -source /tools/Xilinx/Vivado/2024.1/scripts/rt/data/task_worker.tcl -nolog -nojournal -tclargs SYNTH_DESIGN_PARENT626428_2_1730428216_cfg SYNTH_DESIGN_PARENT626428_2_1730428216_buf SYNTH_DESIGN_PARENT626428_1730428212 xcvu19p-fsva3824-1-e, exiting...
+segfault in /tools/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/vivado -exec vivado -notrace -mode batch -source /tools/Xilinx/Vivado/2024.1/scripts/rt/data/task_worker.tcl -nolog -nojournal -tclargs SYNTH_DESIGN_PARENT626428_1_1730428214_cfg SYNTH_DESIGN_PARENT626428_1_1730428214_buf SYNTH_DESIGN_PARENT626428_1730428212 xcvu19p-fsva3824-1-e, exiting...

@@ -1,8 +1,8 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set depths {4 5 6 7 8 9 10}
+set depths {2 3}
 
 # Create a single project
-create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcu250-figd2104-2L-e
+create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcvu19p-fsva3824-1-e
 add_files ./register_tree.sv
 add_files ./comparator.sv
 close_project
@@ -43,9 +43,6 @@ foreach depth $depths {
 
         # Reset the previous synthesis result
         reset_run synth_1
-
-        # Set the synthesis options to preserve hierarchy
-        # set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
 
         # Start a new synthesis and time how long it takes
         set synth_start_time [clock seconds]

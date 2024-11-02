@@ -1,5 +1,5 @@
 # Define the range of QUEUE_SIZE and clock frequencies to test
-set queue_sizes {15 31 63 127 255 511 1023}
+set queue_sizes {4 8}
 
 # Create a single project
 create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcu250-figd2104-2L-e
@@ -42,9 +42,6 @@ foreach queue_size $queue_sizes {
 
         # Reset the previous synthesis result
         reset_run synth_1
-
-        # Set the synthesis options to preserve hierarchy
-        # set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
 
         # Start a new synthesis and time how long it takes
         set synth_start_time [clock seconds]

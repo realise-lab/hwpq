@@ -2,7 +2,7 @@
 set queue_sizes {2048 4096 8192 16384 32768 65536}
 
 # Create a single project
-create_project -force vivado_systolic_array_tcl ./vivado_systolic_array_tcl -part xcu250-figd2104-2L-e
+create_project -force vivado_systolic_array_tcl ./vivado_systolic_array_tcl -part xcvu19p-fsva3824-1-e
 add_files ./tmp_open_list_queue.sv
 close_project
 

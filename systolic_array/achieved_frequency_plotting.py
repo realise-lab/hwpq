@@ -57,7 +57,7 @@ def extrapolate_final_achieved_frequency(achieved_frequencies, num_points=3):
 
 
 # Directory containing the log files
-log_dir = "vivado_register_array_analysis_results"
+log_dir = "vivado_systolic_array_analysis_results"
 
 # Dictionary to store data from all files
 all_data = {}
@@ -92,8 +92,7 @@ plt.title("Achieved Frequency vs Frequency for Different QUEUE_SIZE")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-# plt.show()
-output_dir = "vivado_register_array_analysis_results_plots"
+output_dir = "vivado_systolic_array_analysis_results_plots"
 os.makedirs(output_dir, exist_ok=True)
 plt.savefig(os.path.join(output_dir, "achieved_frequency_plotting.png"))
 
@@ -117,7 +116,6 @@ plt.ylabel("Final Achieved Frequency (MHz)")
 plt.title("Final Achieved Frequency vs QUEUE_SIZE")
 plt.grid(True)
 plt.tight_layout()
-# plt.show()
-output_dir = "vivado_register_array_analysis_results_plots"
+output_dir = "vivado_systolic_array_analysis_results_plots"
 os.makedirs(output_dir, exist_ok=True)
 plt.savefig(os.path.join(output_dir, "final_achieved_frequency_plotting.png"))

@@ -1,10 +1,8 @@
 import os
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
-import numpy as np
+# import numpy as np
 
 plt.rcParams.update({"font.size": 16})
-
 
 def parse_area_utilization(file_path):
     """
@@ -46,9 +44,7 @@ def process_register_array_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(
-            ".txt"
-        ):
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
             queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             area_utilization = parse_area_utilization(file_path)
@@ -65,9 +61,7 @@ def process_register_tree_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_tree_depth") and file_name.endswith(
-            ".txt"
-        ):
+        if file_name.startswith("vivado_analysis_on_tree_depth") and file_name.endswith(".txt"):
             tree_depth = int(file_name.split("_")[-1].split(".")[0])
             queue_size = (1 << tree_depth) - 1  # Convert tree depth to queue size
             file_path = os.path.join(log_dir, file_name)
@@ -77,7 +71,7 @@ def process_register_tree_log_directory(log_dir):
 
 
 # Function to process log files in a directory
-def process_open_list_log_directory(log_dir):
+def process_systolic_array_log_directory(log_dir):
     """
     Processes log files in the given directory and returns a dictionary of data.
     """
@@ -85,8 +79,8 @@ def process_open_list_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("pq_analysis_") and file_name.endswith(".txt"):
-            queue_size = file_name.split("_")[-1].split(".")[0]
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
+            queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             area_utilization = parse_area_utilization(file_path)
             data[queue_size] = area_utilization
@@ -96,7 +90,7 @@ def process_open_list_log_directory(log_dir):
 # Define log directories for both register array and register tree
 register_array_log_dir = "register_array/vivado_register_array_analysis_results/"
 register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results/"
-open_list_log_dir = "../vivado_dir/zhou_2020_hwpq/zhou_2020_hwpq.logs/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results/"
 
 # Process log files for register array
 all_data_array = process_register_array_log_directory(register_array_log_dir)
@@ -105,11 +99,7 @@ all_data_array = process_register_array_log_directory(register_array_log_dir)
 all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
 
 # Process log files for register tree
-all_data_systolic = {
-    k: v
-    for k, v in process_open_list_log_directory(open_list_log_dir).items()
-    if int(k) not in [4, 8]
-}
+all_data_systolic = process_systolic_array_log_directory(systolic_array_log_dir)
 
 # Calculate final achieved frequencies for register array
 final_area_utilization_array = {}
@@ -132,7 +122,7 @@ for queue_size, area_utilization in all_data_systolic.items():
 # Plot the final achieved frequencies for both register array and register tree together
 plt.figure(figsize=(10, 6))
 
-# Plot for OPEN List
+# Plot for Systolic Array
 queue_sizes_systolic = [int(size) for size in final_area_utilization_systolic.keys()]
 final_area_utilization_systolic = [
     value * 0.01 * 1728000
