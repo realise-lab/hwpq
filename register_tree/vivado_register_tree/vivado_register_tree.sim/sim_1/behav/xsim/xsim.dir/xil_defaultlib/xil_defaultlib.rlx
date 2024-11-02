@@ -1,9 +1,0 @@
-0.7
-2020.2
-May 22 2024
-18:54:44
-/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/comparator.sv,1725252698,systemVerilog,,/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree.sv,,comparator,,uvm,,,,,,
-/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/comparator_tb.sv,1725226025,systemVerilog,,,,comparator_tb,,uvm,,,,,,
-/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree.sv,1727239287,systemVerilog,,/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree_tb.sv,,register_tree,,uvm,,,,,,
-/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/register_tree_tb.sv,1727243693,systemVerilog,,,,register_tree_tb,,uvm,,,,,,
-/home/charlie/Workspace/pq_research/hwpq_qw2246/register_tree/vivado_register_tree/vivado_register_tree.sim/sim_1/behav/xsim/glbl.v,1721171010,verilog,,,,glbl,,uvm,,,,,,

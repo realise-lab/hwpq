@@ -1,4 +1,0 @@
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_array/register_array.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module register_array
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/register_array/register_array_tb.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module register_array_tb

@@ -1,6 +1,0 @@
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module tmp_open_list_queue
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/tmp_open_list_queue_tb.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module tmp_open_list_queue_tb
-INFO: [VRFC 10-2263] Analyzing Verilog file "/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array/vivado_systolic_array.sim/sim_2/behav/xsim/glbl.v" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module glbl
