@@ -64,6 +64,7 @@ module tmp_open_list_queue_tb;
     while (!o_full) begin
       random_node_f = $urandom_range(0, 1024);
       enqueue_node(random_node_f);
+      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
     // Test Case 2: Dequeue nodes
@@ -71,6 +72,7 @@ module tmp_open_list_queue_tb;
     $display("\nTest Case 2: Dequeue Test");
     while (!o_empty) begin
       dequeue_node();
+      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
     // Test Case 3: Replace nodes
@@ -79,15 +81,18 @@ module tmp_open_list_queue_tb;
     for (i = 0; i < 5; i++) begin
       random_node_f = $urandom_range(0, 1024);
       enqueue_node(random_node_f);
+      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
     for (i = 0; i < 5; i++) begin
       random_node_f = $urandom_range(0, 1024);
       replace_node(random_node_f);
+      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
     // dequeue all nodes until empty
     while (!o_empty) begin
       dequeue_node();
+      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
     // stress test, mix operations
@@ -97,27 +102,28 @@ module tmp_open_list_queue_tb;
       random_operation = $urandom_range(0, 2);
       if (random_operation == 0) begin
         enqueue_node(random_node_f);
+        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
       end else if (random_operation == 1) begin
         dequeue_node();
+        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
       end else begin
         replace_node(random_node_f);
+        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
       end
     end
 
-    // Finish simulation
     repeat (4) @(posedge CLK);
     $finish;
   end
 
-  sequence s_check_output;
-    (i_wrt || i_read) ##2 (o_node_f == ref_queue[0]); // check if the output of queue matches the reference array
-  endsequence
-
-  // assertion property to check if the output of queue matches the reference array
-  property p_check_output;
-    @(posedge CLK) disable iff (!RSTn) s_check_output;
-  endproperty
-  assert property (p_check_output) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+  // ? This concurrent assertion is not working, so I am still using immediate assertions
+  // Modified assertion for better Vivado compatibility
+  // sequence queue_op_seq;
+  //   (i_wrt || i_read) ##3 ($stable(o_node_f) && o_node_f == ref_queue[0]);
+  // endsequence
+  
+  // queue_validation: assert property(@(posedge CLK) disable iff (!RSTn) queue_op_seq)
+  //   else $error("Node f value mismatch at time %0t: expected %0d, got %0d", $time, ref_queue[0], o_node_f);
 
   // Task to perform an enqueue operation
   task enqueue_node(input logic [DATA_WIDTH-1:0] node_f);
@@ -128,7 +134,7 @@ module tmp_open_list_queue_tb;
       ref_queue.sort();
       @(posedge CLK);
       i_wrt = 0;
-      repeat (3) @(posedge CLK);
+      repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -140,7 +146,7 @@ module tmp_open_list_queue_tb;
       ref_queue.sort();
       @(posedge CLK);
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -156,7 +162,7 @@ module tmp_open_list_queue_tb;
       @(posedge CLK);
       i_wrt = 0;
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (2) @(posedge CLK);
     end
   endtask
 

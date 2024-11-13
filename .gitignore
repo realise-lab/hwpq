@@ -85,3 +85,8 @@ _xmsgs/
 vivado_systolic_array_tcl/
 vivado_register_array_tcl/
 vivado_register_tree_tcl/
+
+# Vivado project files
+vivado_systolic_array/
+vivado_register_array/
+vivado_register_tree/

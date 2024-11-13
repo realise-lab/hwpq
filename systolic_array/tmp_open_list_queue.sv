@@ -21,7 +21,9 @@ module tmp_open_list_queue #(
 
   // Input Buffer (IB) and Output Buffer (OB)
   logic [ DATA_WIDTH-1:0] IB                                          [QUEUE_SIZE-1:0];
+  logic [ DATA_WIDTH-1:0] IB_next                                     [QUEUE_SIZE-1:0];
   logic [ DATA_WIDTH-1:0] OB                                          [QUEUE_SIZE-1:0];
+  logic [ DATA_WIDTH-1:0] OB_next                                     [QUEUE_SIZE-1:0];
   
   // Registers to store comparison results
   logic                   IB_less_than_OB                             [QUEUE_SIZE-1:0];
@@ -65,33 +67,35 @@ module tmp_open_list_queue #(
 
       // Sorting logic
       for (int i = 0; i < QUEUE_SIZE; i++) begin  // Iterate through each element
-        if (i == QUEUE_SIZE - 1) begin
-          if (IB_less_than_OB[i]) begin
+        priority case (1'b1)
+          IB_less_than_OB[i]: begin
             IB[i] <= OB[i];
             OB[i] <= IB[i];
           end
-        end else begin
-          if (IB_less_than_OB[i]) begin  // IB[i] < OB[i]
-            // Swap IB[i] and OB[i]
-            OB[i] <= IB[i];
-            IB[i] <= OB[i];
-          end else if (OB_next_less_than_OB[i]) begin  // OB[i+1] < OB[i]
+
+          (i != QUEUE_SIZE - 1) && OB_next_less_than_OB[i]: begin  // OB[i+1] < OB[i]
             // Swap OB[i] and OB[i+1]
             OB[i+1] <= OB[i];
             OB[i]   <= OB[i+1];
-          end else if (IB_less_than_OB_next[i]) begin  // IB[i] < OB[i+1]
-            if (IB[i+1] == MAX_VALUE) begin
-              // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
-              OB[i+1] <= IB[i];
-              IB[i+1] <= OB[i+1];
-              IB[i]   <= MAX_VALUE;
-            end
-          end else if (IB_less_than_IB_next[i]) begin  // IB[i] < IB[i+1]
+          end
+          
+          (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MAX_VALUE): begin  // IB[i] < OB[i+1]
+            // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
+            OB[i+1] <= IB[i];
+            IB[i+1] <= OB[i+1];
+            IB[i]   <= MAX_VALUE;
+          end
+
+          (i != QUEUE_SIZE - 1) && IB_less_than_IB_next[i]: begin  // IB[i] < IB[i+1]
             // Swap IB[i] and IB[i+1]
             IB[i+1] <= IB[i];
             IB[i]   <= IB[i+1];
           end
-        end
+          
+          default: begin
+            // No action needed
+          end
+        endcase
       end
     end
   end
