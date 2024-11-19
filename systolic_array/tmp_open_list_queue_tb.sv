@@ -67,6 +67,8 @@ module tmp_open_list_queue_tb;
       assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
+    // repeat (5) @(posedge CLK);
+
     // Test Case 2: Dequeue nodes
     // Dequeue all nodes
     $display("\nTest Case 2: Dequeue Test");
@@ -74,6 +76,8 @@ module tmp_open_list_queue_tb;
       dequeue_node();
       assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
+    
+    // repeat (5) @(posedge CLK);
 
     // Test Case 3: Replace nodes
     // Enqueue some nodes and then replace them
@@ -112,7 +116,7 @@ module tmp_open_list_queue_tb;
       end
     end
 
-    repeat (4) @(posedge CLK);
+    // repeat (4) @(posedge CLK);
     $finish;
   end
 
@@ -134,7 +138,7 @@ module tmp_open_list_queue_tb;
       ref_queue.sort();
       @(posedge CLK);
       i_wrt = 0;
-      repeat (2) @(posedge CLK);
+      repeat (3) @(posedge CLK);
     end
   endtask
 
@@ -146,7 +150,7 @@ module tmp_open_list_queue_tb;
       ref_queue.sort();
       @(posedge CLK);
       i_read = 0;
-      repeat (2) @(posedge CLK);
+      repeat (3) @(posedge CLK);
     end
   endtask
 
@@ -162,7 +166,7 @@ module tmp_open_list_queue_tb;
       @(posedge CLK);
       i_wrt = 0;
       i_read = 0;
-      repeat (2) @(posedge CLK);
+      repeat (3) @(posedge CLK);
     end
   endtask
 

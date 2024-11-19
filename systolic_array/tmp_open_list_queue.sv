@@ -1,5 +1,5 @@
 module tmp_open_list_queue #(
-    parameter QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
+    parameter QUEUE_SIZE = 1024,  // Size of the buffers (number of positions)
     parameter DATA_WIDTH = 32  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
@@ -21,9 +21,9 @@ module tmp_open_list_queue #(
 
   // Input Buffer (IB) and Output Buffer (OB)
   logic [ DATA_WIDTH-1:0] IB                                          [QUEUE_SIZE-1:0];
-  logic [ DATA_WIDTH-1:0] IB_next                                     [QUEUE_SIZE-1:0];
+  // logic [ DATA_WIDTH-1:0] IB_next                                     [QUEUE_SIZE-1:0];
   logic [ DATA_WIDTH-1:0] OB                                          [QUEUE_SIZE-1:0];
-  logic [ DATA_WIDTH-1:0] OB_next                                     [QUEUE_SIZE-1:0];
+  // logic [ DATA_WIDTH-1:0] OB_next                                     [QUEUE_SIZE-1:0];
   
   // Registers to store comparison results
   logic                   IB_less_than_OB                             [QUEUE_SIZE-1:0];
@@ -57,9 +57,16 @@ module tmp_open_list_queue #(
       end
 
       // Replace operation
-      if (i_wrt && i_read && !full && !empty) begin
-        IB[0] <= i_node_f;  // replace the head of IB
-        OB[0] <= MAX_VALUE; // pop the head of OB
+      if (i_wrt && i_read) begin
+        if (full) begin
+          IB[0] <= i_node_f;  // replace the head of IB
+          OB[0] <= MAX_VALUE; // pop the head of OB
+        end else if (empty) begin
+          OB[0] <= i_node_f;  // insert the new node at the head of OB
+        end else begin
+          IB[0] <= i_node_f;  // replace the head of IB
+          OB[0] <= MAX_VALUE; // pop the head of OB
+        end
       end
 
       // update size
@@ -78,7 +85,7 @@ module tmp_open_list_queue #(
             OB[i+1] <= OB[i];
             OB[i]   <= OB[i+1];
           end
-          
+
           (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MAX_VALUE): begin  // IB[i] < OB[i+1]
             // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
             OB[i+1] <= IB[i];
@@ -91,7 +98,7 @@ module tmp_open_list_queue #(
             IB[i+1] <= IB[i];
             IB[i]   <= IB[i+1];
           end
-          
+
           default: begin
             // No action needed
           end
@@ -117,6 +124,12 @@ module tmp_open_list_queue #(
       size_next = size + 1;
     end else if (!i_wrt && i_read && !empty) begin
       size_next = size - 1;
+    end else if (i_wrt && i_read && !full && !empty) begin
+      size_next = size;
+    end else if (i_wrt && i_read && full && !empty) begin
+      size_next = size;
+    end else if (i_wrt && i_read && !full && empty) begin
+      size_next = size + 1;
     end else begin
       size_next = size;
     end
