@@ -4,7 +4,7 @@
 
 set TIME_start [clock seconds] 
 namespace eval ::optrace {
-  variable script "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/bram_tree.tcl"
+  variable script "/home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/top.tcl"
   variable category "vivado_synth"
 }
 
@@ -56,24 +56,27 @@ if {$::dispatch::connected} {
 }
 
 OPTRACE "synth_1" START { ROLLUP_AUTO }
+set_param checkpoint.writeSynthRtdsInDcp 1
+set_msg_config -id {Synth 8-256} -limit 10000
+set_msg_config -id {Synth 8-638} -limit 10000
 OPTRACE "Creating in-memory project" START { }
-create_project -in_memory -part xcu250-figd2104-2L-e
+create_project -in_memory -part xcvu19p-fsva3824-1-e
 
 set_param project.singleFileAddWarning.threshold 0
 set_param project.compositeFile.enableAutoGeneration 0
 set_param synth.vivado.isSynthRun true
-set_property webtalk.parent_dir /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.cache/wt [current_project]
-set_property parent.project_path /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.xpr [current_project]
+set_property webtalk.parent_dir /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.cache/wt [current_project]
+set_property parent.project_path /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.xpr [current_project]
 set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
-set_property ip_output_repo /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.cache/ip [current_project]
+set_property ip_output_repo /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.cache/ip [current_project]
 set_property ip_cache_permissions {read write} [current_project]
 OPTRACE "Creating in-memory project" END { }
 OPTRACE "Adding files" START { }
 read_verilog -library xil_defaultlib -sv {
-  /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/comparator.sv
-  /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv
-  /home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv
+  /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/counter.sv
+  /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/maybe_bram.sv
+  /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/top.sv
 }
 OPTRACE "Adding files" END { }
 # Mark all dcp files as not used in implementation to prevent them from being
@@ -85,10 +88,12 @@ foreach dcp [get_files -quiet -all -filter file_type=="Design\ Checkpoint"] {
   set_property used_in_implementation false $dcp
 }
 set_param ips.enableIPCacheLiteLoad 1
+
+read_checkpoint -auto_incremental -incremental /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.srcs/utils_1/imports/synth_1/bram_tree.dcp
 close [open __synthesis_is_running__ w]
 
 OPTRACE "synth_design" START { }
-synth_design -top bram_tree -part xcu250-figd2104-2L-e
+synth_design -top top -part xcvu19p-fsva3824-1-e
 OPTRACE "synth_design" END { }
 if { [get_msg_config -count -severity {CRITICAL WARNING}] > 0 } {
  send_msg_id runtcl-6 info "Synthesis results are not added to the cache due to CRITICAL_WARNING"
@@ -98,10 +103,10 @@ if { [get_msg_config -count -severity {CRITICAL WARNING}] > 0 } {
 OPTRACE "write_checkpoint" START { CHECKPOINT }
 # disable binary constraint mode for synth run checkpoints
 set_param constraints.enableBinaryConstraints false
-write_checkpoint -force -noxdef bram_tree.dcp
+write_checkpoint -force -noxdef top.dcp
 OPTRACE "write_checkpoint" END { }
 OPTRACE "synth reports" START { REPORT }
-generate_parallel_reports -reports { "report_utilization -file bram_tree_utilization_synth.rpt -pb bram_tree_utilization_synth.pb"  } 
+generate_parallel_reports -reports { "report_utilization -file top_utilization_synth.rpt -pb top_utilization_synth.pb"  } 
 OPTRACE "synth reports" END { }
 file delete __synthesis_is_running__
 close [open __synthesis_is_complete__ w]

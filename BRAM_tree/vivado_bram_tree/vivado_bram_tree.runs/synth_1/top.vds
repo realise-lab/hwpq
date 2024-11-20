@@ -1,16 +1,26 @@
-
-*** Running vivado
-    with args -log top.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source top.tcl
-
-
-****** Vivado v2024.1 (64-bit)
-  **** SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
-  **** IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
-  **** SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
-  **** Start of session at: Wed Nov 20 09:34:29 2024
-    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
-    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
-
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Wed Nov 20 09:34:29 2024
+# Process ID: 700371
+# Current directory: /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1
+# Command line: vivado -log top.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source top.tcl
+# Log file: /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/top.vds
+# Journal file: /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1/vivado.jou
+# Running On        :charliePC
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 22.04.5 LTS
+# Processor Detail  :12th Gen Intel(R) Core(TM) i9-12900KF
+# CPU Frequency     :3187.197 MHz
+# CPU Physical cores:12
+# CPU Logical cores :24
+# Host memory       :16682 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20977 MB
+# Available Virtual :13080 MB
+#-----------------------------------------------------------
 source top.tcl -notrace
 Command: read_checkpoint -auto_incremental -incremental /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.srcs/utils_1/imports/synth_1/bram_tree.dcp
 INFO: [Vivado 12-5825] Read reference checkpoint from /home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.srcs/utils_1/imports/synth_1/bram_tree.dcp for incremental synthesis

@@ -8,9 +8,9 @@
 # 
 
 if [ -z "$PATH" ]; then
-  PATH=/opt/Xilinx/Vivado/2024.1/ids_lite/ISE/bin/lin64:/opt/Xilinx/Vivado/2024.1/bin
+  PATH=/tools/Xilinx/Vitis/2024.1/bin:/tools/Xilinx/Vivado/2024.1/ids_lite/ISE/bin/lin64:/tools/Xilinx/Vivado/2024.1/bin
 else
-  PATH=/opt/Xilinx/Vivado/2024.1/ids_lite/ISE/bin/lin64:/opt/Xilinx/Vivado/2024.1/bin:$PATH
+  PATH=/tools/Xilinx/Vitis/2024.1/bin:/tools/Xilinx/Vivado/2024.1/ids_lite/ISE/bin/lin64:/tools/Xilinx/Vivado/2024.1/bin:$PATH
 fi
 export PATH
 
@@ -21,7 +21,7 @@ else
 fi
 export LD_LIBRARY_PATH
 
-HD_PWD='/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1'
+HD_PWD='/home/charlielinux/Workspace/hwpq_qw2246/BRAM_tree/vivado_bram_tree/vivado_bram_tree.runs/synth_1'
 cd "$HD_PWD"
 
 HD_LOG=runme.log
@@ -37,4 +37,4 @@ EAStep()
      fi
 }
 
-EAStep vivado -log bram_tree.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source bram_tree.tcl
+EAStep vivado -log top.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source top.tcl

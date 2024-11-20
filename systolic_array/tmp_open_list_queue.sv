@@ -1,5 +1,5 @@
 module tmp_open_list_queue #(
-    parameter QUEUE_SIZE = 1024,  // Size of the buffers (number of positions)
+    parameter QUEUE_SIZE = 2048,  // Size of the buffers (number of positions)
     parameter DATA_WIDTH = 32  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
@@ -20,16 +20,14 @@ module tmp_open_list_queue #(
   localparam [DATA_WIDTH-1:0] MAX_VALUE = '1;  // Represents the maximum value
 
   // Input Buffer (IB) and Output Buffer (OB)
-  logic [ DATA_WIDTH-1:0] IB                                          [QUEUE_SIZE-1:0];
-  // logic [ DATA_WIDTH-1:0] IB_next                                     [QUEUE_SIZE-1:0];
-  logic [ DATA_WIDTH-1:0] OB                                          [QUEUE_SIZE-1:0];
-  // logic [ DATA_WIDTH-1:0] OB_next                                     [QUEUE_SIZE-1:0];
+  logic [DATA_WIDTH-1:0] IB                                          [QUEUE_SIZE-1:0];
+  logic [DATA_WIDTH-1:0] OB                                          [QUEUE_SIZE-1:0];
   
   // Registers to store comparison results
-  logic                   IB_less_than_OB                             [QUEUE_SIZE-1:0];
-  logic                   IB_less_than_IB_next                        [QUEUE_SIZE-2:0];
-  logic                   IB_less_than_OB_next                        [QUEUE_SIZE-2:0];
-  logic                   OB_next_less_than_OB                        [QUEUE_SIZE-2:0];
+  logic                   IB_less_than_OB                            [QUEUE_SIZE-1:0];
+  logic                   IB_less_than_IB_next                       [QUEUE_SIZE-2:0];
+  logic                   IB_less_than_OB_next                       [QUEUE_SIZE-2:0];
+  logic                   OB_next_less_than_OB                       [QUEUE_SIZE-2:0];
 
   // Control signals
   integer                 size;
