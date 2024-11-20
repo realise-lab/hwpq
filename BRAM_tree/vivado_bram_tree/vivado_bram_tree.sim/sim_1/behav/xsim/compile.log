@@ -1,8 +1,0 @@
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module bram_tree
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/comparator.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module comparator
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/xilinx_true_dual_port_read_first_1_clock_ram.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module xilinx_true_dual_port_read_first_1_clock_ram
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/home/charlie/Workspace/pq_research/hwpq_qw2246/BRAM_tree/bram_tree_tb.sv" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module bram_tree_tb
