@@ -1,17 +1,17 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set depths {2 3}
+set queue_sizes {512 1024 2048}
 
 # Create a single project
-create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcvu19p-fsva3824-1-e
+create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcau25p-ffvb676-1-e
 add_files ./register_tree.sv
 add_files ./comparator.sv
 close_project
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_register_tree_analysis_results
+file mkdir ./vivado_register_tree_analysis_results_new
 
-# Loop through each TREE_DEPTH
-foreach depth $depths {
+# Loop through each QUEUE_SIZE
+foreach queue_size $queue_sizes {
 
     # Open the register_tree.sv file
     set file_id [open "./register_tree.sv" r+]
@@ -20,7 +20,7 @@ foreach depth $depths {
     set file_content [read $file_id]
 
     # Replace the parameter TREE_DEPTH value
-    set updated_content [regsub {parameter TREE_DEPTH = \d+} $file_content "parameter TREE_DEPTH = $depth"]
+    set updated_content [regsub {parameter QUEUE_SIZE = \d+} $file_content "parameter QUEUE_SIZE = $queue_size"]
 
     # Rewind the file pointer to the beginning
     seek $file_id 0
@@ -31,7 +31,7 @@ foreach depth $depths {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_register_tree_analysis_results/vivado_analysis_on_tree_depth_${depth}.txt"
+    set log_file "./vivado_register_tree_analysis_results_new/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 400} {incr freq 50} {
@@ -64,7 +64,7 @@ foreach depth $depths {
         open_run synth_1
 
         # Create a timing constraint
-        create_clock -name sys_clk -period $period_ns [get_ports clk]
+        create_clock -name sys_clk -period $period_ns [get_ports CLK]
 
         # Reset the previous implementation result
         reset_run impl_1

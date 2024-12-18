@@ -1,38 +1,44 @@
+/*
+  This module compares the parent and the two children 
+  to find the minimum value and put it in the parent.
+*/
 module comparator #(
-    parameter DATA_WIDTH = 32
+  parameter DATA_WIDTH = 32
 ) (
-    input  wire [DATA_WIDTH-1:0] parent,
-    input  wire [DATA_WIDTH-1:0] left_child,
-    input  wire [DATA_WIDTH-1:0] right_child,
-    output reg  [DATA_WIDTH-1:0] new_parent,
-    output reg  [DATA_WIDTH-1:0] new_left_child,
-    output reg  [DATA_WIDTH-1:0] new_right_child
+  // Inputs
+  input logic [DATA_WIDTH-1:0] i_parent,
+  input logic [DATA_WIDTH-1:0] i_left_child,
+  input logic [DATA_WIDTH-1:0] i_right_child,
+  // Outputs
+  output logic [DATA_WIDTH-1:0] o_parent,
+  output logic [DATA_WIDTH-1:0] o_left_child,
+  output logic [DATA_WIDTH-1:0] o_right_child
 );
 
   always_comb begin
-    if (left_child >= right_child) begin
-      if (parent < left_child) begin
+    if (i_left_child < i_right_child) begin
+      if (i_parent > i_left_child) begin
         // Swap parent with left child
-        new_parent = left_child;
-        new_left_child = parent;
-        new_right_child = right_child;
+        o_parent = i_left_child;
+        o_left_child = i_parent;
+        o_right_child = i_right_child;
       end else begin
         // No swap needed
-        new_parent = parent;
-        new_left_child = left_child;
-        new_right_child = right_child;
+        o_parent = i_parent;
+        o_left_child = i_left_child;
+        o_right_child = i_right_child;
       end
     end else begin
-      if (parent <= right_child) begin
+      if (i_parent > i_right_child) begin
         // Swap parent with right child
-        new_parent = right_child;
-        new_left_child = left_child;
-        new_right_child = parent;
+        o_parent = i_right_child;
+        o_left_child = i_left_child;
+        o_right_child = i_parent;
       end else begin
         // No swap needed
-        new_parent = parent;
-        new_left_child = left_child;
-        new_right_child = right_child;
+        o_parent = i_parent;
+        o_left_child = i_left_child;
+        o_right_child = i_right_child;
       end
     end
   end

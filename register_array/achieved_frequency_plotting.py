@@ -102,7 +102,7 @@ final_achieved_frequencies = {}
 
 # Iterate over all data to find the final achieved frequency for each queue size
 for queue_size, (frequencies, achieved_frequencies) in all_data.items():
-    final_achieved_frequency = extrapolate_final_achieved_frequency(achieved_frequencies,num_points=1)
+    final_achieved_frequency = extrapolate_final_achieved_frequency(achieved_frequencies,num_points=2)
     final_achieved_frequencies[queue_size] = final_achieved_frequency
 
 # Plot the final achieved frequencies for each queue size

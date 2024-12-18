@@ -61,9 +61,8 @@ def process_register_tree_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_tree_depth") and file_name.endswith(".txt"):
-            tree_depth = int(file_name.split("_")[-1].split(".")[0])
-            queue_size = (1 << tree_depth) - 1  # Convert tree depth to queue size
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
+            queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             area_utilization = parse_area_utilization(file_path)
             data[queue_size] = area_utilization
@@ -88,9 +87,9 @@ def process_systolic_array_log_directory(log_dir):
 
 
 # Define log directories for both register array and register tree
-register_array_log_dir = "register_array/vivado_register_array_analysis_results/"
-register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results/"
-systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results/"
+register_array_log_dir = "register_array/vivado_register_array_analysis_results_new/"
+register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_new/"
 
 # Process log files for register array
 all_data_array = process_register_array_log_directory(register_array_log_dir)
@@ -125,7 +124,7 @@ plt.figure(figsize=(10, 6))
 # Plot for Systolic Array
 queue_sizes_systolic = [int(size) for size in final_area_utilization_systolic.keys()]
 final_area_utilization_systolic = [
-    value * 0.01 * 1728000
+    value * 0.01 * 4085760
     for value in final_area_utilization_systolic.values()  # since value is in percentage
 ]
 plt.plot(
@@ -138,7 +137,7 @@ plt.plot(
 # Plot for register array
 queue_sizes_array = [int(size) for size in final_area_utilization_array.keys()]
 final_area_utilization_array = [
-    value * 0.01 * 1728000 for value in final_area_utilization_array.values()
+    value * 0.01 * 4085760 for value in final_area_utilization_array.values()
 ]
 plt.plot(
     queue_sizes_array,
@@ -150,7 +149,7 @@ plt.plot(
 # Plot for register tree
 queue_sizes_tree = [int(size) for size in final_area_utilization_tree.keys()]
 final_area_utilization_tree = [
-    value * 0.01 * 1728000 for value in final_area_utilization_tree.values()
+    value * 0.01 * 4085760 for value in final_area_utilization_tree.values()
 ]
 plt.plot(
     queue_sizes_tree,
@@ -166,7 +165,7 @@ plt.xscale("log", base=2)
 plt.yscale("log", base=10)
 
 # Set axis ticks manually
-plt.xticks([8, 16, 32, 64, 128, 256, 512, 1024])
+plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048])
 plt.yticks([1000, 10000, 100000, 1000000])
 
 # plt.title("Final Achieved Frequency vs QUEUE_SIZE")

@@ -1,5 +1,5 @@
 module tmp_open_list_queue #(
-    parameter QUEUE_SIZE = 2048,  // Size of the buffers (number of positions)
+    parameter QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
     parameter DATA_WIDTH = 32  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
@@ -143,4 +143,6 @@ module tmp_open_list_queue #(
   assign o_node_f = OB[0];
 
 endmodule
+
+
 

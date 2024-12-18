@@ -1,13 +1,13 @@
 # Define the range of QUEUE_SIZE and clock frequencies to test
-set queue_sizes {4 8}
+set queue_sizes {1024}
 
 # Create a single project
-create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcu250-figd2104-2L-e
+create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcau25p-ffvb676-1-e
 add_files ./register_array.sv
 close_project
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_register_array_analysis_results
+file mkdir ./vivado_register_array_analysis_results_new
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
@@ -30,7 +30,7 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_register_array_analysis_results/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./vivado_register_array_analysis_results_new/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 400} {incr freq 50} {
@@ -135,13 +135,13 @@ foreach queue_size $queue_sizes {
         puts $fileId "\n"
 
         # Exit the loop if WNS has passed the threshold of -2 ns, or if the implementation time is greater than 15 minutes, or if the Util% of CLB LUTs is greater than 50%, and state in the log file
-        if {$wns < -2.0} {
-            puts $fileId "WNS exceeded -2 ns, finished"
-            break
-        } elseif {$clb_luts_util > 50.0} {
-            puts $fileId "CLB LUTs Util% exceeded 50%, finished"
-            break
-        }
+        # if {$wns < -2.0} {
+        #     puts $fileId "WNS exceeded -2 ns, finished"
+        #     break
+        # } elseif {$clb_luts_util > 50.0} {
+        #     puts $fileId "CLB LUTs Util% exceeded 50%, finished"
+        #     break
+        # }
 
         close $fileId
         close_project

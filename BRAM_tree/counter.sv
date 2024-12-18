@@ -1,13 +1,13 @@
 module counter(
-    input clk,
-    output reg [7:0] w_data,
-    output reg [7:0] w_addr,
-    output reg [7:0] r_addr
-    );
-
-    always @(posedge clk) begin
-	    w_data <= w_data == 255 ? 0 : w_data + 1;
-	    w_addr <= w_addr == 255 ? 0 : w_addr + 1;
-	    r_addr <= r_addr == 255 ? 0 : r_addr + 1;
-    end
+  input logic CLK,
+  // Outputs
+  output logic [7:0] o_w_data,
+  output logic [7:0] o_w_addr,
+  output logic [7:0] o_r_addr
+);
+  always @(posedge CLK) begin
+    o_w_data <= (o_w_data == 255) ? 8'd0 : o_w_data + 8'd1;
+    o_w_addr <= (o_w_addr == 255) ? 8'd0 : o_w_addr + 8'd1;
+    o_r_addr <= (o_r_addr == 255) ? 8'd0 : o_r_addr + 8'd1;
+  end
 endmodule
