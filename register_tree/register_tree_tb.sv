@@ -2,8 +2,8 @@ module register_tree_tb;
   // Parameters matching the module under test
   parameter QUEUE_SIZE = 8;
   parameter DATA_WIDTH = 32;
-  parameter TREE_DEPTH = $clog2(QUEUE_SIZE+1);
-  parameter NODES_NEEDED = 2**TREE_DEPTH - 1;
+  parameter TREE_DEPTH = $clog2(QUEUE_SIZE);
+  parameter NODES_NEEDED = 2**(TREE_DEPTH+1) - 1;
   parameter COMP_COUNT = NODES_NEEDED/2;
 
   // Clock and reset signals

@@ -85,7 +85,7 @@ plt.plot(x_array, y_array, 'o-', label='Register Array')
 plt.plot(x_tree, y_tree, 'x-', label='Register Tree')
 
 plt.xlabel('Achieved Frequency (MHz)', fontsize=20)
-plt.ylabel('LUT Utilization (%)', fontsize=20)
+plt.ylabel('LUT Utilization', fontsize=20)
 
 plt.yscale('log')
 plt.grid(True)
