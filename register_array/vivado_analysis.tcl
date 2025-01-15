@@ -1,5 +1,5 @@
 # Define the range of QUEUE_SIZE and clock frequencies to test
-set queue_sizes {1024}
+set queue_sizes {64 128 256 512 1024 2048}
 
 # Create a single project
 create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcau25p-ffvb676-1-e
@@ -7,7 +7,7 @@ add_files ./register_array.sv
 close_project
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_register_array_analysis_results_new
+file mkdir ./vivado_register_array_analysis_results_16bit
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
@@ -19,7 +19,7 @@ foreach queue_size $queue_sizes {
     set file_content [read $file_id]
 
     # Replace the parameter QUEUE_SIZE value
-    set updated_content [regsub {parameter QUEUE_SIZE = \d+} $file_content "parameter QUEUE_SIZE = $queue_size"]
+    set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = $queue_size"]
 
     # Rewind the file pointer to the beginning
     seek $file_id 0
@@ -30,10 +30,10 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_register_array_analysis_results_new/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./vivado_register_array_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
-    for {set freq 100} {$freq <= 400} {incr freq 50} {
+    for {set freq 100} {$freq <= 800} {incr freq 50} {
 
         open_project ./vivado_register_array_tcl/vivado_register_array_tcl.xpr
 
@@ -63,7 +63,7 @@ foreach queue_size $queue_sizes {
         open_run synth_1
 
         # Create a timing constraint
-        create_clock -name sys_clk -period $period_ns [get_ports clk]
+        create_clock -name sys_clk -period $period_ns [get_ports CLK]
 
         # Reset the previous implementation result
         reset_run impl_1
@@ -134,18 +134,16 @@ foreach queue_size $queue_sizes {
         puts $fileId "Frequency: ${freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
         puts $fileId "\n"
 
-        # Exit the loop if WNS has passed the threshold of -2 ns, or if the implementation time is greater than 15 minutes, or if the Util% of CLB LUTs is greater than 50%, and state in the log file
-        # if {$wns < -2.0} {
-        #     puts $fileId "WNS exceeded -2 ns, finished"
-        #     break
-        # } elseif {$clb_luts_util > 50.0} {
-        #     puts $fileId "CLB LUTs Util% exceeded 50%, finished"
-        #     break
-        # }
+        # Break the frequency loop if WNS is less than -1 ns
+        if {$wns < -1.0} {
+            puts $fileId "WNS exceeded -1 ns, finished"
+            close $fileId
+            close_project
+            break
+        }
 
         close $fileId
         close_project
-
     }
 }
 
@@ -156,7 +154,7 @@ set file_id [open "./register_array.sv" r+]
 set file_content [read $file_id]
 
 # Replace the parameter QUEUE_SIZE value
-set updated_content [regsub {parameter QUEUE_SIZE = \d+} $file_content "parameter QUEUE_SIZE = 4"]
+set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 4"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

@@ -1,6 +1,6 @@
 module tmp_open_list_queue #(
-    parameter QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
-    parameter DATA_WIDTH = 32  // Width of the node data (evaluation function value 'f')
+    parameter int QUEUE_SIZE = 2048,  // Size of the buffers (number of positions)
+    parameter int DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
     input logic RSTn,
@@ -17,36 +17,36 @@ module tmp_open_list_queue #(
 );
 
   // Constant
-  localparam [DATA_WIDTH-1:0] MAX_VALUE = '1;  // Represents the maximum value
+  localparam logic [DATA_WIDTH-1:0] MaxValue = '1;  // Represents the maximum value
 
   // Input Buffer (IB) and Output Buffer (OB)
-  logic [DATA_WIDTH-1:0] IB                                          [QUEUE_SIZE-1:0];
-  logic [DATA_WIDTH-1:0] OB                                          [QUEUE_SIZE-1:0];
-  
+  logic   [DATA_WIDTH-1:0] IB                  [  QUEUE_SIZE];
+  logic   [DATA_WIDTH-1:0] OB                  [  QUEUE_SIZE];
+
   // Registers to store comparison results
-  logic                   IB_less_than_OB                            [QUEUE_SIZE-1:0];
-  logic                   IB_less_than_IB_next                       [QUEUE_SIZE-2:0];
-  logic                   IB_less_than_OB_next                       [QUEUE_SIZE-2:0];
-  logic                   OB_next_less_than_OB                       [QUEUE_SIZE-2:0];
+  logic                    IB_less_than_OB     [  QUEUE_SIZE];
+  logic                    IB_less_than_IB_next[QUEUE_SIZE-1];
+  logic                    IB_less_than_OB_next[QUEUE_SIZE-1];
+  logic                    OB_next_less_than_OB[QUEUE_SIZE-1];
 
   // Control signals
-  integer                 size;
-  integer                 size_next;
-  logic                   full;
-  logic                   empty;
+  integer                  size;
+  integer                  size_next;
+  logic                    full;
+  logic                    empty;
 
   // Sequential logic
   always_ff @(posedge CLK or negedge RSTn) begin
     if (!RSTn) begin  // Reset
       size <= 0;
       for (int i = 0; i < QUEUE_SIZE; i++) begin
-        IB[i] <= MAX_VALUE;  // initialize IB to MAX_VALUE, since this is a min-queue
-        OB[i] <= MAX_VALUE;  // initialize OB to MAX_VALUE, since this is a min-queue
+        IB[i] <= MaxValue;  // initialize IB to MaxValue, since this is a min-queue
+        OB[i] <= MaxValue;  // initialize OB to MaxValue, since this is a min-queue
       end
     end else begin
       // Dequeue operation
       if (i_read && !i_wrt && !empty) begin
-        OB[0] <= MAX_VALUE;  // pop the head of OB
+        OB[0] <= MaxValue;  // pop the head of OB
       end
 
       // Enqueue operation
@@ -58,12 +58,12 @@ module tmp_open_list_queue #(
       if (i_wrt && i_read) begin
         if (full) begin
           IB[0] <= i_node_f;  // replace the head of IB
-          OB[0] <= MAX_VALUE; // pop the head of OB
+          OB[0] <= MaxValue;  // pop the head of OB
         end else if (empty) begin
           OB[0] <= i_node_f;  // insert the new node at the head of OB
         end else begin
           IB[0] <= i_node_f;  // replace the head of IB
-          OB[0] <= MAX_VALUE; // pop the head of OB
+          OB[0] <= MaxValue;  // pop the head of OB
         end
       end
 
@@ -84,11 +84,11 @@ module tmp_open_list_queue #(
             OB[i]   <= OB[i+1];
           end
 
-          (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MAX_VALUE): begin  // IB[i] < OB[i+1]
+          (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MaxValue): begin
             // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
             OB[i+1] <= IB[i];
             IB[i+1] <= OB[i+1];
-            IB[i]   <= MAX_VALUE;
+            IB[i]   <= MaxValue;
           end
 
           (i != QUEUE_SIZE - 1) && IB_less_than_IB_next[i]: begin  // IB[i] < IB[i+1]
@@ -133,16 +133,20 @@ module tmp_open_list_queue #(
     end
 
     // compute full and empty flags
-    full = (size >= 2 * QUEUE_SIZE);
+    full  = (size >= 2 * QUEUE_SIZE);
     empty = (size == 0);
   end
-  
+
   // Output assignments
   assign o_full   = full;
   assign o_empty  = empty;
   assign o_node_f = OB[0];
 
 endmodule
+
+
+
+
 
 
 

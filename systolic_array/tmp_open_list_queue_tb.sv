@@ -1,7 +1,10 @@
 module tmp_open_list_queue_tb;
   // Parameters matching the module under test
-  parameter QUEUE_SIZE = 4;
-  parameter DATA_WIDTH = 32;
+  parameter int QUEUE_SIZE = 4;
+  parameter int DATA_WIDTH = 16;
+
+  // MaxValue is used to represent the maximum value in the queue
+  localparam logic [DATA_WIDTH-1:0] MaxValue = '1;
 
   // Clock and reset signals
   logic                  CLK;
@@ -18,11 +21,11 @@ module tmp_open_list_queue_tb;
   logic [DATA_WIDTH-1:0] o_node_f;  // Node data output
 
   // Reference array for sorted nodes
-  logic [DATA_WIDTH-1:0] ref_queue  [$:2*QUEUE_SIZE-1];
+  logic [DATA_WIDTH-1:0] ref_queue                     [$:2*QUEUE_SIZE-1];
 
   // Random number generator and random operations
   logic [DATA_WIDTH-1:0] random_node_f;
-  logic [1:0]            random_operation;
+  logic [           1:0] random_operation;
 
   // Instantiate the tmp_open_list_queue module
   tmp_open_list_queue #(
@@ -64,20 +67,23 @@ module tmp_open_list_queue_tb;
     while (!o_full) begin
       random_node_f = $urandom_range(0, 1024);
       enqueue_node(random_node_f);
-      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      assert (o_node_f == ref_queue[0])
+      else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
-
-    // repeat (5) @(posedge CLK);
 
     // Test Case 2: Dequeue nodes
     // Dequeue all nodes
     $display("\nTest Case 2: Dequeue Test");
     while (!o_empty) begin
       dequeue_node();
-      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      if (!o_empty) begin
+        assert (o_node_f == ref_queue[0])
+        else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      end else begin
+        assert (o_node_f == MaxValue)
+        else $error("Node f value mismatch: expected %d, got %d", MaxValue, o_node_f);
+      end
     end
-    
-    // repeat (5) @(posedge CLK);
 
     // Test Case 3: Replace nodes
     // Enqueue some nodes and then replace them
@@ -85,18 +91,26 @@ module tmp_open_list_queue_tb;
     for (i = 0; i < 5; i++) begin
       random_node_f = $urandom_range(0, 1024);
       enqueue_node(random_node_f);
-      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      assert (o_node_f == ref_queue[0])
+      else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
     for (i = 0; i < 5; i++) begin
       random_node_f = $urandom_range(0, 1024);
       replace_node(random_node_f);
-      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      assert (o_node_f == ref_queue[0])
+      else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
     end
 
     // dequeue all nodes until empty
     while (!o_empty) begin
       dequeue_node();
-      assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      if (!o_empty) begin
+        assert (o_node_f == ref_queue[0])
+        else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+      end else begin
+        assert (o_node_f == MaxValue)
+        else $error("Node f value mismatch: expected %d, got %d", MaxValue, o_node_f);
+      end
     end
 
     // stress test, mix operations
@@ -106,13 +120,21 @@ module tmp_open_list_queue_tb;
       random_operation = $urandom_range(0, 2);
       if (random_operation == 0) begin
         enqueue_node(random_node_f);
-        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+        assert (o_node_f == ref_queue[0])
+        else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
       end else if (random_operation == 1) begin
         dequeue_node();
-        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+        if (!o_empty) begin
+          assert (o_node_f == ref_queue[0])
+          else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+        end else begin
+          assert (o_node_f == MaxValue)
+          else $error("Node f value mismatch: expected %d, got %d", MaxValue, o_node_f);
+        end
       end else begin
         replace_node(random_node_f);
-        assert (o_node_f == ref_queue[0]) else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
+        assert (o_node_f == ref_queue[0])
+        else $error("Node f value mismatch: expected %d, got %d", ref_queue[0], o_node_f);
       end
     end
 
@@ -125,12 +147,12 @@ module tmp_open_list_queue_tb;
   // sequence queue_op_seq;
   //   (i_wrt || i_read) ##3 ($stable(o_node_f) && o_node_f == ref_queue[0]);
   // endsequence
-  
+
   // queue_validation: assert property(@(posedge CLK) disable iff (!RSTn) queue_op_seq)
   //   else $error("Node f value mismatch at time %0t: expected %0d, got %0d", $time, ref_queue[0], o_node_f);
 
   // Task to perform an enqueue operation
-  task enqueue_node(input logic [DATA_WIDTH-1:0] node_f);
+  task automatic enqueue_node(input logic [DATA_WIDTH-1:0] node_f);
     begin
       i_wrt = 1;
       i_node_f = node_f;
@@ -143,7 +165,7 @@ module tmp_open_list_queue_tb;
   endtask
 
   // Task to perform a dequeue operation
-  task dequeue_node();
+  task automatic dequeue_node();
     begin
       i_read = 1;
       ref_queue.pop_front();
@@ -155,7 +177,7 @@ module tmp_open_list_queue_tb;
   endtask
 
   // Task to perform a replace operation
-  task replace_node(input logic [DATA_WIDTH-1:0] node_f);
+  task automatic replace_node(input logic [DATA_WIDTH-1:0] node_f);
     begin
       i_wrt = 1;
       i_node_f = node_f;
@@ -164,7 +186,7 @@ module tmp_open_list_queue_tb;
       ref_queue.push_back(node_f);
       ref_queue.sort();
       @(posedge CLK);
-      i_wrt = 0;
+      i_wrt  = 0;
       i_read = 0;
       repeat (3) @(posedge CLK);
     end

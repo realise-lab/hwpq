@@ -98,28 +98,27 @@ def process_log_directory(log_dir):
     return data
 
 
-def make_LUT_utilization_vs_achieved_frequencies_plot(data, total_luts):
+def make_throughput_vs_queue_size_plot(data):
     """
     Converts data from process_log_directory into plot-ready x and y values.
     
     Args:
         data (dict): Dictionary from process_log_directory containing (frequencies, achieved_frequencies, utilization_data)
-        total_luts (int): Total number of LUTs available on the FPGA
-        
+
     Returns:
         tuple: (x_values, y_values) where:
             x_values (list): List of achieved frequencies for x-axis
-            y_values (list): List of LUT utilization counts for y-axis
+            y_values (list): List of throughput counts for y-axis
     """
     x_values = []
     y_values = []
     
-    for frequencies, achieved_frequencies, utilization_data in data.values():
+    for queue_size, (frequencies, achieved_frequencies, utilization_data) in data.items():
         # For each queue size, find the max achieved frequency and corresponding utilization
         max_achieved_freq = max(achieved_frequencies)
         max_utilization = utilization_data[achieved_frequencies.index(max_achieved_freq)]
-        x_values.append(max_utilization * 0.01 * total_luts)  # Convert percentage to actual LUT count
-        y_values.append(max_achieved_freq)
+        x_values.append(queue_size)  # Use queue size for x-axis
+        y_values.append(max_achieved_freq * 16)  # throughput
             
     return x_values, y_values
 
@@ -139,18 +138,18 @@ systolic_data = process_log_directory(systolic_array_log_dir)
 plt.figure(figsize=(10, 6))
 
 # Plot data for each architecture
-x_systolic, y_systolic = make_LUT_utilization_vs_achieved_frequencies_plot(systolic_data, 4085760)
-x_array, y_array = make_LUT_utilization_vs_achieved_frequencies_plot(array_data, 4085760)
-# x_tree, y_tree = make_LUT_utilization_vs_achieved_frequencies_plot(tree_data, 4085760)
+x_systolic, y_systolic = make_throughput_vs_queue_size_plot(systolic_data)
+x_array, y_array = make_throughput_vs_queue_size_plot(array_data)
+# x_tree, y_tree = make_throughput_vs_queue_size_plot(tree_data)
 
 plt.plot(x_systolic, y_systolic, 'd-', label='Systolic Array')
 plt.plot(x_array, y_array, 'o-', label='Register Array')
 # plt.plot(x_tree, y_tree, 'x-', label='Register Tree')
 
-plt.xlabel('LUT Utilization', fontsize=20)
-plt.ylabel('Achieved Frequency (MHz)', fontsize=20)
+plt.xlabel('Queue Size', fontsize=20)
+plt.ylabel('Throughput (Mbps)', fontsize=20)
 
-plt.yscale('log')
+# plt.yscale('log')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
@@ -158,4 +157,4 @@ plt.tight_layout()
 # Save the plot
 output_dir = "vivado_analysis_results_plots"
 os.makedirs(output_dir, exist_ok=True)
-plt.savefig(os.path.join(output_dir, "LUT_utilization_vs_achieved_frequencies.pdf"))
+plt.savefig(os.path.join(output_dir, "throughput_vs_queue_size.pdf"))

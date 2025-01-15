@@ -88,14 +88,14 @@ def process_systolic_array_log_directory(log_dir):
 
 # Define log directories for both register array and register tree
 register_array_log_dir = "register_array/vivado_register_array_analysis_results_new/"
-register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
+# register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
 systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_new/"
 
 # Process log files for register array
 all_data_array = process_register_array_log_directory(register_array_log_dir)
 
 # Process log files for register tree
-all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
+# all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
 
 # Process log files for register tree
 all_data_systolic = process_systolic_array_log_directory(systolic_array_log_dir)
@@ -107,10 +107,10 @@ for queue_size, area_utilization in all_data_array.items():
     final_area_utilization_array[queue_size] = average_area_utilization
 
 # Calculate final achieved frequencies for register tree
-final_area_utilization_tree = {}
-for queue_size, area_utilization in all_data_tree.items():
-    average_area_utilization = sum(area_utilization.values()) / len(area_utilization)
-    final_area_utilization_tree[queue_size] = average_area_utilization
+# final_area_utilization_tree = {}
+# for queue_size, area_utilization in all_data_tree.items():
+#     average_area_utilization = sum(area_utilization.values()) / len(area_utilization)
+#     final_area_utilization_tree[queue_size] = average_area_utilization
 
 # Calculate final achieved frequencies for systolic array
 final_area_utilization_systolic = {}
@@ -147,16 +147,16 @@ plt.plot(
 )
 
 # Plot for register tree
-queue_sizes_tree = [int(size) for size in final_area_utilization_tree.keys()]
-final_area_utilization_tree = [
-    value * 0.01 * 4085760 for value in final_area_utilization_tree.values()
-]
-plt.plot(
-    queue_sizes_tree,
-    final_area_utilization_tree,
-    marker="x",
-    label="Register Tree",
-)
+# queue_sizes_tree = [int(size) for size in final_area_utilization_tree.keys()]
+# final_area_utilization_tree = [
+    # value * 0.01 * 4085760 for value in final_area_utilization_tree.values()
+# ]
+# plt.plot(
+#     queue_sizes_tree,
+#     final_area_utilization_tree,
+#     marker="x",
+#     label="Register Tree",
+# )
 
 plt.xlabel("Queue Size", fontsize=20)
 plt.ylabel("LUT Utilization", fontsize=20)

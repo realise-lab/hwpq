@@ -4,11 +4,11 @@
 */
 
 module register_array #(
-    parameter QUEUE_SIZE = 4,  // Define the size of the queue
-    parameter DATA_WIDTH = 32   // Define the width of the data
+    parameter int QUEUE_SIZE = 2048,  // Define the size of the queue
+    parameter int DATA_WIDTH = 16  // Define the width of the data
 ) (
     input  logic                  CLK,        // Clock signal
-    input  logic                  RSTn,        // Reset signal
+    input  logic                  RSTn,       // Reset signal
     // Inputs
     input  logic                  replace,    // Signal to indicate replacement
     input  logic [DATA_WIDTH-1:0] new_entry,  // New entry to be inserted
@@ -16,14 +16,14 @@ module register_array #(
     output logic [DATA_WIDTH-1:0] max_entry   // Output the maximum entry
 );
 
-  localparam PAIR_COUNT = (QUEUE_SIZE + 1) / 2;  // Calculate the number of pairs
+  localparam int PairCount = (QUEUE_SIZE + 1) / 2;  // Calculate the number of pairs
 
-  logic [DATA_WIDTH-1:0] register[0:QUEUE_SIZE-1];  // Array to hold the register values
+  logic [DATA_WIDTH-1:0] register[QUEUE_SIZE];  // Array to hold the register values
 
-  logic [DATA_WIDTH-1:0] tmp_register[0:QUEUE_SIZE-1];  // Temporary register array
+  logic [DATA_WIDTH-1:0] tmp_register[QUEUE_SIZE];  // Temporary register array
 
-  logic [DATA_WIDTH-1:0] max[0:PAIR_COUNT-1];  // Adjusted size for max array
-  logic [DATA_WIDTH-1:0] min[0:PAIR_COUNT-1];  // Adjusted size for min array
+  logic [DATA_WIDTH-1:0] max[PairCount];  // Adjusted size for max array
+  logic [DATA_WIDTH-1:0] min[PairCount];  // Adjusted size for min array
 
   always_ff @(posedge CLK or negedge RSTn) begin
     if (!RSTn) begin
@@ -47,7 +47,7 @@ module register_array #(
     end
 
     // Calculate max and min for pairs
-    for (int i = 0; i < PAIR_COUNT; i++) begin
+    for (int i = 0; i < PairCount; i++) begin
       if ((2 * i + 1) < QUEUE_SIZE) begin
         max[i] = (register[2*i] > register[2*i+1]) ? register[2*i] : register[2*i+1];
         min[i] = (register[2*i] < register[2*i+1]) ? register[2*i] : register[2*i+1];
@@ -58,7 +58,7 @@ module register_array #(
     end
 
     // Update temporary register with min/max
-    for (int i = 1; i < PAIR_COUNT; i++) begin
+    for (int i = 1; i < PairCount; i++) begin
       tmp_register[2*i-1] = (min[i-1] > max[i]) ? min[i-1] : max[i];
       tmp_register[2*i]   = (min[i-1] < max[i]) ? min[i-1] : max[i];
     end

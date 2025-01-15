@@ -36,25 +36,17 @@ def parse_achieved_frequencies(file_path):
     return frequencies, achieved_frequencies
 
 
-def extrapolate_final_achieved_frequency(achieved_frequencies, num_points=3):
+def extrapolate_final_achieved_frequency(achieved_frequencies):
     """
-    Extrapolates the final achieved frequency by averaging the last few points.
+    Extrapolates the final achieved frequency by finding the maximum frequency.
 
     Args:
         achieved_frequencies (list): A list of achieved frequencies.
-        num_points (int, optional): The number of points to consider for averaging. Defaults to 3.
 
     Returns:
-        float: The extrapolated final achieved frequency.
-
-    Example:
-        Given achieved_frequencies = [138.242, 143.205, 134.132, 138.035, 138.290, 138.889]
-        and num_points = 3, the function will return the average of the last 3 points:
-            (138.035 + 138.290 + 138.889) / 3 = 138.40466666666667
+        float: The extrapolated final achieved frequency. 
     """
-    if len(achieved_frequencies) < num_points:
-        return np.mean(achieved_frequencies)
-    return np.mean(achieved_frequencies[-num_points:])
+    return np.max(achieved_frequencies)
 
 
 def process_register_array_log_directory(log_dir):
@@ -109,14 +101,14 @@ def process_systolic_array_log_directory(log_dir):
 
 # Define log directories for both register array and register tree
 register_array_log_dir = "register_array/vivado_register_array_analysis_results_new/"
-register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
+# register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
 systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_new/"
 
 # Process log files for register array
 all_data_array = process_register_array_log_directory(register_array_log_dir)
 
 # Process log files for register tree
-all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
+# all_data_tree = process_register_tree_log_directory(register_tree_log_dir)
 
 # Process log files for systolic array
 all_data_systolic = process_systolic_array_log_directory(systolic_array_log_dir)
@@ -124,25 +116,19 @@ all_data_systolic = process_systolic_array_log_directory(systolic_array_log_dir)
 # Calculate final achieved frequencies for register array
 final_achieved_frequencies_array = {}
 for queue_size, (frequencies, achieved_frequencies) in all_data_array.items():
-    final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=2
-    )
+    final_achieved_frequency = extrapolate_final_achieved_frequency(achieved_frequencies)
     final_achieved_frequencies_array[queue_size] = final_achieved_frequency
 
 # Calculate final achieved frequencies for register tree
-final_achieved_frequencies_tree = {}
-for queue_size, (frequencies, achieved_frequencies) in all_data_tree.items():
-    final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=2
-    )
-    final_achieved_frequencies_tree[queue_size] = final_achieved_frequency
+# final_achieved_frequencies_tree = {}
+# for queue_size, (frequencies, achieved_frequencies) in all_data_tree.items():
+#     final_achieved_frequency = extrapolate_final_achieved_frequency(achieved_frequencies)
+#     final_achieved_frequencies_tree[queue_size] = final_achieved_frequency
 
 # Calculate final achieved frequencies for systolic array
 final_achieved_frequencies_systolic = {}
 for queue_size, (frequencies, achieved_frequencies) in all_data_systolic.items():
-    final_achieved_frequency = extrapolate_final_achieved_frequency(
-        achieved_frequencies, num_points=2
-    )
+    final_achieved_frequency = extrapolate_final_achieved_frequency(achieved_frequencies)
     final_achieved_frequencies_systolic[queue_size] = final_achieved_frequency
 
 # Plot the final achieved frequencies for both register array and register tree together
@@ -171,14 +157,14 @@ plt.plot(
 )
 
 # Plot for Register Tree
-queue_sizes_tree = list(final_achieved_frequencies_tree.keys())
-final_frequencies_tree = list(final_achieved_frequencies_tree.values())
-plt.plot(
-    queue_sizes_tree,
-    final_frequencies_tree,
-    marker="x",
-    label="Register Tree",
-)
+# queue_sizes_tree = list(final_achieved_frequencies_tree.keys())
+# final_frequencies_tree = list(final_achieved_frequencies_tree.values())
+# plt.plot(
+#     queue_sizes_tree,
+#     final_frequencies_tree,
+#     marker="x",
+#     label="Register Tree",
+# )
 
 plt.xlabel("Queue Size", fontsize=20)
 plt.ylabel("Maximum Frequency (MHz)", fontsize=20)
@@ -186,7 +172,7 @@ plt.ylabel("Maximum Frequency (MHz)", fontsize=20)
 plt.xscale("log", base=2)
 
 # Set axis ticks manually
-plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384])
+plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048])
 plt.yticks(np.arange(0, 500, 50))
 
 # plt.title("Final Achieved Frequency vs QUEUE_SIZE")
