@@ -4,16 +4,19 @@
 */
 
 module register_array #(
-    parameter int QUEUE_SIZE = 2048,  // Define the size of the queue
+    parameter int QUEUE_SIZE = 8,  // Define the size of the queue
     parameter int DATA_WIDTH = 16  // Define the width of the data
 ) (
-    input  logic                  CLK,        // Clock signal
-    input  logic                  RSTn,       // Reset signal
+    input  logic                  CLK,      // Clock signal
+    input  logic                  RSTn,     // Reset signal
     // Inputs
-    input  logic                  replace,    // Signal to indicate replacement
-    input  logic [DATA_WIDTH-1:0] new_entry,  // New entry to be inserted
+    input  logic                  i_wrt,    // Signal to indicate write
+    input  logic                  i_read,   // Signal to indicate read
+    input  logic [DATA_WIDTH-1:0] i_data,   // New entry to be inserted
     // Outputs
-    output logic [DATA_WIDTH-1:0] max_entry   // Output the maximum entry
+    output logic                  o_full,   // Signal to indicate full
+    output logic                  o_empty,  // Signal to indicate empty
+    output logic [DATA_WIDTH-1:0] o_data    // Output the maximum entry
 );
 
   localparam int PairCount = (QUEUE_SIZE + 1) / 2;  // Calculate the number of pairs
@@ -25,17 +28,27 @@ module register_array #(
   logic [DATA_WIDTH-1:0] max[PairCount];  // Adjusted size for max array
   logic [DATA_WIDTH-1:0] min[PairCount];  // Adjusted size for min array
 
+  int size = 0;
+
   always_ff @(posedge CLK or negedge RSTn) begin
     if (!RSTn) begin
       for (int j = 0; j < QUEUE_SIZE; j++) begin
-        register[j] <= (j + 1) * 10;  // Initialize tree entries to some values
+        register[j] <= '0;  // Initialize tree entries with 0
+        tmp_register[j] <= '0;
+        size <= 0;
       end
     end else begin
       for (int i = 0; i < QUEUE_SIZE; i++) begin
         register[i] <= tmp_register[i];  // Update the register with temporary register values
       end
-      if (replace) begin
-        register[0] <= new_entry;
+      if (i_wrt && !i_read) begin  // enqueue
+        register[size] <= i_data;
+        size <= size + 1;
+      end else if (!i_wrt && i_read) begin  // dequeue
+        register[0] <= '0;
+        size <= size - 1;
+      end else if (i_wrt && i_read) begin  // replace
+        register[0] <= i_data;
       end
     end
   end
@@ -58,7 +71,7 @@ module register_array #(
     end
 
     // Update temporary register with min/max
-    for (int i = 1; i < PairCount; i++) begin
+    for (int i = 0; i < PairCount; i++) begin
       tmp_register[2*i-1] = (min[i-1] > max[i]) ? min[i-1] : max[i];
       tmp_register[2*i]   = (min[i-1] < max[i]) ? min[i-1] : max[i];
     end
@@ -66,6 +79,8 @@ module register_array #(
     tmp_register[0] = max[0];
   end
 
-  assign max_entry = register[0];
+  assign o_data  = register[0];
+  assign o_full  = (size == QUEUE_SIZE);
+  assign o_empty = (size == 0);
 
 endmodule

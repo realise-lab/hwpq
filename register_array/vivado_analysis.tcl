@@ -1,5 +1,5 @@
 # Define the range of QUEUE_SIZE and clock frequencies to test
-set queue_sizes {64 128 256 512 1024 2048}
+set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
 
 # Create a single project
 create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcau25p-ffvb676-1-e

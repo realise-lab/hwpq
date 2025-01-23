@@ -1,5 +1,5 @@
 module register_tree #(
-    parameter int QUEUE_SIZE = 8,
+    parameter int QUEUE_SIZE = 128,
     parameter int DATA_WIDTH = 16
 ) (
     // Synchronous Control
@@ -30,19 +30,16 @@ module register_tree #(
     Registers
   */
   // Register array to store the tree nodes
-  logic [         DATA_WIDTH-1:0] queue          [NodesNeeded];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] queue          [NodesNeeded];
   // Size counter to keep track of the number of nodes in the queue
-  logic [$clog2(NodesNeeded)-1:0] size;
+  (* ram_style = "distributed" *)logic [$clog2(NodesNeeded)-1:0] size;
   // Wires to connect the comparator units
-  logic [         DATA_WIDTH-1:0] old_parent     [  CompCount];
-  logic [         DATA_WIDTH-1:0] old_left_child [  CompCount];
-  logic [         DATA_WIDTH-1:0] old_right_child[  CompCount];
-  logic [         DATA_WIDTH-1:0] new_parent     [  CompCount];
-  logic [         DATA_WIDTH-1:0] new_left_child [  CompCount];
-  logic [         DATA_WIDTH-1:0] new_right_child[  CompCount];
-  // Declare arrays for start and end indices of each level
-  logic [  $clog2(CompCount)-1:0] level_start    [  TreeDepth];
-  logic [  $clog2(CompCount)-1:0] level_end      [  TreeDepth];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_parent     [  CompCount];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_left_child [  CompCount];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_right_child[  CompCount];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_parent     [  CompCount];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_left_child [  CompCount];
+  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_right_child[  CompCount];
 
 
 
@@ -91,12 +88,12 @@ module register_tree #(
   endgenerate
 
   // Generate block to compute level indices
-  generate
-    for (level = 0; level < TreeDepth; level++) begin : gen_level_indices
-      assign level_start[level] = (1 << level) - 1;
-      assign level_end[level]   = (1 << (level + 1)) - 2;
-    end
-  endgenerate
+  // generate
+  //   for (level = 0; level < TreeDepth; level++) begin : gen_level_indices
+  //     assign level_start[level] = (1 << level) - 1;
+  //     assign level_end[level]   = (1 << (level + 1)) - 2;
+  //   end
+  // endgenerate
 
 
 
@@ -211,7 +208,7 @@ module register_tree #(
   /*
     Queue Management
   */
-  int itr, itr_even, itr_odd, itr_last, lvl_even, lvl_odd;
+  int itr, lvl;
   always_ff @(posedge CLK or negedge RSTn) begin : queue_management
     if (!RSTn) begin
       for (itr = 0; itr < NodesNeeded; itr++) begin
@@ -223,41 +220,35 @@ module register_tree #(
         end
 
         COMPARE_AND_SWAP_EVEN: begin
-          for (lvl_even = 0; lvl_even < TreeDepth; lvl_even = lvl_even + 2) begin
-            for (
-                itr_even = level_start[lvl_even]; itr_even <= level_end[lvl_even]; itr_even++
-            ) begin
-              if (
-                itr_even < NodesNeeded && 2 * itr_even + 1 < NodesNeeded && 2 * itr_even + 2 < NodesNeeded
-              ) begin
-                queue[itr_even] <= new_parent[itr_even];
-                queue[2*itr_even+1] <= new_left_child[itr_even];
-                queue[2*itr_even+2] <= new_right_child[itr_even];
-              end
+          for (lvl = 0; lvl < TreeDepth; lvl = lvl + 2) begin
+            // Compute level bounds directly
+            automatic int s = (1 << lvl) - 1;  // start index
+            automatic int e = (1 << (lvl + 1)) - 2;  // end index
+            for (itr = s; itr <= e; itr++) begin
+              queue[itr] <= new_parent[itr];
+              queue[2*itr+1] <= new_left_child[itr];
+              queue[2*itr+2] <= new_right_child[itr];
             end
           end
         end
 
         COMPARE_AND_SWAP_ODD: begin
-          for (lvl_odd = 1; lvl_odd < TreeDepth; lvl_odd = lvl_odd + 2) begin
-            for (itr_odd = level_start[lvl_odd]; itr_odd <= level_end[lvl_odd]; itr_odd++) begin
-              if (
-                itr_odd < NodesNeeded && 2 * itr_odd + 1 < NodesNeeded && 2 * itr_odd + 2 < NodesNeeded
-              ) begin
-                queue[itr_odd] <= new_parent[itr_odd];
-                queue[2*itr_odd+1] <= new_left_child[itr_odd];
-                queue[2*itr_odd+2] <= new_right_child[itr_odd];
-              end
+          for (lvl = 1; lvl < TreeDepth; lvl = lvl + 2) begin
+            // Compute level bounds directly
+            automatic int s = (1 << lvl) - 1;  // start index
+            automatic int e = (1 << (lvl + 1)) - 2;  // end index
+            for (itr = s; itr <= e; itr++) begin
+              queue[itr] <= new_parent[itr];
+              queue[2*itr+1] <= new_left_child[itr];
+              queue[2*itr+2] <= new_right_child[itr];
             end
           end
         end
 
         WRITE_TO_QUEUE: begin
-          for (
-              itr_last = (1 << TreeDepth) - 1; itr_last > (1 << (TreeDepth + 1)) - 2; itr_last--
-          ) begin
-            if (queue[itr_last] == '0) begin
-              queue[itr_last] <= i_data;
+          for (itr = (1 << TreeDepth) - 1; itr < (1 << (TreeDepth + 1)) - 1; itr++) begin
+            if (queue[itr] == '0) begin
+              queue[itr] <= i_data;
               break;
             end
           end
@@ -280,8 +271,8 @@ module register_tree #(
 
 
   // Assign outputs
-  assign o_full  = (size == QUEUE_SIZE);
-  assign o_empty = (size == 0);
+  assign o_full  = size == QUEUE_SIZE;
+  assign o_empty = size == 0;
   assign o_data  = (size > 0) ? queue[0] : '0;
 
 endmodule

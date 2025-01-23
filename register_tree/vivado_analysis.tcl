@@ -20,7 +20,7 @@ foreach queue_size $queue_sizes {
     set file_content [read $file_id]
 
     # Replace the parameter TREE_DEPTH value
-    set updated_content [regsub {parameter QUEUE_SIZE = \d+} $file_content "parameter QUEUE_SIZE = $queue_size"]
+    set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = $queue_size"]
 
     # Rewind the file pointer to the beginning
     seek $file_id 0
@@ -34,7 +34,7 @@ foreach queue_size $queue_sizes {
     set log_file "./vivado_register_tree_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
-    for {set freq 100} {$freq <= 400} {incr freq 50} {
+    for {set freq 100} {$freq <= 800} {incr freq 50} {
 
         open_project ./vivado_register_tree_tcl/vivado_register_tree_tcl.xpr
 
@@ -135,14 +135,14 @@ foreach queue_size $queue_sizes {
         puts $fileId "Frequency: ${freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
         puts $fileId "\n"
 
-        close $fileId
-        close_project
-
         # Exit the loop if WNS has passed the threshold of -1 ns
         if {$wns < -1.0} {
             puts $fileId "WNS exceeded -1 ns, finished"
             break
         }
+
+        close $fileId
+        close_project
     }
 }
 
@@ -153,7 +153,7 @@ set file_id [open "./register_tree.sv" r+]
 set file_content [read $file_id]
 
 # Replace the parameter TREE_DEPTH value
-set updated_content [regsub {parameter TREE_DEPTH = \d+} $file_content "parameter TREE_DEPTH = 4"]
+set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 8"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

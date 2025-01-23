@@ -1,0 +1,120 @@
+Frequency: 100 MHz -> Synthesis: 28s -> 28s
+Frequency: 100 MHz -> Implementation: 1m 3s -> 63s
+Frequency: 100 MHz -> Power: 0.466 W
+Frequency: 100 MHz -> LUTs Util%: 0.27 %
+Frequency: 100 MHz -> WNS: 6.809 ns
+Frequency: 100 MHz -> Achieved Frequency: 313.381 MHz
+
+
+Frequency: 150 MHz -> Synthesis: 29s -> 29s
+Frequency: 150 MHz -> Implementation: 1m 4s -> 64s
+Frequency: 150 MHz -> Power: 0.474 W
+Frequency: 150 MHz -> LUTs Util%: 0.27 %
+Frequency: 150 MHz -> WNS: 3.643 ns
+Frequency: 150 MHz -> Achieved Frequency: 330.724 MHz
+
+
+Frequency: 200 MHz -> Synthesis: 29s -> 29s
+Frequency: 200 MHz -> Implementation: 1m 3s -> 63s
+Frequency: 200 MHz -> Power: 0.482 W
+Frequency: 200 MHz -> LUTs Util%: 0.27 %
+Frequency: 200 MHz -> WNS: 1.877 ns
+Frequency: 200 MHz -> Achieved Frequency: 320.205 MHz
+
+
+Frequency: 250 MHz -> Synthesis: 28s -> 28s
+Frequency: 250 MHz -> Implementation: 1m 8s -> 68s
+Frequency: 250 MHz -> Power: 0.490 W
+Frequency: 250 MHz -> LUTs Util%: 0.27 %
+Frequency: 250 MHz -> WNS: 1.314 ns
+Frequency: 250 MHz -> Achieved Frequency: 372.301 MHz
+
+
+Frequency: 300 MHz -> Synthesis: 28s -> 28s
+Frequency: 300 MHz -> Implementation: 1m 4s -> 64s
+Frequency: 300 MHz -> Power: 0.497 W
+Frequency: 300 MHz -> LUTs Util%: 0.27 %
+Frequency: 300 MHz -> WNS: 0.738 ns
+Frequency: 300 MHz -> Achieved Frequency: 385.307 MHz
+
+
+Frequency: 350 MHz -> Synthesis: 28s -> 28s
+Frequency: 350 MHz -> Implementation: 1m 4s -> 64s
+Frequency: 350 MHz -> Power: 0.505 W
+Frequency: 350 MHz -> LUTs Util%: 0.27 %
+Frequency: 350 MHz -> WNS: 0.538 ns
+Frequency: 350 MHz -> Achieved Frequency: 431.194 MHz
+
+
+Frequency: 400 MHz -> Synthesis: 28s -> 28s
+Frequency: 400 MHz -> Implementation: 1m 8s -> 68s
+Frequency: 400 MHz -> Power: 0.514 W
+Frequency: 400 MHz -> LUTs Util%: 0.27 %
+Frequency: 400 MHz -> WNS: 0.341 ns
+Frequency: 400 MHz -> Achieved Frequency: 463.177 MHz
+
+
+Frequency: 450 MHz -> Synthesis: 28s -> 28s
+Frequency: 450 MHz -> Implementation: 1m 30s -> 90s
+Frequency: 450 MHz -> Power: 0.520 W
+Frequency: 450 MHz -> LUTs Util%: 0.28 %
+Frequency: 450 MHz -> WNS: 0.294 ns
+Frequency: 450 MHz -> Achieved Frequency: 518.612 MHz
+
+
+Frequency: 500 MHz -> Synthesis: 29s -> 29s
+Frequency: 500 MHz -> Implementation: 1m 24s -> 84s
+Frequency: 500 MHz -> Power: 0.528 W
+Frequency: 500 MHz -> LUTs Util%: 0.27 %
+Frequency: 500 MHz -> WNS: 0.061 ns
+Frequency: 500 MHz -> Achieved Frequency: 515.730 MHz
+
+
+Frequency: 550 MHz -> Synthesis: 29s -> 29s
+Frequency: 550 MHz -> Implementation: 1m 32s -> 92s
+Frequency: 550 MHz -> Power: 0.536 W
+Frequency: 550 MHz -> LUTs Util%: 0.28 %
+Frequency: 550 MHz -> WNS: -0.106 ns
+Frequency: 550 MHz -> Achieved Frequency: 519.701 MHz
+
+
+Frequency: 600 MHz -> Synthesis: 29s -> 29s
+Frequency: 600 MHz -> Implementation: 1m 38s -> 98s
+Frequency: 600 MHz -> Power: 0.544 W
+Frequency: 600 MHz -> LUTs Util%: 0.28 %
+Frequency: 600 MHz -> WNS: -0.254 ns
+Frequency: 600 MHz -> Achieved Frequency: 520.653 MHz
+
+
+Frequency: 650 MHz -> Synthesis: 29s -> 29s
+Frequency: 650 MHz -> Implementation: 1m 39s -> 99s
+Frequency: 650 MHz -> Power: 0.556 W
+Frequency: 650 MHz -> LUTs Util%: 0.29 %
+Frequency: 650 MHz -> WNS: -0.291 ns
+Frequency: 650 MHz -> Achieved Frequency: 546.609 MHz
+
+
+Frequency: 700 MHz -> Synthesis: 28s -> 28s
+Frequency: 700 MHz -> Implementation: 1m 34s -> 94s
+Frequency: 700 MHz -> Power: 0.562 W
+Frequency: 700 MHz -> LUTs Util%: 0.29 %
+Frequency: 700 MHz -> WNS: -0.602 ns
+Frequency: 700 MHz -> Achieved Frequency: 492.472 MHz
+
+
+Frequency: 750 MHz -> Synthesis: 29s -> 29s
+Frequency: 750 MHz -> Implementation: 1m 31s -> 91s
+Frequency: 750 MHz -> Power: 0.570 W
+Frequency: 750 MHz -> LUTs Util%: 0.29 %
+Frequency: 750 MHz -> WNS: -0.722 ns
+Frequency: 750 MHz -> Achieved Frequency: 486.539 MHz
+
+
+Frequency: 800 MHz -> Synthesis: 28s -> 28s
+Frequency: 800 MHz -> Implementation: 1m 31s -> 91s
+Frequency: 800 MHz -> Power: 0.579 W
+Frequency: 800 MHz -> LUTs Util%: 0.28 %
+Frequency: 800 MHz -> WNS: -0.816 ns
+Frequency: 800 MHz -> Achieved Frequency: 484.027 MHz
+
+

@@ -1,19 +1,19 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {1024 2048}
+set queue_sizes {2048 4096}
 
 # Create a single project
-create_project -force vivado_systolic_array_tcl ./vivado_systolic_array_tcl -part xcau25p-ffvb676-1-e
-add_files ./tmp_open_list_queue.sv
+create_project -force vivado_systolic_array_tcl_16bit_new ./vivado_systolic_array_tcl_16bit_new -part xcau25p-ffvb676-1-e
+add_files ./systolic_array.sv
 close_project
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_systolic_array_analysis_results_16bit
+file mkdir ./vivado_systolic_array_analysis_results_16bit_new
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
 
     # Open the systolic_array.sv file
-    set file_id [open "./tmp_open_list_queue.sv" r+]
+    set file_id [open "./systolic_array.sv" r+]
 
     # Read the file content
     set file_content [read $file_id]
@@ -30,12 +30,12 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_systolic_array_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./vivado_systolic_array_analysis_results_16bit_new/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {
 
-        open_project ./vivado_systolic_array_tcl/vivado_systolic_array_tcl.xpr
+        open_project ./vivado_systolic_array_tcl_16bit_new/vivado_systolic_array_tcl_16bit_new.xpr
 
         # Set the clock period (in nanoseconds)
         set period_ns [expr {1000.0 / $freq}]

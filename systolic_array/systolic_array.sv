@@ -1,39 +1,42 @@
-module tmp_open_list_queue #(
-    parameter int QUEUE_SIZE = 2048,  // Size of the buffers (number of positions)
+module systolic_array #(
+    parameter int QUEUE_SIZE = 4096,  // Size of the buffers (number of positions)
     parameter int DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
     input logic RSTn,
 
     // Input
-    input logic                  i_wrt,    // Enqueue signal
-    input logic                  i_read,   // Dequeue signal
-    input logic [DATA_WIDTH-1:0] i_node_f, // Node data input
+    input logic                  i_wrt,   // Enqueue signal
+    input logic                  i_read,  // Dequeue signal
+    input logic [DATA_WIDTH-1:0] i_data,  // Node data input
 
     // Output
     output logic                  o_full,   // Queue is full
     output logic                  o_empty,  // Queue is empty
-    output logic [DATA_WIDTH-1:0] o_node_f  // Node data output
+    output logic [DATA_WIDTH-1:0] o_data    // Node data output
 );
 
   // Constant
   localparam logic [DATA_WIDTH-1:0] MaxValue = '1;  // Represents the maximum value
 
   // Input Buffer (IB) and Output Buffer (OB)
-  logic   [DATA_WIDTH-1:0] IB                  [  QUEUE_SIZE];
-  logic   [DATA_WIDTH-1:0] OB                  [  QUEUE_SIZE];
+  logic   [DATA_WIDTH-1:0] IB                  [  QUEUE_SIZE/2];
+  logic   [DATA_WIDTH-1:0] OB                  [  QUEUE_SIZE/2];
 
   // Registers to store comparison results
-  logic                    IB_less_than_OB     [  QUEUE_SIZE];
-  logic                    IB_less_than_IB_next[QUEUE_SIZE-1];
-  logic                    IB_less_than_OB_next[QUEUE_SIZE-1];
-  logic                    OB_next_less_than_OB[QUEUE_SIZE-1];
+  logic                    IB_less_than_OB     [  QUEUE_SIZE/2];
+  logic                    IB_less_than_IB_next[QUEUE_SIZE/2-1];
+  logic                    IB_less_than_OB_next[QUEUE_SIZE/2-1];
+  logic                    OB_next_less_than_OB[QUEUE_SIZE/2-1];
 
   // Control signals
   integer                  size;
   integer                  size_next;
   logic                    full;
   logic                    empty;
+
+  assign full  = (size == QUEUE_SIZE);
+  assign empty = (size == 0);
 
   // Sequential logic
   always_ff @(posedge CLK or negedge RSTn) begin
@@ -51,18 +54,18 @@ module tmp_open_list_queue #(
 
       // Enqueue operation
       if (i_wrt && !i_read && !full) begin
-        IB[0] <= i_node_f;  // insert the new node at the head of IB
+        IB[0] <= i_data;  // insert the new node at the head of IB
       end
 
       // Replace operation
       if (i_wrt && i_read) begin
         if (full) begin
-          IB[0] <= i_node_f;  // replace the head of IB
+          IB[0] <= i_data;  // replace the head of IB
           OB[0] <= MaxValue;  // pop the head of OB
         end else if (empty) begin
-          OB[0] <= i_node_f;  // insert the new node at the head of OB
+          OB[0] <= i_data;  // insert the new node at the head of OB
         end else begin
-          IB[0] <= i_node_f;  // replace the head of IB
+          IB[0] <= i_data;  // replace the head of IB
           OB[0] <= MaxValue;  // pop the head of OB
         end
       end
@@ -132,21 +135,11 @@ module tmp_open_list_queue #(
       size_next = size;
     end
 
-    // compute full and empty flags
-    full  = (size >= 2 * QUEUE_SIZE);
-    empty = (size == 0);
   end
 
   // Output assignments
-  assign o_full   = full;
-  assign o_empty  = empty;
-  assign o_node_f = OB[0];
+  assign o_full  = full;
+  assign o_empty = empty;
+  assign o_data  = OB[0];
 
 endmodule
-
-
-
-
-
-
-

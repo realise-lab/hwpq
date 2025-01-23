@@ -1,0 +1,53 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
+| Date         : Sat Jan 18 00:07:13 2025
+| Host         : charliePC running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_drc -file systolic_array_drc_opted.rpt -pb systolic_array_drc_opted.pb -rpx systolic_array_drc_opted.rpx
+| Design       : systolic_array
+| Device       : xcau25p-ffvb676-1-e
+| Speed File   : -1
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: netlist
+          Floorplan: checkpoint_systolic_array
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 3
++--------+------------------+----------------------------+------------+
+| Rule   | Severity         | Description                | Violations |
++--------+------------------+----------------------------+------------+
+| UTLZ-1 | Error            | Resource utilization       | 1          |
+| NSTD-1 | Critical Warning | Unspecified I/O Standard   | 1          |
+| UCIO-1 | Critical Warning | Unconstrained Logical Port | 1          |
++--------+------------------+----------------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+UTLZ-1#1 Error
+Resource utilization  - PBlock:ROOT
+LUT as Logic over-utilized in Top Level Design (This design requires more LUT as Logic cells than are available in the target device. This design requires 207672 of such cell types but only 141000 compatible sites are available in the target device. Please analyze your synthesis results and constraints to ensure the design is mapped to Xilinx primitives as expected. If so, please consider targeting a larger device. Please set tcl parameter "drc.disableLUTOverUtilError" to 1 to change this error to warning.)ROOT
+Related violations: <none>
+
+NSTD-1#1 Critical Warning
+Unspecified I/O Standard  
+38 out of 38 logical ports use I/O standard (IOSTANDARD) value 'DEFAULT', instead of a user assigned specific value. This may cause I/O contention or incompatibility with the board power or connectivity affecting performance, signal integrity or in extreme cases cause damage to the device or the components to which it is connected. To correct this violation, specify all I/O standards. This design will fail to generate a bitstream unless all logical ports have a user specified I/O standard value defined. To allow bitstream creation with unspecified I/O standard values (not recommended), use this command: set_property SEVERITY {Warning} [get_drc_checks NSTD-1].  NOTE: When using the Vivado Runs infrastructure (e.g. launch_runs Tcl command), add this command to a .tcl file and add that file as a pre-hook for write_bitstream step for the implementation run. Problem ports: CLK, RSTn, i_data[15:0], i_read, i_wrt, o_data[15:0], o_empty, o_full.
+Related violations: <none>
+
+UCIO-1#1 Critical Warning
+Unconstrained Logical Port  
+38 out of 38 logical ports have no user assigned specific location constraint (LOC). This may cause I/O contention or incompatibility with the board power or connectivity affecting performance, signal integrity or in extreme cases cause damage to the device or the components to which it is connected. To correct this violation, specify all pin locations. This design will fail to generate a bitstream unless all logical ports have a user specified site LOC constraint defined.  To allow bitstream creation with unspecified pin locations (not recommended), use this command: set_property SEVERITY {Warning} [get_drc_checks UCIO-1].  NOTE: When using the Vivado Runs infrastructure (e.g. launch_runs Tcl command), add this command to a .tcl file and add that file as a pre-hook for write_bitstream step for the implementation run.  Problem ports: CLK, RSTn, i_data[15:0], i_read, i_wrt, o_data[15:0], o_empty, o_full.
+Related violations: <none>
+
+

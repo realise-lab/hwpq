@@ -1,0 +1,220 @@
+
+*** Running vivado
+    with args -log systolic_array.vdi -applog -m64 -product Vivado -messageDb vivado.pb -mode batch -source systolic_array.tcl -notrace
+
+
+****** Vivado v2024.1 (64-bit)
+  **** SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+  **** IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+  **** SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+  **** Start of session at: Sat Jan 18 00:06:26 2025
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source systolic_array.tcl -notrace
+Command: open_checkpoint /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array_tcl_16bit_new/vivado_systolic_array_tcl_16bit_new.runs/impl_1/systolic_array.dcp
+INFO: [Device 21-403] Loading part xcau25p-ffvb676-1-e
+Netlist sorting complete. Time (s): cpu = 00:00:00.44 ; elapsed = 00:00:00.45 . Memory (MB): peak = 2681.871 ; gain = 0.000 ; free physical = 49279 ; free virtual = 67917
+INFO: [Netlist 29-17] Analyzing 8213 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+WARNING: [Netlist 29-101] Netlist 'systolic_array' is not ideal for floorplanning, since the cellview 'systolic_array' contains a large number of primitives.  Please consider enabling hierarchy in synthesis if you want to do floorplanning.
+INFO: [Project 1-479] Netlist was created with Vivado 2024.1
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00.19 ; elapsed = 00:00:00.2 . Memory (MB): peak = 2844.770 ; gain = 40.398 ; free physical = 49115 ; free virtual = 67754
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3410.477 ; gain = 0.000 ; free physical = 48613 ; free virtual = 67251
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 20 instances were transformed.
+  IBUF => IBUF (IBUFCTRL, INBUF): 20 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.1 (64-bit) build 5076996
+open_checkpoint: Time (s): cpu = 00:00:24 ; elapsed = 00:00:25 . Memory (MB): peak = 3410.477 ; gain = 1975.559 ; free physical = 48613 ; free virtual = 67251
+Command: opt_design
+Attempting to get a license for feature 'Implementation' and/or device 'xcau25p'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xcau25p'
+Running DRC as a precondition to command opt_design
+
+Starting DRC Task
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Project 1-461] DRC finished with 0 Errors
+INFO: [Project 1-462] Please refer to the DRC report (report_drc) for more information.
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.53 . Memory (MB): peak = 3544.883 ; gain = 134.406 ; free physical = 48544 ; free virtual = 67183
+
+Starting Cache Timing Information Task
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Ending Cache Timing Information Task | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:09 ; elapsed = 00:00:02 . Memory (MB): peak = 3889.414 ; gain = 344.531 ; free physical = 48220 ; free virtual = 66858
+
+Starting Logic Optimization Task
+
+Phase 1 Initialization
+
+Phase 1.1 Core Generation And Design Setup
+Phase 1.1 Core Generation And Design Setup | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47924 ; free virtual = 66562
+
+Phase 1.2 Setup Constraints And Sort Netlist
+Phase 1.2 Setup Constraints And Sort Netlist | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:00.06 ; elapsed = 00:00:00.05 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47924 ; free virtual = 66562
+Phase 1 Initialization | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:00.06 ; elapsed = 00:00:00.06 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47924 ; free virtual = 66562
+
+Phase 2 Timer Update And Timing Data Collection
+
+Phase 2.1 Timer Update
+Phase 2.1 Timer Update | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:02 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47923 ; free virtual = 66561
+
+Phase 2.2 Timing Data Collection
+Phase 2.2 Timing Data Collection | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:02 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47894 ; free virtual = 66532
+Phase 2 Timer Update And Timing Data Collection | Checksum: 2019e1e99
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:02 . Memory (MB): peak = 4205.102 ; gain = 0.000 ; free physical = 47894 ; free virtual = 66533
+
+Phase 3 Retarget
+INFO: [Opt 31-1834] Total Chains To Be Transformed Were: 0 AND Number of Transformed insts Created are: 0
+INFO: [Opt 31-138] Pushed 1 inverter(s) to 65568 load pin(s).
+INFO: [Opt 31-49] Retargeted 0 cell(s).
+Phase 3 Retarget | Checksum: 19b8d2167
+
+Time (s): cpu = 00:00:12 ; elapsed = 00:00:06 . Memory (MB): peak = 4261.129 ; gain = 56.027 ; free physical = 47894 ; free virtual = 66532
+Retarget | Checksum: 19b8d2167
+INFO: [Opt 31-389] Phase Retarget created 0 cells and removed 1 cells
+
+Phase 4 Constant propagation
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Phase 4 Constant propagation | Checksum: 19b8d2167
+
+Time (s): cpu = 00:00:13 ; elapsed = 00:00:07 . Memory (MB): peak = 4261.129 ; gain = 56.027 ; free physical = 47893 ; free virtual = 66532
+Constant propagation | Checksum: 19b8d2167
+INFO: [Opt 31-389] Phase Constant propagation created 0 cells and removed 0 cells
+
+Phase 5 Sweep
+Phase 5 Sweep | Checksum: 1325e0956
+
+Time (s): cpu = 00:00:14 ; elapsed = 00:00:08 . Memory (MB): peak = 4261.129 ; gain = 56.027 ; free physical = 47890 ; free virtual = 66528
+Sweep | Checksum: 1325e0956
+INFO: [Opt 31-389] Phase Sweep created 0 cells and removed 0 cells
+
+Phase 6 BUFG optimization
+INFO: [Opt 31-1077] Phase BUFG optimization inserted 0 global clock buffer(s) for CLOCK_LOW_FANOUT.
+INFO: [Opt 31-129] Inserted BUFG to drive high-fanout reset|set|enable net. BUFG cell: RSTn_IBUF_BUFG_inst, Net: RSTn_IBUF
+Phase 6 BUFG optimization | Checksum: 1ca4588de
+
+Time (s): cpu = 00:00:17 ; elapsed = 00:00:10 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47891 ; free virtual = 66529
+BUFG optimization | Checksum: 1ca4588de
+INFO: [Opt 31-662] Phase BUFG optimization created 1 cells of which 1 are BUFGs and removed 0 cells.
+
+Phase 7 Shift Register Optimization
+INFO: [Opt 31-1064] SRL Remap converted 0 SRLs to 0 registers and converted 0 registers of register chains to 0 SRLs
+Phase 7 Shift Register Optimization | Checksum: 1ca4588de
+
+Time (s): cpu = 00:00:17 ; elapsed = 00:00:10 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47891 ; free virtual = 66529
+Shift Register Optimization | Checksum: 1ca4588de
+INFO: [Opt 31-389] Phase Shift Register Optimization created 0 cells and removed 0 cells
+
+Phase 8 Post Processing Netlist
+Phase 8 Post Processing Netlist | Checksum: 1ca4588de
+
+Time (s): cpu = 00:00:17 ; elapsed = 00:00:10 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47891 ; free virtual = 66529
+Post Processing Netlist | Checksum: 1ca4588de
+INFO: [Opt 31-389] Phase Post Processing Netlist created 0 cells and removed 0 cells
+
+Phase 9 Finalization
+
+Phase 9.1 Finalizing Design Cores and Updating Shapes
+Phase 9.1 Finalizing Design Cores and Updating Shapes | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:21 ; elapsed = 00:00:14 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47887 ; free virtual = 66526
+
+Phase 9.2 Verifying Netlist Connectivity
+
+Starting Connectivity Check Task
+
+Time (s): cpu = 00:00:00.23 ; elapsed = 00:00:00.23 . Memory (MB): peak = 4293.145 ; gain = 0.000 ; free physical = 47886 ; free virtual = 66524
+Phase 9.2 Verifying Netlist Connectivity | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:21 ; elapsed = 00:00:14 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47886 ; free virtual = 66524
+Phase 9 Finalization | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:21 ; elapsed = 00:00:14 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47886 ; free virtual = 66524
+Opt_design Change Summary
+=========================
+
+
+-------------------------------------------------------------------------------------------------------------------------
+|  Phase                        |  #Cells created  |  #Cells Removed  |  #Constrained objects preventing optimizations  |
+-------------------------------------------------------------------------------------------------------------------------
+|  Retarget                     |               0  |               1  |                                              0  |
+|  Constant propagation         |               0  |               0  |                                              0  |
+|  Sweep                        |               0  |               0  |                                              0  |
+|  BUFG optimization            |               1  |               0  |                                              0  |
+|  Shift Register Optimization  |               0  |               0  |                                              0  |
+|  Post Processing Netlist      |               0  |               0  |                                              0  |
+-------------------------------------------------------------------------------------------------------------------------
+
+
+Ending Logic Optimization Task | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:22 ; elapsed = 00:00:14 . Memory (MB): peak = 4293.145 ; gain = 88.043 ; free physical = 47886 ; free virtual = 66524
+
+Starting Power Optimization Task
+INFO: [Pwropt 34-132] Skipping clock gating for clocks with a period < 2.00 ns.
+Ending Power Optimization Task | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:00.06 ; elapsed = 00:00:00.06 . Memory (MB): peak = 4293.145 ; gain = 0.000 ; free physical = 47886 ; free virtual = 66524
+
+Starting Final Cleanup Task
+Ending Final Cleanup Task | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 4293.145 ; gain = 0.000 ; free physical = 47886 ; free virtual = 66524
+
+Starting Netlist Obfuscation Task
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 4293.145 ; gain = 0.000 ; free physical = 47886 ; free virtual = 66524
+Ending Netlist Obfuscation Task | Checksum: 277dd8a97
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.02 . Memory (MB): peak = 4293.145 ; gain = 0.000 ; free physical = 47886 ; free virtual = 66524
+INFO: [Common 17-83] Releasing license: Implementation
+31 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+opt_design completed successfully
+opt_design: Time (s): cpu = 00:00:33 ; elapsed = 00:00:18 . Memory (MB): peak = 4293.145 ; gain = 882.668 ; free physical = 47886 ; free virtual = 66524
+INFO: [Vivado 12-24828] Executing command : report_drc -file systolic_array_drc_opted.rpt -pb systolic_array_drc_opted.pb -rpx systolic_array_drc_opted.rpx
+Command: report_drc -file systolic_array_drc_opted.rpt -pb systolic_array_drc_opted.pb -rpx systolic_array_drc_opted.rpx
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2024.1/data/ip'.
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file /home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array_tcl_16bit_new/vivado_systolic_array_tcl_16bit_new.runs/impl_1/systolic_array_drc_opted.rpt.
+report_drc completed successfully
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:00.71 ; elapsed = 00:00:00.18 . Memory (MB): peak = 4333.164 ; gain = 0.000 ; free physical = 47854 ; free virtual = 66513
+INFO: [Common 17-1381] The checkpoint '/home/charlielinux/Workspace/hwpq_qw2246/systolic_array/vivado_systolic_array_tcl_16bit_new/vivado_systolic_array_tcl_16bit_new.runs/impl_1/systolic_array_opt.dcp' has been generated.
+Command: place_design
+Attempting to get a license for feature 'Implementation' and/or device 'xcau25p'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xcau25p'
+INFO: [Common 17-83] Releasing license: Implementation
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+Running DRC as a precondition to command place_design
+INFO: [DRC 23-27] Running DRC with 8 threads
+ERROR: [DRC UTLZ-1] Resource utilization: LUT as Logic over-utilized in Top Level Design (This design requires more LUT as Logic cells than are available in the target device. This design requires 207672 of such cell types but only 141000 compatible sites are available in the target device. Please analyze your synthesis results and constraints to ensure the design is mapped to Xilinx primitives as expected. If so, please consider targeting a larger device. Please set tcl parameter "drc.disableLUTOverUtilError" to 1 to change this error to warning.)
+INFO: [Vivado_Tcl 4-198] DRC finished with 1 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+ERROR: [Vivado_Tcl 4-23] Error(s) found during DRC. Placer not run.
+47 Infos, 1 Warnings, 0 Critical Warnings and 2 Errors encountered.
+place_design failed
+ERROR: [Common 17-39] 'place_design' failed due to earlier errors.
+
+INFO: [Common 17-206] Exiting Vivado at Sat Jan 18 00:07:20 2025...
