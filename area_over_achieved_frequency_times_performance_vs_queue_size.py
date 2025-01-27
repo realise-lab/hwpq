@@ -154,7 +154,7 @@ def make_area_over_achieved_frequency_times_performance_plot_for_trees(data, per
 
 # Define log directories
 register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
-systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit_new/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
 
 # Process data for all architectures
 array_data = process_log_directory(register_array_log_dir)
@@ -213,6 +213,6 @@ for idx, operation in enumerate(operations, 1):
 plt.tight_layout()
 
 # Save the plot
-output_dir = "vivado_analysis_results_plots"
+output_dir = "vivado_analysis_results_plots_16bit"
 os.makedirs(output_dir, exist_ok=True)
 plt.savefig(os.path.join(output_dir, "area_over_achieved_frequency_times_performance_vs_queue_size.pdf"))

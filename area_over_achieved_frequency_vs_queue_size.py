@@ -126,13 +126,13 @@ def make_area_over_achieved_frequency_plot(data, total_luts):
 
 
 # Define log directories
-register_array_log_dir = "register_array/vivado_register_array_analysis_results_new/"
-# register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
-systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_new/"
+register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
+register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_16bit/"
 
 # Process data for all architectures
 array_data = process_log_directory(register_array_log_dir)
-# tree_data = process_log_directory(register_tree_log_dir)
+tree_data = process_log_directory(register_tree_log_dir)
 systolic_data = process_log_directory(systolic_array_log_dir)
 
 # Create the plot
@@ -141,21 +141,22 @@ plt.figure(figsize=(10, 6))
 # Plot data for each architecture
 x_systolic, y_systolic = make_area_over_achieved_frequency_plot(systolic_data, 4085760)
 x_array, y_array = make_area_over_achieved_frequency_plot(array_data, 4085760)
-# x_tree, y_tree = make_area_over_achieved_frequency_plot(tree_data, 4085760)
+x_tree, y_tree = make_area_over_achieved_frequency_plot(tree_data, 4085760)
 
 plt.plot(x_systolic, y_systolic, 'd-', label='Systolic Array')
 plt.plot(x_array, y_array, 'o-', label='Register Array')
-# plt.plot(x_tree, y_tree, 'x-', label='Register Tree')
+plt.plot(x_tree, y_tree, 'x-', label='Register Tree')
 
 plt.xlabel('Queue Size', fontsize=20)
 plt.ylabel('LUTs/MHz', fontsize=20)
 
+plt.xscale('log')
 plt.yscale('log')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
 
 # Save the plot
-output_dir = "vivado_analysis_results_plots"
+output_dir = "vivado_analysis_results_plots_16bit"
 os.makedirs(output_dir, exist_ok=True)
 plt.savefig(os.path.join(output_dir, "area_over_achieved_frequency_vs_queue_size.pdf"))

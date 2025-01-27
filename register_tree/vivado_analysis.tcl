@@ -1,5 +1,5 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
+set queue_sizes {256 512 1024 2048}
 
 # Create a single project
 create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcau25p-ffvb676-1-e
@@ -135,9 +135,11 @@ foreach queue_size $queue_sizes {
         puts $fileId "Frequency: ${freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
         puts $fileId "\n"
 
-        # Exit the loop if WNS has passed the threshold of -1 ns
+        # Break the frequency loop if WNS is less than -1 ns
         if {$wns < -1.0} {
             puts $fileId "WNS exceeded -1 ns, finished"
+            close $fileId
+            close_project
             break
         }
 

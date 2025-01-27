@@ -1,5 +1,5 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {2048 4096}
+set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
 
 # Create a single project
 create_project -force vivado_systolic_array_tcl_16bit_new ./vivado_systolic_array_tcl_16bit_new -part xcau25p-ffvb676-1-e
