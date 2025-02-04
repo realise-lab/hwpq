@@ -46,7 +46,7 @@ def extrapolate_final_achieved_frequency(achieved_frequencies):
         achieved_frequencies (list): A list of achieved frequencies.
 
     Returns:
-        float: The extrapolated final achieved frequency. 
+        float: The extrapolated final achieved frequency.
     """
     return np.max(achieved_frequencies)
 
@@ -89,7 +89,9 @@ def process_log_directory(log_dir):
     for file_name in sorted(
         os.listdir(log_dir), key=lambda x: int(x.split("_")[-1].split(".")[0])
     ):
-        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(".txt"):
+        if file_name.startswith("vivado_analysis_on_queue_size") and file_name.endswith(
+            ".txt"
+        ):
             queue_size = int(file_name.split("_")[-1].split(".")[0])
             file_path = os.path.join(log_dir, file_name)
             frequencies, achieved_frequencies = parse_achieved_frequencies(file_path)
@@ -101,7 +103,7 @@ def process_log_directory(log_dir):
 def make_throughput_vs_queue_size_plot(data):
     """
     Converts data from process_log_directory into plot-ready x and y values.
-    
+
     Args:
         data (dict): Dictionary from process_log_directory containing (frequencies, achieved_frequencies, utilization_data)
 
@@ -112,26 +114,31 @@ def make_throughput_vs_queue_size_plot(data):
     """
     x_values = []
     y_values = []
-    
-    for queue_size, (frequencies, achieved_frequencies, utilization_data) in data.items():
+
+    for queue_size, (
+        frequencies,
+        achieved_frequencies,
+        utilization_data,
+    ) in data.items():
         # For each queue size, find the max achieved frequency and corresponding utilization
         max_achieved_freq = max(achieved_frequencies)
-        max_utilization = utilization_data[achieved_frequencies.index(max_achieved_freq)]
+        max_utilization = utilization_data[
+            achieved_frequencies.index(max_achieved_freq)
+        ]
         x_values.append(queue_size)  # Use queue size for x-axis
         y_values.append(max_achieved_freq * 16)  # throughput
-            
+
     return x_values, y_values
 
 
-
 # Define log directories
-register_array_log_dir = "register_array/vivado_register_array_analysis_results_new/"
-# register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_new/"
-systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_new/"
+register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
+register_tree_log_dir = "register_tree/vivado_register_tree_analysis_results_16bit/"
+systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
 
 # Process data for all architectures
 array_data = process_log_directory(register_array_log_dir)
-# tree_data = process_log_directory(register_tree_log_dir)
+tree_data = process_log_directory(register_tree_log_dir)
 systolic_data = process_log_directory(systolic_array_log_dir)
 
 # Create the plot
@@ -140,14 +147,14 @@ plt.figure(figsize=(10, 6))
 # Plot data for each architecture
 x_systolic, y_systolic = make_throughput_vs_queue_size_plot(systolic_data)
 x_array, y_array = make_throughput_vs_queue_size_plot(array_data)
-# x_tree, y_tree = make_throughput_vs_queue_size_plot(tree_data)
+x_tree, y_tree = make_throughput_vs_queue_size_plot(tree_data)
 
-plt.plot(x_systolic, y_systolic, 'd-', label='Systolic Array')
-plt.plot(x_array, y_array, 'o-', label='Register Array')
-# plt.plot(x_tree, y_tree, 'x-', label='Register Tree')
+plt.plot(x_systolic, y_systolic, "d-", label="Systolic Array")
+plt.plot(x_array, y_array, "o-", label="Register Array")
+plt.plot(x_tree, y_tree, "x-", label="Register Tree")
 
-plt.xlabel('Queue Size', fontsize=20)
-plt.ylabel('Throughput (Mbps)', fontsize=20)
+plt.xlabel("Queue Size", fontsize=20)
+plt.ylabel("Throughput (Mbps)", fontsize=20)
 
 # plt.yscale('log')
 plt.grid(True)
@@ -155,6 +162,6 @@ plt.legend()
 plt.tight_layout()
 
 # Save the plot
-output_dir = "vivado_analysis_results_plots"
+output_dir = "vivado_analysis_results_plots_16bit"
 os.makedirs(output_dir, exist_ok=True)
 plt.savefig(os.path.join(output_dir, "throughput_vs_queue_size.pdf"))
