@@ -191,8 +191,8 @@ plt.ylabel("Maximum Frequency (MHz)", fontsize=20)
 plt.xscale("log", base=2)
 
 # Set axis ticks manually
-plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048])
-plt.yticks(np.arange(0, 500, 50))
+# plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048])
+# plt.yticks(np.arange(0, 500, 50))
 
 # plt.title("Final Achieved Frequency vs QUEUE_SIZE")
 plt.legend()

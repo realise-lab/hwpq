@@ -222,7 +222,7 @@ for idx, operation in enumerate(operations, 1):
     plt.title(f"{operation.capitalize()} Operation", fontsize=20)
 
     plt.yscale("log")
-    plt.xscale("log")
+    plt.xscale("log", base=2)
     plt.grid(True)
     plt.legend()
 

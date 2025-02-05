@@ -159,7 +159,9 @@ plt.plot(x_tree, y_tree, "x-", label="Register Tree")
 plt.xlabel("LUT Utilization", fontsize=20)
 plt.ylabel("Achieved Frequency (MHz)", fontsize=20)
 
+plt.xscale("log")
 plt.yscale("log")
+
 plt.grid(True)
 plt.legend()
 plt.tight_layout()

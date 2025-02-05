@@ -1,5 +1,5 @@
 module comparator #(
-  parameter DATA_WIDTH = 32
+  parameter int DATA_WIDTH = 32
 ) (
   // Inputs
   input logic [DATA_WIDTH-1:0] i_parent,
@@ -15,7 +15,7 @@ module comparator #(
   logic parent_less_than_left;
   logic parent_less_than_right;
 
-  always @(*) begin
+  always_comb begin
     if (left_greater_than_right) begin
       if (parent_less_than_left) begin
         // Swap parent with left child

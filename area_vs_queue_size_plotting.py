@@ -176,7 +176,7 @@ plt.xlabel("Queue Size", fontsize=20)
 plt.ylabel("LUT Utilization", fontsize=20)
 
 plt.xscale("log", base=2)
-plt.yscale("log", base=10)
+plt.yscale("log")
 
 # Set axis ticks manually
 # plt.xticks([4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048])

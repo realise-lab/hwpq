@@ -156,7 +156,9 @@ plt.plot(x_tree, y_tree, "x-", label="Register Tree")
 plt.xlabel("Queue Size", fontsize=20)
 plt.ylabel("Throughput (Mbps)", fontsize=20)
 
-# plt.yscale('log')
+plt.xscale("log", base=2)
+plt.yscale('log')
+
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
