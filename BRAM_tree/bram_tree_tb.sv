@@ -1,36 +1,36 @@
 module bram_tree_tb;
   // Parameters
-  localparam QUEUE_SIZE = 8;
-  localparam DATA_WIDTH = 32;
-  localparam TREE_DEPTH = $clog2(QUEUE_SIZE+1);
-  localparam NODES_NEEDED = 2**TREE_DEPTH - 1;
-  localparam COMP_COUNT = NODES_NEEDED/2;
+  localparam int unsigned QueueSize = 8;
+  localparam int unsigned DataWidth = 32;
+  localparam int unsigned TreeDepth = $clog2(QueueSize + 1);
+  localparam int unsigned NodesNeeded = 2 ** TreeDepth - 1;
+  localparam int unsigned CompCount = NodesNeeded / 2;
 
   // Signals
   logic CLK;
   logic RSTn;
   logic i_wrt;
   logic i_read;
-  logic [DATA_WIDTH-1:0] i_data;
-  logic [DATA_WIDTH-1:0] o_data;
+  logic [DataWidth-1:0] i_data;
+  logic [DataWidth-1:0] o_data;
 
   // Reference array for verification
-  logic [DATA_WIDTH-1:0] ref_queue [$:NODES_NEEDED-1];
+  logic [DataWidth-1:0] ref_queue[NodesNeeded];
 
   // Clock generation
   always #5 CLK <= ~CLK;
 
   // DUT instantiation
   bram_tree #(
-    .QUEUE_SIZE(QUEUE_SIZE),
-    .DATA_WIDTH(DATA_WIDTH)
+      .QueueSize(QueueSize),
+      .DataWidth(DataWidth)
   ) dut (
-    .CLK(CLK),
-    .RSTn(RSTn),
-    .i_wrt(i_wrt),
-    .i_read(i_read),
-    .i_data(i_data),
-    .o_data(o_data)
+      .CLK(CLK),
+      .RSTn(RSTn),
+      .i_wrt(i_wrt),
+      .i_read(i_read),
+      .i_data(i_data),
+      .o_data(o_data)
   );
 
   // Initialize BRAM with values through backdoor access
@@ -88,7 +88,7 @@ module bram_tree_tb;
     i_wrt = 0;
     i_read = 0;
     i_data = 0;
-    
+
     // Reset the module
     @(posedge CLK);
     RSTn = 1;
@@ -101,15 +101,15 @@ module bram_tree_tb;
 
     // Test Case 2: Replace top item with random values
     $display("\nTest Case 2: Replace Test");
-    for(i = 0; i < QUEUE_SIZE; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(1, 256);
       replace(random_value);
-      assert (o_data == ref_queue[0]) 
+      assert (o_data == ref_queue[0])
       else $error("Replace top_item mismatch: expected %d, got %d", ref_queue[0], o_data);
     end
 
     repeat (4) @(posedge CLK);  // Wait for tree to stabilize
-    assert (o_data == ref_queue[0]) 
+    assert (o_data == ref_queue[0])
     else $error("Rapid replace top_item mismatch: expected %d, got %d", ref_queue[0], o_data);
 
     $display("\nTestbench completed");
@@ -117,16 +117,16 @@ module bram_tree_tb;
   end
 
   // Task to replace top item
-  task replace(input logic [DATA_WIDTH-1:0] value);
+  task automatic replace(input logic [DataWidth-1:0] value);
     begin
-      i_wrt = 1;
+      i_wrt  = 1;
       i_read = 1;
       i_data = value;
       ref_queue.pop_front();
       ref_queue.push_back(value);
       ref_queue.rsort();
       @(posedge CLK);
-      i_wrt = 0;
+      i_wrt  = 0;
       i_read = 0;
       repeat (3) @(posedge CLK);
     end

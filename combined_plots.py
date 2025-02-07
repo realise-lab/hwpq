@@ -327,6 +327,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
+            xytext=(0.5, 0.6), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='bottom')
 
 # Subplot 5: Dequeue -> Raw Performance vs Queue Size
 ax = axs[1, 1]
@@ -344,6 +348,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
+            xytext=(0.5, 0.6), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='bottom')
 
 # Subplot 6: Replace -> Raw Performance vs Queue Size
 ax = axs[1, 2]
@@ -361,6 +369,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
+            xytext=(0.5, 0.6), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='bottom')
 
 # Subplot 7: Enqueue -> Area/(Achieved Frequency * Performance) vs Queue Size
 ax = axs[2, 0]
@@ -378,6 +390,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.6, 0.3), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 # Subplot 8: Dequeue -> Area/(Achieved Frequency * Performance) vs Queue Size
 ax = axs[2, 1]
@@ -395,6 +411,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.6, 0.3), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 # Subplot 9: Replace -> Area/(Achieved Frequency * Performance) vs Queue Size
 ax = axs[2, 2]
@@ -412,6 +432,10 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
+ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.6, 0.3), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 plt.tight_layout()
 
