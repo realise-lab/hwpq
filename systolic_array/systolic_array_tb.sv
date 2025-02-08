@@ -161,7 +161,7 @@ module systolic_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -195,7 +195,7 @@ module systolic_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (2) @(posedge CLK);
     end
   endtask
 

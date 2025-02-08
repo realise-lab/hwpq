@@ -24,7 +24,6 @@ module register_array_tb;
   int                    i;
   logic [DATA_WIDTH-1:0] random_value;
   int                    random_operation;
-  int                    size;
 
   typedef enum logic [1:0] {
     ENQUEUE = 2'b00,
@@ -61,20 +60,20 @@ module register_array_tb;
     // Reset the module
     @(posedge CLK);
     RSTn = 1;
-    size = 0;
-    repeat (5) @(posedge CLK);
+    @(posedge CLK);
 
     // Initialize the queue, fill it up to QUEUE_SIZE with random values
     for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
+      repeat (5) @(posedge CLK);
     end
-    repeat (10) @(posedge CLK);  // wait for the queue to stabilize
+    repeat (5) @(posedge CLK);  // to make sure that the queue is correctly initialized
 
     // Test Case 1: Dequeue nodes
-    // Dequeue nodes for QUEUE_SIZE / 2 times
+    // Dequeue nodes for QUEUE_SIZE times
     $display("\nTest Case 1: Dequeue Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       dequeue();
       if (!o_empty) begin
         assert (o_data == ref_queue[0])
@@ -86,9 +85,9 @@ module register_array_tb;
     end
 
     // Test Case 2: Enqueue nodes
-    // Enqueue random values for QUEUE_SIZE / 2 times
+    // Enqueue random values for QUEUE_SIZE times
     $display("\nTest Case 2: Enqueue Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       assert (o_data == ref_queue[0])
@@ -96,9 +95,9 @@ module register_array_tb;
     end
 
     // Test Case 3: Replace nodes
-    // Replace root node for QUEUE_SIZE / 2 times
+    // Replace root node for QUEUE_SIZE times
     $display("\nTest Case 3: Replace Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       replace(random_value);
       assert (o_data == ref_queue[0])
@@ -110,11 +109,6 @@ module register_array_tb;
     $display("\nTest Case 4: Stress Test");
     for (i = 0; i < 100; i++) begin
       random_value = $urandom_range(0, 1024);
-      case (size)
-        0: random_operation = ENQUEUE;
-        QUEUE_SIZE: random_operation = DEQUEUE;
-        default: random_operation = $urandom_range(0, 2);
-      endcase
       case (random_operation)
         ENQUEUE: begin
           enqueue(random_value);
@@ -148,6 +142,7 @@ module register_array_tb;
       endcase
     end
 
+    $display("\nTest completed! ");
     $finish;
   end
 
@@ -160,7 +155,6 @@ module register_array_tb;
         i_data = value;
         ref_queue.push_back(value);
         ref_queue.rsort();
-        size = size + 1;
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
       end
@@ -179,7 +173,6 @@ module register_array_tb;
         i_read = 1;
         ref_queue.pop_front();
         ref_queue.rsort();
-        size = size - 1;
       end else begin
         $display("Dequeue: Queue empty, skipping dequeue");
       end
