@@ -161,7 +161,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      repeat (3) @(posedge CLK);
     end
   endtask
 
@@ -179,7 +179,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      @(posedge CLK);
     end
   endtask
 
@@ -195,7 +195,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      @(posedge CLK);
     end
   endtask
 

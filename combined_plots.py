@@ -219,9 +219,9 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
 
 # Performance factors for area over (achieved frequency * performance) plots
 performances = {
-    "enqueue": {"register_array": 1.0, "systolic_array": 1/3, "register_tree": 1.0},
-    "dequeue": {"register_array": 0.5, "systolic_array": 1/4, "register_tree": 0.5},
-    "replace": {"register_array": 0.5, "systolic_array": 1/3, "register_tree": 1.0},
+    "enqueue": {"register_array": 1/4, "systolic_array": 1/3, "register_tree": 1},
+    "dequeue": {"register_array": 1/2, "systolic_array": 1/4, "register_tree": 1/2},
+    "replace": {"register_array": 1/2, "systolic_array": 1/3, "register_tree": 1/2},
 }
 
 ra_raw_enq = compute_raw_performance(ra_all, "register_array", "enqueue")
@@ -327,10 +327,14 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
-            xytext=(0.5, 0.6), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.5, 0.9), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
-            horizontalalignment='left', verticalalignment='bottom')
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 # Subplot 5: Dequeue -> Raw Performance vs Queue Size
 ax = axs[1, 1]
@@ -348,10 +352,14 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
-            xytext=(0.5, 0.6), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.5, 0.9), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
-            horizontalalignment='left', verticalalignment='bottom')
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 # Subplot 6: Replace -> Raw Performance vs Queue Size
 ax = axs[1, 2]
@@ -369,10 +377,14 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.8, 0.8), xycoords='axes fraction',
-            xytext=(0.5, 0.6), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.5, 0.9), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
-            horizontalalignment='left', verticalalignment='bottom')
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
 
 # Subplot 7: Enqueue -> Area/(Achieved Frequency * Performance) vs Queue Size
 ax = axs[2, 0]
@@ -390,8 +402,12 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
-            xytext=(0.6, 0.3), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.5, 0.1), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
             horizontalalignment='left', verticalalignment='top')
 
@@ -411,8 +427,12 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
-            xytext=(0.6, 0.3), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.5, 0.1), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
             horizontalalignment='left', verticalalignment='top')
 
@@ -432,8 +452,12 @@ ax.set_xscale('log', base=2)
 ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
-ax.annotate('Peak', xy=(0.9, 0.1), xycoords='axes fraction',
-            xytext=(0.6, 0.3), textcoords='axes fraction',
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.5, 0.1), textcoords='axes fraction',
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            horizontalalignment='left', verticalalignment='top')
+ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
+            xytext=(0.9, 0.5), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05),
             horizontalalignment='left', verticalalignment='top')
 

@@ -1,5 +1,5 @@
 module register_tree #(
-    parameter int QUEUE_SIZE = 2048,
+    parameter int QUEUE_SIZE = 8,
     parameter int DATA_WIDTH = 16
 ) (
     // Synchronous Control

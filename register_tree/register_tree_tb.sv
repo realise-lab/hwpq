@@ -1,6 +1,6 @@
 module register_tree_tb;
   // Parameters matching the module under test
-  parameter int QUEUE_SIZE = 16;
+  parameter int QUEUE_SIZE = 8;
   parameter int DATA_WIDTH = 16;
 
   // parameter int TREE_DEPTH = $clog2(QUEUE_SIZE);
@@ -72,22 +72,23 @@ module register_tree_tb;
     for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
+      repeat (5) @(posedge CLK);
     end
     repeat (10) @(posedge CLK);  // wait for the queue to stabilize
 
     // Test Case 1: Dequeue nodes
-    // Dequeue nodes for QUEUE_SIZE / 2 times
+    // Dequeue nodes for QUEUE_SIZE times
     $display("\nTest Case 1: Dequeue Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       dequeue();
       assert (o_data == ref_queue[0])
       else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
     end
 
     // Test Case 2: Enqueue nodes
-    // Enqueue random values for QUEUE_SIZE / 2 times
+    // Enqueue random values for QUEUE_SIZE times
     $display("\nTest Case 2: Enqueue Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       assert (o_data == ref_queue[0])
@@ -95,9 +96,9 @@ module register_tree_tb;
     end
 
     // Test Case 3: Replace nodes
-    // Replace root node for QUEUE_SIZE / 2 times
+    // Replace root node for QUEUE_SIZE times
     $display("\nTest Case 3: Replace Test");
-    for (i = 0; i < QUEUE_SIZE / 2; i++) begin
+    for (i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       replace(random_value);
       assert (o_data == ref_queue[0])
