@@ -3,8 +3,8 @@
     Paper
 */
 module register_array #(
-    parameter QUEUE_SIZE = 512,  // Define the size of the queue
-    parameter DATA_WIDTH = 16  // Define the width of the data
+    parameter integer QUEUE_SIZE = 16,  // Define the size of the queue
+    parameter integer DATA_WIDTH = 16   // Define the width of the data
 ) (
     input  logic                  CLK,      // Clock signal
     input  logic                  RSTn,     // Reset signal
@@ -22,7 +22,7 @@ module register_array #(
   /*
     Local parameters
   */
-  localparam PairCount = QUEUE_SIZE / 2;  // number of pairs in the queue
+  localparam integer PairCount = QUEUE_SIZE / 2;  // number of pairs in the queue
 
 
   // Main register array for the queue.
@@ -40,7 +40,6 @@ module register_array #(
   logic [DATA_WIDTH-1:0] min[PairCount-1:0];
   logic [DATA_WIDTH-1:0] stage1[QUEUE_SIZE-1:0];
   logic [DATA_WIDTH-1:0] stage2[QUEUE_SIZE-1:0];
-  logic [DATA_WIDTH-1:0] stage3[QUEUE_SIZE-1:0];
 
 
   integer i, j;  // for loop index
@@ -50,23 +49,15 @@ module register_array #(
   // Next-State Calculation for 'size'
   //--------------------------------------------------------------------------
 
-  always_comb begin : size_update
-    next_size = size;
+  always_comb begin : size_track
     if (i_wrt && !i_read) begin  // Enqueue
       next_size = size + 1;
     end else if (!i_wrt && i_read) begin  // Dequeue
       next_size = size - 1;
-    end // For replace or no-operation, size remains unchanged.
+    end else begin  // Replace & No-op
+      next_size = size;
+    end
   end
-
-  //--------------------------------------------------------------------------
-  // Next-State Calculation for 'queue'
-  //
-  // In this block we combine:
-  //   (a) A pipeline max-min computation based on the current 'queue'
-  //   (b) The shifting/insertion logic based on control signals.
-  // Adjust the order or selection logic as needed for your design.
-  //--------------------------------------------------------------------------
 
   always_comb begin : next_queue_calc
     // --- Incorporate Shifting/Inserting Based on Control Signals ---
@@ -88,6 +79,8 @@ module register_array #(
       for (j = 1; j < QUEUE_SIZE; j++) begin
         stage1[j] = queue[j];
       end
+    end else begin  // No-op
+      stage1 = queue;
     end
 
     // --- Pipeline (max-min) Computation ---
@@ -108,15 +101,11 @@ module register_array #(
       stage2[2*j+2] = (min[j] < max[j+1]) ? min[j] : max[j+1];
     end
 
-    stage3[0] = max[0];
+    next_queue[0] = max[0];
     for (j = 1; j < QUEUE_SIZE - 1; j++) begin
-      stage3[j] = stage2[j];
+      next_queue[j] = stage2[j];
     end
-    stage3[QUEUE_SIZE-1] = min[PairCount-1];
-
-    for (j = 0; j < QUEUE_SIZE; j++) begin
-      next_queue[j] = stage3[j];
-    end
+    next_queue[QUEUE_SIZE-1] = min[PairCount-1];
   end
 
   //--------------------------------------------------------------------------
@@ -131,17 +120,9 @@ module register_array #(
       size <= '0;
       for (i = 0; i < QUEUE_SIZE; i++) begin
         queue[i] <= '0;
-        next_queue[i] <= '0;
-        stage1[i] <= '0;
-        stage2[i] <= '0;
-        stage3[i] <= '0;
-      end
-      for (i = 0; i < PairCount; i++) begin
-        max[i] <= '0;
-        min[i] <= '0;
       end
     end else begin
-      size <= next_size;
+      size  <= next_size;
       queue <= next_queue;
     end
   end
