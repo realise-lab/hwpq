@@ -1,7 +1,7 @@
 module register_array_tb;
   // Parameters matching the module under test
-  parameter int QUEUE_SIZE = 8;
-  parameter int DATA_WIDTH = 16;
+  localparam integer QueueSize = 64;
+  localparam integer DataWidth = 16;
 
   // Clock and reset signals
   logic                  CLK;
@@ -10,19 +10,19 @@ module register_array_tb;
   // Input signals
   logic                  i_wrt;
   logic                  i_read;
-  logic [DATA_WIDTH-1:0] i_data;
+  logic [DataWidth-1:0]  i_data;
 
   // Output signals
   logic                  o_full;
   logic                  o_empty;
-  logic [DATA_WIDTH-1:0] o_data;
+  logic [DataWidth-1:0]  o_data;
 
   // Reference array for verification
-  logic [DATA_WIDTH-1:0] ref_queue        [$:QUEUE_SIZE-1];
+  logic [DataWidth-1:0]  ref_queue        [$:QueueSize-1];
 
   // Test variables
   int                    i;
-  logic [DATA_WIDTH-1:0] random_value;
+  logic [DataWidth-1:0]  random_value;
   int                    random_operation;
 
   typedef enum logic [1:0] {
@@ -33,8 +33,8 @@ module register_array_tb;
 
   // Instantiate the register_tree module
   register_array #(
-      .QUEUE_SIZE(QUEUE_SIZE),
-      .DATA_WIDTH(DATA_WIDTH)
+      .QUEUE_SIZE(QueueSize),
+      .DATA_WIDTH(DataWidth)
   ) uut (
       .CLK(CLK),
       .RSTn(RSTn),
@@ -63,7 +63,7 @@ module register_array_tb;
     @(posedge CLK);
 
     // Initialize the queue, fill it up to QUEUE_SIZE with random values
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (i = 0; i < QueueSize; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       repeat (5) @(posedge CLK);
@@ -73,7 +73,7 @@ module register_array_tb;
     // Test Case 1: Dequeue nodes
     // Dequeue nodes for QUEUE_SIZE times
     $display("\nTest Case 1: Dequeue Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (i = 0; i < QueueSize; i++) begin
       dequeue();
       if (!o_empty) begin
         assert (o_data == ref_queue[0])
@@ -87,7 +87,7 @@ module register_array_tb;
     // Test Case 2: Enqueue nodes
     // Enqueue random values for QUEUE_SIZE times
     $display("\nTest Case 2: Enqueue Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (i = 0; i < QueueSize; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       assert (o_data == ref_queue[0])
@@ -97,7 +97,7 @@ module register_array_tb;
     // Test Case 3: Replace nodes
     // Replace root node for QUEUE_SIZE times
     $display("\nTest Case 3: Replace Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (i = 0; i < QueueSize; i++) begin
       random_value = $urandom_range(0, 1024);
       replace(random_value);
       assert (o_data == ref_queue[0])
@@ -147,7 +147,7 @@ module register_array_tb;
   end
 
   // Task to write to the end of the queue
-  task automatic enqueue(input logic [DATA_WIDTH-1:0] value);
+  task automatic enqueue(input logic [DataWidth-1:0] value);
     begin
       if (!o_full) begin
         i_wrt  = 1;
@@ -184,7 +184,7 @@ module register_array_tb;
   endtask
 
   // Task to replace root node
-  task automatic replace(input logic [DATA_WIDTH-1:0] value);
+  task automatic replace(input logic [DataWidth-1:0] value);
     begin
       i_wrt  = 1;
       i_read = 1;
