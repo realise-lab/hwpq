@@ -71,8 +71,8 @@ module bram_tree #(
   // Level tracker
   logic [ADDRESS_WIDTH-1:0] current_level     [COMPARATORS_NEEDED];
   logic [ADDRESS_WIDTH-1:0] next_level        [COMPARATORS_NEEDED];
-  logic                          current_even_flag;
-  logic                          next_even_flag;
+  logic                     current_even_flag;
+  logic                     next_even_flag;
 
   // integers for iteration
   integer lvl, itr;
