@@ -219,9 +219,9 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
 
 # Performance factors for area over (achieved frequency * performance) plots
 performances = {
-    "enqueue": {"register_array": 1/4, "systolic_array": 1/3, "register_tree": 1},
-    "dequeue": {"register_array": 1/2, "systolic_array": 1/4, "register_tree": 1/2},
-    "replace": {"register_array": 1/2, "systolic_array": 1/3, "register_tree": 1/2},
+    "enqueue": {"register_array": 1/4, "systolic_array": 1/4, "register_tree": 1}, # for register_tree, this value is just a placeholder.
+    "dequeue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2},
+    "replace": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2},
 }
 
 ra_raw_enq = compute_raw_performance(ra_all, "register_array", "enqueue")

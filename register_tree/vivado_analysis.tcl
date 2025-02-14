@@ -1,5 +1,5 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {256 512 1024 2048}
+set queue_sizes {3 7 15 31 63 127 255 511 1023 2047}
 
 # Create a single project
 create_project -force vivado_register_tree_tcl ./vivado_register_tree_tcl -part xcau25p-ffvb676-1-e
@@ -19,8 +19,8 @@ foreach queue_size $queue_sizes {
     # Read the file content
     set file_content [read $file_id]
 
-    # Replace the parameter TREE_DEPTH value
-    set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = $queue_size"]
+    # Replace the parameter QUEUE_SIZE value
+    set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = $queue_size"]
 
     # Rewind the file pointer to the beginning
     seek $file_id 0
@@ -155,7 +155,7 @@ set file_id [open "./register_tree.sv" r+]
 set file_content [read $file_id]
 
 # Replace the parameter TREE_DEPTH value
-set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 8"]
+set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 8"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0
@@ -165,4 +165,3 @@ puts -nonewline $file_id $updated_content
 
 # Close the file
 close $file_id
-

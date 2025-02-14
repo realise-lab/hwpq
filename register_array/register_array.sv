@@ -3,7 +3,7 @@
     Paper
 */
 module register_array #(
-    parameter integer QUEUE_SIZE = 16,  // Define the size of the queue
+    parameter integer QUEUE_SIZE = 4,  // Define the size of the queue
     parameter integer DATA_WIDTH = 16   // Define the width of the data
 ) (
     input  logic                  CLK,      // Clock signal
@@ -19,12 +19,14 @@ module register_array #(
 );
 
 
-  /*
-    Local parameters
-  */
+  //--------------------------------------------------------------------------
+  // Local parameters
+  //--------------------------------------------------------------------------
   localparam integer PairCount = QUEUE_SIZE / 2;  // number of pairs in the queue
 
-
+  //--------------------------------------------------------------------------
+  // Internal used wires and registers
+  //--------------------------------------------------------------------------
   // Main register array for the queue.
   logic [DATA_WIDTH-1:0] queue[QUEUE_SIZE-1:0];
   // Next-state version of the queue
@@ -44,11 +46,31 @@ module register_array #(
 
   integer i, j;  // for loop index
 
+  //--------------------------------------------------------------------------
+  // Output assignments.
+  //--------------------------------------------------------------------------
+  assign o_data  = queue[0];
+  assign o_full  = (size == QUEUE_SIZE);
+  assign o_empty = (size == 0);
+
+  //--------------------------------------------------------------------------
+  // Sequential Logic: Register Updates
+  //--------------------------------------------------------------------------
+  always_ff @(posedge CLK or negedge RSTn) begin
+    if (!RSTn) begin
+      size <= '0;
+      for (i = 0; i < QUEUE_SIZE; i++) begin
+        queue[i] <= '0;
+      end
+    end else begin
+      size  <= next_size;
+      queue <= next_queue;
+    end
+  end
 
   //--------------------------------------------------------------------------
   // Next-State Calculation for 'size'
   //--------------------------------------------------------------------------
-
   always_comb begin : size_track
     if (i_wrt && !i_read) begin  // Enqueue
       next_size = size + 1;
@@ -59,6 +81,9 @@ module register_array #(
     end
   end
 
+  //--------------------------------------------------------------------------
+  // Next-State Calculation for 'queue'
+  //--------------------------------------------------------------------------
   always_comb begin : next_queue_calc
     // --- Incorporate Shifting/Inserting Based on Control Signals ---
     if (i_wrt && !i_read) begin  // Enqueue
@@ -107,31 +132,5 @@ module register_array #(
     end
     next_queue[QUEUE_SIZE-1] = min[PairCount-1];
   end
-
-  //--------------------------------------------------------------------------
-  // Sequential Logic: Register Updates
-  //
-  // This always_ff block updates both 'queue' and 'size' with their
-  // computed next-state values. There is now a single driver for each.
-  //--------------------------------------------------------------------------
-
-  always_ff @(posedge CLK or negedge RSTn) begin
-    if (!RSTn) begin
-      size <= '0;
-      for (i = 0; i < QUEUE_SIZE; i++) begin
-        queue[i] <= '0;
-      end
-    end else begin
-      size  <= next_size;
-      queue <= next_queue;
-    end
-  end
-
-  //--------------------------------------------------------------------------
-  // Output assignments.
-  //--------------------------------------------------------------------------
-  assign o_data  = queue[0];
-  assign o_full  = (size == QUEUE_SIZE);
-  assign o_empty = (size == 0);
 
 endmodule

@@ -21,14 +21,14 @@ module register_array_tb;
   logic [DataWidth-1:0]  ref_queue        [$:QueueSize-1];
 
   // Test variables
-  int                    i;
+  integer                    i;
   logic [DataWidth-1:0]  random_value;
-  int                    random_operation;
+  integer                random_operation;
 
-  typedef enum logic [1:0] {
-    ENQUEUE = 2'b00,
-    DEQUEUE = 2'b01,
-    REPLACE = 2'b10
+  typedef enum integer {
+    ENQUEUE = 0,
+    DEQUEUE = 1,
+    REPLACE = 2
   } operation_t;
 
   // Instantiate the register_tree module
@@ -64,7 +64,7 @@ module register_array_tb;
 
     // Initialize the queue, fill it up to QUEUE_SIZE with random values
     for (i = 0; i < QueueSize; i++) begin
-      random_value = $urandom_range(0, 1024);
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       enqueue(random_value);
       repeat (5) @(posedge CLK);
     end
@@ -88,7 +88,7 @@ module register_array_tb;
     // Enqueue random values for QUEUE_SIZE times
     $display("\nTest Case 2: Enqueue Test");
     for (i = 0; i < QueueSize; i++) begin
-      random_value = $urandom_range(0, 1024);
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       enqueue(random_value);
       assert (o_data == ref_queue[0])
       else $error("Enqueue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
@@ -98,7 +98,7 @@ module register_array_tb;
     // Replace root node for QUEUE_SIZE times
     $display("\nTest Case 3: Replace Test");
     for (i = 0; i < QueueSize; i++) begin
-      random_value = $urandom_range(0, 1024);
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       replace(random_value);
       assert (o_data == ref_queue[0])
       else $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
@@ -108,7 +108,8 @@ module register_array_tb;
     // stress test, mix operations
     $display("\nTest Case 4: Stress Test");
     for (i = 0; i < 100; i++) begin
-      random_value = $urandom_range(0, 1024);
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
+      random_operation = $urandom_range(0, 2);
       case (random_operation)
         ENQUEUE: begin
           enqueue(random_value);
@@ -161,7 +162,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (5) @(posedge CLK);
     end
   endtask
 
@@ -179,7 +180,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      @(posedge CLK);
+      repeat (5) @(posedge CLK);
     end
   endtask
 
@@ -195,7 +196,7 @@ module register_array_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      @(posedge CLK);
+      repeat (5) @(posedge CLK);
     end
   endtask
 

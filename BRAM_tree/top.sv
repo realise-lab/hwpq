@@ -1,55 +1,36 @@
+/*
+ * Top module for the testing if BRAM is synthesized by Vivado.
+ */
 module top(
   input logic CLK,
   // Inputs
-  input logic [3:0] i_sw,
+  input logic [1:0] i_sw,
   // Outputs
-  output logic [1:0] o_led
+  output logic o_led
 );
 
-  reg [7:0] i_data_a; 
-  reg [7:0] i_addr_a; 
-  reg [7:0] o_addr_a; 
-  reg [7:0] o_data_a; 
-  reg [7:0] i_data_b; 
-  reg [7:0] i_addr_b; 
-  reg [7:0] o_addr_b; 
-  reg [7:0] o_data_b; 
+  localparam integer DataWidth = 32;
+  localparam integer RamDepth = 256;
 
-  counter counter_inst_a(
+  logic [$clog2(RamDepth)-1:0] i_addr;
+  logic [DataWidth-1:0] i_data;
+  logic [$clog2(RamDepth)-1:0] o_addr;
+  logic [DataWidth-1:0] o_data;
+
+  bram #(
+    .DATA_WIDTH(DataWidth),
+    .RAM_DEPTH(RamDepth)
+  ) bram_inst (
     .CLK(CLK),
-    .o_w_data(i_data_a),
-    .o_w_addr(i_addr_a),
-    .o_r_addr(o_addr_a)
+    .i_write(i_sw[0]),
+    .i_read(i_sw[1]),
+    .i_wrt_addr(i_addr),
+    .i_read_addr(o_addr),
+    .i_data(i_data),
+    .o_data(o_data)
   );
 
-  counter counter_inst_b(
-    .CLK(CLK),
-    .o_w_data(i_data_b),
-    .o_w_addr(i_addr_b),
-    .o_r_addr(o_addr_b)
-  );
-
-  dual_port_bram # (
-    .BRAM_WIDTH(8),
-    .BRAM_DEPTH(8)
-  ) dual_port_bram_inst(
-    .CLK_a(CLK),
-    .CLK_b(CLK),
-    .i_we_a(i_sw[0]),
-    .i_addr_a(o_addr_a),
-    .i_ena_a(i_sw[1]),
-    .i_din_a(i_data_a),
-    .i_we_b(i_sw[2]),
-    .i_addr_b(o_addr_b),
-    .i_ena_b(i_sw[3]),
-    .i_din_b(i_data_b),
-    .o_dout_a(o_data_a),
-    .o_dout_b(o_data_b)
-  );
-
-  // Do something with the data read from bram so that it does not get
-  // eliminated in synthesis.
-  assign o_led[0] = o_data_a > 100 ? 1 : 0;
-  assign o_led[1] = o_data_b > 100 ? 1 : 0;
+  // Do something with the data read from bram so that it does not get eliminated in synthesis.
+  assign o_led = o_data > 100 ? 1 : 0;
 
 endmodule

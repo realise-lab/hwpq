@@ -1,85 +1,53 @@
 module bram_tree_tb;
-  // Parameters
-  localparam int unsigned QueueSize = 8;
-  localparam int unsigned DataWidth = 32;
-  localparam int unsigned TreeDepth = $clog2(QueueSize + 1);
-  localparam int unsigned NodesNeeded = 2 ** TreeDepth - 1;
-  localparam int unsigned CompCount = NodesNeeded / 2;
+  // Parameters matching the module under test
+  localparam integer QueueSize = 7;
+  localparam integer DataWidth = 16;
 
-  // Signals
-  logic CLK;
-  logic RSTn;
-  logic i_wrt;
-  logic i_read;
-  logic [DataWidth-1:0] i_data;
-  logic [DataWidth-1:0] o_data;
+  // Clock and reset signals
+  logic                   CLK;
+  logic                   RSTn;
+
+  // Input signals
+  logic                   i_wrt;
+  logic                   i_read;
+  logic   [DataWidth-1:0] i_data;
+
+  // Output signals
+  logic                   o_full;
+  logic                   o_empty;
+  logic   [DataWidth-1:0] o_data;
 
   // Reference array for verification
-  logic [DataWidth-1:0] ref_queue[NodesNeeded];
+  logic   [DataWidth-1:0] ref_queue        [$:QueueSize-1];
 
-  // Clock generation
-  always #5 CLK <= ~CLK;
+  // Test variables
+  integer                 i;
+  logic   [DataWidth-1:0] random_value;
+  integer                 random_operation;
 
-  // DUT instantiation
+  typedef enum integer {
+    ENQUEUE = 0,
+    DEQUEUE = 1,
+    REPLACE = 2
+  } operation_t;
+
+  // Instantiate the register_tree module
   bram_tree #(
-      .QueueSize(QueueSize),
-      .DataWidth(DataWidth)
-  ) dut (
+      .QUEUE_SIZE(QueueSize),
+      .DATA_WIDTH(DataWidth)
+  ) uut (
       .CLK(CLK),
       .RSTn(RSTn),
       .i_wrt(i_wrt),
       .i_read(i_read),
       .i_data(i_data),
+      .o_full(o_full),
+      .o_empty(o_empty),
       .o_data(o_data)
   );
 
-  // Initialize BRAM with values through backdoor access
-  initial begin
-    // Initialize the bottom level of the tree (level 3 for QUEUE_SIZE=8)
-    dut.BRAM_gen[3].bram_inst.bram[0] = 32'd8;
-    ref_queue.push_back(32'd8);
-    dut.BRAM_gen[3].bram_inst.bram[1] = 32'd6;
-    ref_queue.push_back(32'd6);
-    dut.BRAM_gen[3].bram_inst.bram[2] = 32'd4;
-    ref_queue.push_back(32'd4);
-    dut.BRAM_gen[3].bram_inst.bram[3] = 32'd2;
-    ref_queue.push_back(32'd2);
-    dut.BRAM_gen[3].bram_inst.bram[4] = 32'd9;
-    ref_queue.push_back(32'd9);
-    dut.BRAM_gen[3].bram_inst.bram[5] = 32'd5;
-    ref_queue.push_back(32'd5);
-    dut.BRAM_gen[3].bram_inst.bram[6] = 32'd3;
-    ref_queue.push_back(32'd3);
-    dut.BRAM_gen[3].bram_inst.bram[7] = 32'd1;
-    ref_queue.push_back(32'd1);
-
-    // Initialize level 2
-    dut.BRAM_gen[2].bram_inst.bram[0] = 32'd6;
-    ref_queue.push_back(32'd6);
-    dut.BRAM_gen[2].bram_inst.bram[1] = 32'd2;
-    ref_queue.push_back(32'd2);
-    dut.BRAM_gen[2].bram_inst.bram[2] = 32'd5;
-    ref_queue.push_back(32'd5);
-    dut.BRAM_gen[2].bram_inst.bram[3] = 32'd1;
-    ref_queue.push_back(32'd1);
-
-    // Initialize level 1
-    dut.BRAM_gen[1].bram_inst.bram[0] = 32'd2;
-    ref_queue.push_back(32'd2);
-    dut.BRAM_gen[1].bram_inst.bram[1] = 32'd1;
-    ref_queue.push_back(32'd1);
-
-    // Initialize root (level 0)
-    dut.BRAM_gen[0].bram_inst.bram[0] = 32'd1;
-    ref_queue.push_back(32'd1);
-
-    // Sort the reference queue
-    ref_queue.rsort();
-  end
-
-  // Test variables
-  integer i;
-  logic [DATA_WIDTH-1:0] random_value;
+  // Clock generation: 10ns period
+  always #5 CLK <= ~CLK;
 
   initial begin
     // Initialize signals
@@ -92,31 +60,131 @@ module bram_tree_tb;
     // Reset the module
     @(posedge CLK);
     RSTn = 1;
-    repeat (3) @(posedge CLK);
+    @(posedge CLK);
 
-    // Test Case 1: Verify initial state
-    $display("\nTest Case 1: Initial State Test");
-    assert (o_data == ref_queue[0])
-    else $error("Initial top_item mismatch: expected %d, got %d", ref_queue[0], o_data);
+    // Initialize the queue, fill it up to QUEUE_SIZE with random values
+    for (i = 0; i < QueueSize; i++) begin
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
+      enqueue(random_value);
+      repeat (5) @(posedge CLK);
+    end
+    repeat (5) @(posedge CLK);  // to make sure that the queue is correctly initialized
 
-    // Test Case 2: Replace top item with random values
-    $display("\nTest Case 2: Replace Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
-      random_value = $urandom_range(1, 256);
-      replace(random_value);
-      assert (o_data == ref_queue[0])
-      else $error("Replace top_item mismatch: expected %d, got %d", ref_queue[0], o_data);
+    // Test Case 1: Dequeue nodes
+    // Dequeue nodes for QUEUE_SIZE times
+    $display("\nTest Case 1: Dequeue Test");
+    for (i = 0; i < QueueSize; i++) begin
+      dequeue();
+      if (!o_empty) begin
+        assert (o_data == ref_queue[0])
+        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+      end else begin
+        assert (o_data == '0)
+        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
+      end
     end
 
-    repeat (4) @(posedge CLK);  // Wait for tree to stabilize
-    assert (o_data == ref_queue[0])
-    else $error("Rapid replace top_item mismatch: expected %d, got %d", ref_queue[0], o_data);
+    // Test Case 2: Enqueue nodes
+    // Enqueue random values for QUEUE_SIZE times
+    $display("\nTest Case 2: Enqueue Test");
+    for (i = 0; i < QueueSize; i++) begin
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
+      enqueue(random_value);
+      assert (o_data == ref_queue[0])
+      else $error("Enqueue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+    end
 
-    $display("\nTestbench completed");
+    // Test Case 3: Replace nodes
+    // Replace root node for QUEUE_SIZE times
+    $display("\nTest Case 3: Replace Test");
+    for (i = 0; i < QueueSize; i++) begin
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
+      replace(random_value);
+      assert (o_data == ref_queue[0])
+      else $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+    end
+
+    // Test Case 4: Stress Test
+    // stress test, mix operations
+    $display("\nTest Case 4: Stress Test");
+    for (i = 0; i < 100; i++) begin
+      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
+      random_operation = $urandom_range(0, 2);
+      case (random_operation)
+        ENQUEUE: begin
+          enqueue(random_value);
+          assert (o_data == ref_queue[0])
+          else
+            $error("Enqueue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+        end
+
+        DEQUEUE: begin
+          dequeue();
+          if (!o_empty) begin
+            assert (o_data == ref_queue[0])
+            else
+              $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+          end else begin
+            assert (o_data == '0)
+            else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
+          end
+        end
+
+        REPLACE: begin
+          replace(random_value);
+          assert (o_data == ref_queue[0])
+          else
+            $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+        end
+
+        default: begin
+          $display("Invalid operation: %d", random_operation);
+        end
+      endcase
+    end
+
+    $display("\nTest completed! ");
     $finish;
   end
 
-  // Task to replace top item
+  // Task to write to the end of the queue
+  task automatic enqueue(input logic [DataWidth-1:0] value);
+    begin
+      if (!o_full) begin
+        i_wrt  = 1;
+        i_read = 0;
+        i_data = value;
+        ref_queue.push_back(value);
+        ref_queue.rsort();
+      end else begin
+        $display("Enqueue: Queue full, skipping enqueue");
+      end
+      @(posedge CLK);
+      i_wrt  = 0;
+      i_read = 0;
+      repeat (5) @(posedge CLK);
+    end
+  endtask
+
+  // Task to read root node
+  task automatic dequeue();
+    begin
+      if (!o_empty) begin
+        i_wrt  = 0;
+        i_read = 1;
+        ref_queue.pop_front();
+        ref_queue.rsort();
+      end else begin
+        $display("Dequeue: Queue empty, skipping dequeue");
+      end
+      @(posedge CLK);
+      i_wrt  = 0;
+      i_read = 0;
+      repeat (5) @(posedge CLK);
+    end
+  endtask
+
+  // Task to replace root node
   task automatic replace(input logic [DataWidth-1:0] value);
     begin
       i_wrt  = 1;
@@ -128,7 +196,7 @@ module bram_tree_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge CLK);
+      repeat (5) @(posedge CLK);
     end
   endtask
 

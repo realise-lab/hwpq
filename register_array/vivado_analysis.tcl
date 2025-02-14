@@ -19,7 +19,7 @@ foreach queue_size $queue_sizes {
     set file_content [read $file_id]
 
     # Replace the parameter QUEUE_SIZE value
-    set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = $queue_size"]
+    set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = $queue_size"]
 
     # Rewind the file pointer to the beginning
     seek $file_id 0
@@ -154,7 +154,7 @@ set file_id [open "./register_array.sv" r+]
 set file_content [read $file_id]
 
 # Replace the parameter QUEUE_SIZE value
-set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 4"]
+set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 4"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

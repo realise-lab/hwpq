@@ -1,6 +1,6 @@
 module register_tree #(
-    parameter int QUEUE_SIZE = 8,
-    parameter int DATA_WIDTH = 16
+    parameter integer QUEUE_SIZE = 3,
+    parameter integer DATA_WIDTH = 16
 ) (
     // Synchronous Control
     input logic CLK,
@@ -15,33 +15,27 @@ module register_tree #(
     output logic [DATA_WIDTH-1:0] o_data
 );
 
-
-
   /*
     Parameters
   */
-  localparam int TreeDepth = $clog2(QUEUE_SIZE);  // depth of the tree
-  localparam int NodesNeeded = (1 << (TreeDepth + 1)) - 1;  // number of nodes needed to initialize
-  localparam int CompCount = NodesNeeded / 2;  // number of comparators
-
-
+  localparam integer TreeDepth = $clog2(QUEUE_SIZE);  // depth of the tree
+  localparam integer NodesNeeded = (1 << (TreeDepth + 1)) - 1;  // number of nodes needed to initialize
+  localparam integer CompCount = NodesNeeded / 2;  // number of comparators
 
   /*
     Registers
   */
   // Register array to store the tree nodes
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] queue          [NodesNeeded];
+  logic [         DATA_WIDTH-1:0] queue          [NodesNeeded];
   // Size counter to keep track of the number of nodes in the queue
-  (* ram_style = "distributed" *)logic [$clog2(NodesNeeded)-1:0] size;
+  logic [$clog2(NodesNeeded)-1:0] size;
   // Wires to connect the comparator units
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_parent     [  CompCount];
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_left_child [  CompCount];
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] old_right_child[  CompCount];
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_parent     [  CompCount];
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_left_child [  CompCount];
-  (* ram_style = "distributed" *)logic [         DATA_WIDTH-1:0] new_right_child[  CompCount];
-
-
+  logic [         DATA_WIDTH-1:0] old_parent     [  CompCount];
+  logic [         DATA_WIDTH-1:0] old_left_child [  CompCount];
+  logic [         DATA_WIDTH-1:0] old_right_child[  CompCount];
+  logic [         DATA_WIDTH-1:0] new_parent     [  CompCount];
+  logic [         DATA_WIDTH-1:0] new_left_child [  CompCount];
+  logic [         DATA_WIDTH-1:0] new_right_child[  CompCount];
 
   /*
     States
@@ -55,8 +49,6 @@ module register_tree #(
     REPLACE               = 3'b101
   } state_t;
   state_t current_state, next_state;
-
-
 
   /*
     Generate components and initialize registers
@@ -86,16 +78,6 @@ module register_tree #(
       assign old_right_child[i] = (2 * i + 2 < NodesNeeded) ? queue[2*i+2] : '0;
     end
   endgenerate
-
-  // Generate block to compute level indices
-  // generate
-  //   for (level = 0; level < TreeDepth; level++) begin : gen_level_indices
-  //     assign level_start[level] = (1 << level) - 1;
-  //     assign level_end[level]   = (1 << (level + 1)) - 2;
-  //   end
-  // endgenerate
-
-
 
   /*
     Size Tracker
@@ -130,8 +112,6 @@ module register_tree #(
       endcase
     end
   end
-
-
 
   /*
     State machine control
@@ -203,8 +183,6 @@ module register_tree #(
     endcase
   end
 
-
-
   /*
     Queue Management
   */
@@ -267,8 +245,6 @@ module register_tree #(
       endcase
     end
   end
-
-
 
   // Assign outputs
   assign o_full  = size == QUEUE_SIZE;
