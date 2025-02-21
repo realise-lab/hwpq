@@ -66,9 +66,7 @@ module bram_tree_tb;
     for (i = 0; i < QueueSize; i++) begin
       random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       enqueue(random_value);
-      repeat (5) @(posedge CLK);
     end
-    repeat (5) @(posedge CLK);  // to make sure that the queue is correctly initialized
 
     // Test Case 1: Dequeue nodes
     // Dequeue nodes for QUEUE_SIZE times
@@ -114,16 +112,14 @@ module bram_tree_tb;
         ENQUEUE: begin
           enqueue(random_value);
           assert (o_data == ref_queue[0])
-          else
-            $error("Enqueue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+          else $error("Enqueue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
         end
 
         DEQUEUE: begin
           dequeue();
           if (!o_empty) begin
             assert (o_data == ref_queue[0])
-            else
-              $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+            else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
           end else begin
             assert (o_data == '0)
             else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
@@ -133,8 +129,7 @@ module bram_tree_tb;
         REPLACE: begin
           replace(random_value);
           assert (o_data == ref_queue[0])
-          else
-            $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
+          else $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
         end
 
         default: begin
@@ -162,7 +157,7 @@ module bram_tree_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      repeat (24) @(posedge CLK);
     end
   endtask
 
@@ -180,7 +175,7 @@ module bram_tree_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      repeat (24) @(posedge CLK);
     end
   endtask
 
@@ -196,7 +191,7 @@ module bram_tree_tb;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (5) @(posedge CLK);
+      repeat (24) @(posedge CLK);
     end
   endtask
 
