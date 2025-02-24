@@ -67,6 +67,7 @@ module bram_tree #(
   logic [ADDRESS_WIDTH-1:0] next_changed_addr[TREE_DEPTH][0:1];
 
   logic even_flag, next_even_flag;
+  logic [1:0] odd_flag, next_odd_flag;
 
   // integers for iteration
   integer lvl_seq, itr_seq, lvl_comb, itr_comb;
@@ -240,6 +241,7 @@ module bram_tree #(
   always_ff @(posedge CLK or negedge RSTn) begin : bram_seq
     if (!RSTn) begin
       even_flag <= 1'b0;
+      odd_flag  <= 2'b0;
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
         addr_a[lvl_seq] <= '0;
         addr_b[lvl_seq] <= '0;
@@ -260,6 +262,7 @@ module bram_tree #(
       end
     end else begin
       even_flag <= next_even_flag;
+      odd_flag  <= next_odd_flag;
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
         addr_a[lvl_seq] <= next_addr_a[lvl_seq];
         addr_b[lvl_seq] <= next_addr_b[lvl_seq];
@@ -278,6 +281,7 @@ module bram_tree #(
 
   always_comb begin : bram_comb
     next_even_flag = even_flag;
+    next_odd_flag  = odd_flag;
     for (lvl_comb = 0; lvl_comb < TREE_DEPTH; lvl_comb++) begin : bram_reset
       next_addr_a[lvl_comb] = addr_a[lvl_comb];
       next_addr_b[lvl_comb] = addr_b[lvl_comb];
@@ -302,12 +306,28 @@ module bram_tree #(
           next_addr_a[2] = 0;  // level 2 BRAM not used
           next_addr_b[2] = 0;
         end else begin
-          next_addr_a[0] = 0;  // level 0 BRAM not used
-          next_addr_b[0] = 0;
-          next_addr_a[1] = 0;
-          next_addr_b[1] = 1;
-          next_addr_a[2] = 2;
-          next_addr_b[2] = 3;
+          if (odd_flag == 0) begin
+            next_addr_a[0] = 0;  // level 0 BRAM not used
+            next_addr_b[0] = 0;
+            next_addr_a[1] = 0;
+            next_addr_b[1] = 0;
+            next_addr_a[2] = 0;
+            next_addr_b[2] = 1;
+          end else if (odd_flag == 1) begin
+            next_addr_a[0] = 0;  // level 0 BRAM not used
+            next_addr_b[0] = 0;
+            next_addr_a[1] = 0;
+            next_addr_b[1] = 1;
+            next_addr_a[2] = 2;
+            next_addr_b[2] = 3;
+          end else begin
+            next_addr_a[0] = 0;
+            next_addr_b[0] = 0;
+            next_addr_a[1] = 0;
+            next_addr_b[1] = 0;
+            next_addr_a[2] = 0;
+            next_addr_b[2] = 0;
+          end
         end
       end
 
@@ -326,19 +346,26 @@ module bram_tree #(
           next_we_b[0] = '1;
           next_we_a[1] = '1;
           next_we_b[1] = '1;
-        end else begin
-          comp_parent_in[0] = dout_a[1];
-          comp_left_child_in[0] = dout_a[2];
-          comp_right_child_in[0] = dout_b[2];
-          next_din_b[1] = comp_parent_out[0];
-          next_din_a[2] = comp_left_child_out[0];
-          next_din_b[2] = comp_right_child_out[0];
 
-          next_we_b[1] = '1;
-          next_we_a[2] = '1;
-          next_we_b[2] = '1;
+          next_even_flag = 1'b0;
+        end else begin
+          if (odd_flag > 1) begin
+            next_even_flag = 1'b1;
+            next_odd_flag  = 0;
+          end else begin
+            comp_parent_in[0] = dout_b[1];
+            comp_left_child_in[0] = dout_a[2];
+            comp_right_child_in[0] = dout_b[2];
+            next_din_b[1] = comp_parent_out[0];
+            next_din_a[2] = comp_left_child_out[0];
+            next_din_b[2] = comp_right_child_out[0];
+
+            next_we_b[1] = '1;
+            next_we_a[2] = '1;
+            next_we_b[2] = '1;
+            next_odd_flag = odd_flag + 1;
+          end
         end
-        next_even_flag = ~even_flag;
       end
 
       ENQUEUE: begin
@@ -389,10 +416,16 @@ module bram_tree #(
 
   always_comb begin : queue_size_counter_comb
     next_queue_size = queue_size;
-    if (i_wrt && !i_read) begin
+    if (i_wrt && !i_read) begin  // enqueue
       next_queue_size = queue_size + 1;
-    end else if (!i_wrt && i_read) begin
+    end else if (!i_wrt && i_read) begin  // dequeue
       next_queue_size = queue_size - 1;
+    end else if (i_wrt && i_read) begin  // replace
+      if (queue_size == 0 && i_data != 0) begin
+        next_queue_size = queue_size + 1;
+      end else begin
+        next_queue_size = queue_size;
+      end
     end
   end
 
