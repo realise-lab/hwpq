@@ -17,57 +17,68 @@ module bram_tree #(
   //-------------------------------------------------------------------------
   // Local parameters
   //-------------------------------------------------------------------------
-  localparam integer TREE_DEPTH = $clog2(QUEUE_SIZE + 1);  // depth of the tree calculated from the queue size
-                                                           // = how many BRAMs are needed
+
+  // BRAM local parameters
   localparam integer BRAM_WIDTH = 18;  // width of the BRAMs, as Xilinx BRAMs are only supported for width of
                                        // 0, 1, 2, 4, 9, 18, 36, 72
   localparam integer BRAM_DEPTH = 1024;  // depth of the BRAMs, 18 Kb = 18 * 1024 bits
-  localparam integer NODES_NEEDED = (1 << (TREE_DEPTH + 1)) - 1;  // number of actual slots needed for the queue
-                                                                  // to store the heap, need to caculate this so
-                                                                  // that we could take any arbitrary queue size
-  localparam integer COMPARATORS_NEEDED = (TREE_DEPTH - 1) / 2;  // number of comparators needed for the heap
   localparam integer ADDRESS_WIDTH = $clog2(BRAM_DEPTH);  // width for the address/index of the BRAMs
+
+  // General local parameters
+  localparam integer TREE_DEPTH = $clog2(QUEUE_SIZE + 1);  // depth of the tree calculated from the queue size
+                                                           // = how many BRAMs are needed
+  localparam integer NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of actual slots needed for the queue
+                                                            // to store the heap, need to caculate this so
+                                                            // that we could take any arbitrary queue size
+  // localparam integer COMPARATORS_NEEDED = TREE_DEPTH - 1;  // number of comparators needed
   localparam integer COUNTER_WIDTH = $clog2(NODES_NEEDED);  // width for the counter of the queue size
 
   //-------------------------------------------------------------------------
   // Internal used wires and registers
   //-------------------------------------------------------------------------
 
-  // Memory used wires and registers
-  logic [ADDRESS_WIDTH-1:0] addr_a[TREE_DEPTH];
-  logic [ADDRESS_WIDTH-1:0] addr_b[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] dout_a[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] dout_b[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] din_a[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] din_b[TREE_DEPTH];
-  logic we_a[TREE_DEPTH];
-  logic we_b[TREE_DEPTH];
+  // Registers for root node and its children
+  logic [DATA_WIDTH-1:0] level_0;
+  logic [DATA_WIDTH-1:0] level_1[2];
+  logic [DATA_WIDTH-1:0] next_level_0;
+  logic [DATA_WIDTH-1:0] next_level_1[2];
 
-  logic [ADDRESS_WIDTH-1:0] next_addr_a[TREE_DEPTH];
-  logic [ADDRESS_WIDTH-1:0] next_addr_b[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] next_din_a[TREE_DEPTH];
-  logic [DATA_WIDTH-1:0] next_din_b[TREE_DEPTH];
-  logic next_we_a[TREE_DEPTH];
-  logic next_we_b[TREE_DEPTH];
+  // Memory used wires and registers
+  logic [ADDRESS_WIDTH-1:0] addr_a[2:TREE_DEPTH-1];
+  logic [ADDRESS_WIDTH-1:0] addr_b[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] dout_a[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] dout_b[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] din_a[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] din_b[2:TREE_DEPTH-1];
+  logic we_a[2:TREE_DEPTH-1];
+  logic we_b[2:TREE_DEPTH-1];
+
+  logic [ADDRESS_WIDTH-1:0] next_addr_a[2:TREE_DEPTH-1];
+  logic [ADDRESS_WIDTH-1:0] next_addr_b[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] next_din_a[2:TREE_DEPTH-1];
+  logic [DATA_WIDTH-1:0] next_din_b[2:TREE_DEPTH-1];
+  logic next_we_a[2:TREE_DEPTH-1];
+  logic next_we_b[2:TREE_DEPTH-1];
 
   // Comparator used wires and registers
-  logic [DATA_WIDTH-1:0] comp_parent_in[COMPARATORS_NEEDED];  // comparator input data
-  logic [DATA_WIDTH-1:0] comp_left_child_in[COMPARATORS_NEEDED];
-  logic [DATA_WIDTH-1:0] comp_right_child_in[COMPARATORS_NEEDED];
+  logic [DATA_WIDTH-1:0] comp_parent_in;
+  logic [DATA_WIDTH-1:0] comp_left_child_in;
+  logic [DATA_WIDTH-1:0] comp_right_child_in;
 
-  logic [DATA_WIDTH-1:0] comp_parent_out[COMPARATORS_NEEDED];  // comparator output data
-  logic [DATA_WIDTH-1:0] comp_left_child_out[COMPARATORS_NEEDED];
-  logic [DATA_WIDTH-1:0] comp_right_child_out[COMPARATORS_NEEDED];
+  logic [DATA_WIDTH-1:0] next_comp_parent_in;
+  logic [DATA_WIDTH-1:0] next_comp_left_child_in;
+  logic [DATA_WIDTH-1:0] next_comp_right_child_in;
+
+  logic [DATA_WIDTH-1:0] comp_parent_out;
+  logic [DATA_WIDTH-1:0] comp_left_child_out;
+  logic [DATA_WIDTH-1:0] comp_right_child_out;
+
+  // Index tracker for each level
+  logic [$clog2(TREE_DEPTH)-1:0] parent_lvl, next_parent_lvl;
+  logic [ADDRESS_WIDTH-1:0] parent_idx, next_parent_idx;
 
   // Size counter to keep track of the number of nodes in the queue
   logic [31:0] queue_size, next_queue_size;
-
-  // Change tracker
-  logic [ADDRESS_WIDTH-1:0] changed_addr[TREE_DEPTH][0:1];  // tracker for changed node
-  logic [ADDRESS_WIDTH-1:0] next_changed_addr[TREE_DEPTH][0:1];
-
-  logic even_flag, next_even_flag;
-  logic [1:0] odd_flag, next_odd_flag;
 
   // integers for iteration
   integer lvl_seq, itr_seq, lvl_comb, itr_comb;
@@ -80,10 +91,9 @@ module bram_tree #(
     READ_MEM     = 3'd1,
     COMPARE_SWAP = 3'd2,
     WRITE_MEM    = 3'd3,
-    ENQUEUE      = 3'd4,
-    DEQUEUE      = 3'd5,
-    REPLACE      = 3'd6,
-    WAIT         = 3'd7
+    DEQUEUE      = 3'd4,
+    REPLACE      = 3'd5,
+    WAIT         = 3'd6
   } state_t;
   state_t state, next_state;
 
@@ -92,8 +102,8 @@ module bram_tree #(
   //-------------------------------------------------------------------------
   genvar i;
   generate
-    for (i = 0; i < TREE_DEPTH; i++) begin : gen_bram
-      blk_mem_gen_0 blk_mem_gen_0_inst (
+    for (i = 2; i < TREE_DEPTH; i++) begin : gen_bram  // Using BRAM starts from level 2
+      blk_mem_gen_0 bram_inst (
           .clka (CLK),
           .wea  (we_a[i]),
           .addra(addr_a[i]),
@@ -111,21 +121,16 @@ module bram_tree #(
   //-------------------------------------------------------------------------
   // Comparator instantiation
   //-------------------------------------------------------------------------
-  genvar j;
-  generate
-    for (j = 0; j < COMPARATORS_NEEDED; j++) begin : gen_comparator
-      comparator #(
-          .DATA_WIDTH(DATA_WIDTH)
-      ) comparator_inst (
-          .i_parent(comp_parent_in[j]),
-          .i_left_child(comp_left_child_in[j]),
-          .i_right_child(comp_right_child_in[j]),
-          .o_parent(comp_parent_out[j]),
-          .o_left_child(comp_left_child_out[j]),
-          .o_right_child(comp_right_child_out[j])
-      );
-    end
-  endgenerate
+  comparator #(
+      .DATA_WIDTH(DATA_WIDTH)
+  ) comparator_inst (
+      .i_parent(comp_parent_in),
+      .i_left_child(comp_left_child_in),
+      .i_right_child(comp_right_child_in),
+      .o_parent(comp_parent_out),
+      .o_left_child(comp_left_child_out),
+      .o_right_child(comp_right_child_out)
+  );
 
   //-------------------------------------------------------------------------
   // FSM
@@ -143,9 +148,7 @@ module bram_tree #(
     case (state)
       IDLE: begin
         next_state = READ_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
+        if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
         end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
@@ -153,10 +156,8 @@ module bram_tree #(
       end
 
       READ_MEM: begin
-        next_state = COMPARE_SWAP;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
+        next_state = WAIT;
+        if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
         end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
@@ -165,9 +166,7 @@ module bram_tree #(
 
       COMPARE_SWAP: begin
         next_state = WRITE_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
+        if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
         end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
@@ -176,20 +175,7 @@ module bram_tree #(
 
       WRITE_MEM: begin
         next_state = READ_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
-          next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
-          next_state = REPLACE;
-        end
-      end
-
-      ENQUEUE: begin
-        next_state = READ_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
+        if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
         end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
@@ -198,31 +184,15 @@ module bram_tree #(
 
       DEQUEUE: begin
         next_state = READ_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
-          next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
-          next_state = REPLACE;
-        end
       end
 
       REPLACE: begin
         next_state = READ_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
-          next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
-          next_state = REPLACE;
-        end
       end
 
       WAIT: begin
-        next_state = WRITE_MEM;
-        if (i_wrt && !i_read) begin  // enqueue
-          next_state = ENQUEUE;
-        end else if (!i_wrt && i_read) begin  // dequeue
+        next_state = COMPARE_SWAP;
+        if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
         end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
@@ -240,9 +210,13 @@ module bram_tree #(
   //-------------------------------------------------------------------------
   always_ff @(posedge CLK or negedge RSTn) begin : bram_seq
     if (!RSTn) begin
-      even_flag <= 1'b0;
-      odd_flag  <= 2'b0;
-      for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
+      parent_lvl <= '0;
+      parent_idx <= '0;
+      level_0 <= '0;
+      for (itr_seq = 0; itr_seq < 2; itr_seq++) begin  // initialize 2 registers on level_1 
+        level_1[itr_seq] <= '0;
+      end
+      for (lvl_seq = 2; lvl_seq < TREE_DEPTH; lvl_seq++) begin  // initialize BRAMs' ports
         addr_a[lvl_seq] <= '0;
         addr_b[lvl_seq] <= '0;
         din_a[lvl_seq]  <= '0;
@@ -250,20 +224,17 @@ module bram_tree #(
         we_a[lvl_seq]   <= '0;
         we_b[lvl_seq]   <= '0;
       end
-      for (lvl_seq = 0; lvl_seq < COMPARATORS_NEEDED; lvl_seq++) begin
-        comp_parent_in[lvl_seq] <= '0;
-        comp_left_child_in[lvl_seq] <= '0;
-        comp_right_child_in[lvl_seq] <= '0;
-      end
-      for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
-        for (itr_seq = 0; itr_seq < 2; itr_seq++) begin
-          changed_addr[lvl_seq][itr_seq] <= '0;
-        end
-      end
+      comp_parent_in <= '0;
+      comp_left_child_in <= '0;
+      comp_right_child_in <= '0;
     end else begin
-      even_flag <= next_even_flag;
-      odd_flag  <= next_odd_flag;
-      for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
+      parent_lvl <= next_parent_lvl;
+      parent_idx <= next_parent_idx;
+      level_0 <= next_level_0;
+      for (itr_seq = 0; itr_seq < 2; itr_seq++) begin
+        level_1[itr_seq] <= next_level_1[itr_seq];
+      end
+      for (lvl_seq = 2; lvl_seq < TREE_DEPTH; lvl_seq++) begin
         addr_a[lvl_seq] <= next_addr_a[lvl_seq];
         addr_b[lvl_seq] <= next_addr_b[lvl_seq];
         din_a[lvl_seq]  <= next_din_a[lvl_seq];
@@ -271,131 +242,174 @@ module bram_tree #(
         we_a[lvl_seq]   <= next_we_a[lvl_seq];
         we_b[lvl_seq]   <= next_we_b[lvl_seq];
       end
-      for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
-        for (itr_seq = 0; itr_seq < 2; itr_seq++) begin
-          next_changed_addr[lvl_seq][itr_seq] <= changed_addr[lvl_seq][itr_seq];
-        end
-      end
+      comp_parent_in <= next_comp_parent_in;
+      comp_left_child_in <= next_comp_left_child_in;
+      comp_right_child_in <= next_comp_right_child_in;
     end
   end
 
   always_comb begin : bram_comb
-    next_even_flag = even_flag;
-    next_odd_flag  = odd_flag;
-    for (lvl_comb = 0; lvl_comb < TREE_DEPTH; lvl_comb++) begin : bram_reset
+    next_parent_lvl = parent_lvl;
+    next_parent_idx = parent_idx;
+    next_level_0 = level_0;
+    for (itr_comb = 0; itr_comb < 2; itr_comb++) begin
+      next_level_1[itr_comb] = level_1[itr_comb];
+    end
+    for (lvl_comb = 2; lvl_comb < TREE_DEPTH; lvl_comb++) begin
       next_addr_a[lvl_comb] = addr_a[lvl_comb];
       next_addr_b[lvl_comb] = addr_b[lvl_comb];
-      next_din_a[lvl_comb]  = '0;
-      next_din_b[lvl_comb]  = '0;
-      next_we_a[lvl_comb]   = '0;
-      next_we_b[lvl_comb]   = '0;
-      for (itr_comb = 0; itr_comb < 2; itr_comb++) begin
-        next_changed_addr[lvl_comb][itr_comb] = changed_addr[lvl_comb][itr_comb];
-      end
+      next_din_a[lvl_comb]  = din_a[lvl_comb];
+      next_din_b[lvl_comb]  = din_b[lvl_comb];
+      next_we_a[lvl_comb]   = 1'b0;  // default to read
+      next_we_b[lvl_comb]   = 1'b0;
     end
+    next_comp_parent_in = comp_parent_in;
+    next_comp_left_child_in = comp_left_child_in;
+    next_comp_right_child_in = comp_right_child_in;
     case (state)
       IDLE: begin
       end
 
-      READ_MEM: begin
-        if (even_flag) begin
-          next_addr_a[0] = 0;
-          next_addr_b[0] = 0;
-          next_addr_a[1] = 0;
-          next_addr_b[1] = 1;
-          next_addr_a[2] = 0;  // level 2 BRAM not used
-          next_addr_b[2] = 0;
-        end else begin
-          if (odd_flag == 0) begin
-            next_addr_a[0] = 0;  // level 0 BRAM not used
-            next_addr_b[0] = 0;
-            next_addr_a[1] = 0;
-            next_addr_b[1] = 0;
-            next_addr_a[2] = 0;
-            next_addr_b[2] = 1;
-          end else if (odd_flag == 1) begin
-            next_addr_a[0] = 0;  // level 0 BRAM not used
-            next_addr_b[0] = 0;
-            next_addr_a[1] = 0;
-            next_addr_b[1] = 1;
-            next_addr_a[2] = 2;
-            next_addr_b[2] = 3;
-          end else begin
-            next_addr_a[0] = 0;
-            next_addr_b[0] = 0;
-            next_addr_a[1] = 0;
-            next_addr_b[1] = 0;
-            next_addr_a[2] = 0;
-            next_addr_b[2] = 0;
-          end
+      READ_MEM: begin  // in order to read from BRAMs, we will need to send addresses in
+        if (parent_lvl == 'd1) begin
+          next_addr_a[2] = 2 * parent_idx;
+          next_addr_b[2] = 2 * parent_idx + 1;
+        end else if (parent_lvl > 'd1) begin
+          next_addr_a[parent_lvl]   = parent_idx;
+          next_addr_a[parent_lvl+1] = 2 * parent_idx;
+          next_addr_b[parent_lvl+1] = 2 * parent_idx + 1;
         end
       end
 
-      COMPARE_SWAP: begin  // Wait mem output ready
-      end
-
-      WRITE_MEM: begin
-        if (even_flag) begin
-          comp_parent_in[0] = dout_b[0];
-          comp_left_child_in[0] = dout_a[1];
-          comp_right_child_in[0] = dout_b[1];
-          next_din_b[0] = comp_parent_out[0];
-          next_din_a[1] = comp_left_child_out[0];
-          next_din_b[1] = comp_right_child_out[0];
-
-          next_we_b[0] = '1;
-          next_we_a[1] = '1;
-          next_we_b[1] = '1;
-
-          next_even_flag = 1'b0;
-        end else begin
-          if (odd_flag > 1) begin
-            next_even_flag = 1'b1;
-            next_odd_flag  = 0;
-          end else begin
-            comp_parent_in[0] = dout_b[1];
-            comp_left_child_in[0] = dout_a[2];
-            comp_right_child_in[0] = dout_b[2];
-            next_din_b[1] = comp_parent_out[0];
-            next_din_a[2] = comp_left_child_out[0];
-            next_din_b[2] = comp_right_child_out[0];
-
-            next_we_b[1] = '1;
-            next_we_a[2] = '1;
-            next_we_b[2] = '1;
-            next_odd_flag = odd_flag + 1;
-          end
+      COMPARE_SWAP: begin
+        if (parent_lvl == 'd0) begin
+          next_comp_parent_in = level_0;
+          next_comp_left_child_in = level_1[0];
+          next_comp_right_child_in = level_1[1];
+        end else if (parent_lvl == 'd1) begin
+          next_comp_parent_in = level_1[parent_idx];
+          next_comp_left_child_in = dout_a[2];
+          next_comp_right_child_in = dout_b[2];
+        end else if (parent_lvl > 'd1) begin
+          next_comp_parent_in = dout_a[parent_lvl];
+          next_comp_left_child_in = dout_a[parent_lvl+1];
+          next_comp_right_child_in = dout_b[parent_lvl+1];
         end
       end
 
-      ENQUEUE: begin
-        next_addr_b[$clog2(queue_size+1)-1] = queue_size - (1 << ($clog2(queue_size + 1) - 1));
-        next_din_b[$clog2(queue_size+1)-1] = i_data;
-        next_we_b[$clog2(queue_size+1)-1] = 1'b1;
+      WRITE_MEM: begin  // in order to write to BRAMs, we need enable write signals
+        if (parent_lvl == 'd0) begin
+          next_level_0 = comp_parent_out;
+          next_level_1[0] = comp_left_child_out;
+          next_level_1[1] = comp_right_child_out;
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = 'd1;
+            next_parent_idx = 0;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = 'd1;
+            next_parent_idx = 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
+        end else if (parent_lvl == 'd1) begin
+          next_level_1[parent_idx] = comp_parent_out;
+          next_din_a[2] = comp_left_child_out;
+          next_din_b[2] = comp_right_child_out;
+          // find where the next parent index is
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = 'd2;
+            next_parent_idx = 2 * parent_idx;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = 'd2;
+            next_parent_idx = 2 * parent_idx + 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
 
-        next_changed_addr[$clog2(queue_size+1)-1][1] = queue_size - (1 << ($clog2(queue_size + 1) - 1));
-        next_even_flag = 1'b1;
+          next_we_a[2] = 1'b1;
+          next_we_b[2] = 1'b1;
+        end else if (parent_lvl > 'd1) begin
+          next_din_a[parent_lvl]   = comp_parent_out;
+          next_din_a[parent_lvl+1] = comp_left_child_out;
+          next_din_b[parent_lvl+1] = comp_right_child_out;
+          // find where the next parent index is
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = parent_lvl + 1;
+            next_parent_idx = 2 * parent_idx;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = parent_lvl + 1;
+            next_parent_idx = 2 * parent_idx + 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
+
+          if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+            next_we_a[parent_lvl] = 1'b0;
+            next_we_b[parent_lvl] = 1'b0;
+          end else begin
+            next_we_a[parent_lvl]   = 1'b1;
+            next_we_a[parent_lvl+1] = 1'b1;
+            next_we_b[parent_lvl+1] = 1'b1;
+          end
+        end
       end
 
       DEQUEUE: begin
-        next_addr_b[0] = 0;
-        next_din_b[0] = '0;
-        next_we_b[0] = 1'b1;
-
-        next_changed_addr[0][0] = 0;
-        next_even_flag = 1'b1;
+        // // we can actually directly send dequeue command to the comparator
+        // comp_parent_in = 0;
+        // comp_left_child_in = level_1[0];
+        // comp_right_child_in = level_1[1];
+        // // get the comparison result
+        // next_level_0 = comp_parent_out;
+        // next_level_1[0] = comp_left_child_out;
+        // next_level_1[1] = comp_right_child_out;
+        // // get next parent level and index
+        // if (comp_left_child_out != comp_left_child_in) begin
+        //   next_parent_lvl = 'd1;
+        //   next_parent_idx = 0;
+        // end else if (comp_right_child_out != comp_right_child_in) begin
+        //   next_parent_lvl = 'd1;
+        //   next_parent_idx = 1;
+        // end else begin
+        //   next_parent_lvl = 'd0;
+        //   next_parent_idx = 'd0;
+        // end
+        next_level_0 = 'd0;
+        next_parent_lvl = 'd0;
+        next_parent_idx = 'd0;
       end
 
       REPLACE: begin
-        next_addr_b[0] = 0;
-        next_din_b[0] = i_data;
-        next_we_b[0] = 1'b1;
-
-        next_changed_addr[0][0] = 0;
-        next_even_flag = 1'b1;
+        // // same reason as DEQUEUE
+        // comp_parent_in = i_data;
+        // comp_left_child_in = level_1[0];
+        // comp_right_child_in = level_1[1];
+        // // get the comparison result
+        // next_level_0 = comp_parent_out;
+        // next_level_1[0] = comp_left_child_out;
+        // next_level_1[1] = comp_right_child_out;
+        // // get next parent level and index
+        // if (comp_left_child_out != comp_left_child_in) begin
+        //   next_parent_lvl = 'd1;
+        //   next_parent_idx = 0;
+        // end else if (comp_right_child_out != comp_right_child_in) begin
+        //   next_parent_lvl = 'd1;
+        //   next_parent_idx = 1;
+        // end else begin
+        //   next_parent_lvl = 'd0;
+        //   next_parent_idx = 'd0;
+        // end
+        next_level_0 = i_data;
+        next_parent_lvl = 'd0;
+        next_parent_idx = 'd0;
       end
 
-      WAIT: begin  // * Temporary state for clock testing
+      WAIT: begin  // this is a do nothing state, just for reading from RAM
       end
 
       default: begin
@@ -414,14 +428,14 @@ module bram_tree #(
     end
   end
 
-  always_comb begin : queue_size_counter_comb
+  always_comb begin : queue_size_comb
     next_queue_size = queue_size;
     if (i_wrt && !i_read) begin  // enqueue
       next_queue_size = queue_size + 1;
     end else if (!i_wrt && i_read) begin  // dequeue
       next_queue_size = queue_size - 1;
     end else if (i_wrt && i_read) begin  // replace
-      if (queue_size == 0 && i_data != 0) begin
+      if (queue_size == 0 && i_data != 0) begin  // this would be a special case for replace, function as enqueue
         next_queue_size = queue_size + 1;
       end else begin
         next_queue_size = queue_size;
@@ -434,6 +448,6 @@ module bram_tree #(
   //-------------------------------------------------------------------------
   assign o_full  = (queue_size == QUEUE_SIZE);
   assign o_empty = (queue_size == 0);
-  assign o_data  = dout_a[0];
+  assign o_data  = level_0;
 
 endmodule

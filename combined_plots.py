@@ -121,21 +121,25 @@ def process_directory_all(log_dir):
 register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
 register_tree_log_dir  = "register_tree/vivado_register_tree_analysis_results_16bit/"
 systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
+bram_tree_log_dir = "BRAM_tree/vivado_BRAM_tree_analysis_results_16bit/"
 
 # Process achieved frequency data
 ra_achieved = process_directory_achieved(register_array_log_dir)
 rt_achieved = process_directory_achieved(register_tree_log_dir)
 sa_achieved = process_directory_achieved(systolic_array_log_dir)
+bt_achieved = process_directory_achieved(bram_tree_log_dir)
 
 # Process area utilization (using dict to compute average) data
 ra_area = process_directory_area_dict(register_array_log_dir)
 rt_area = process_directory_area_dict(register_tree_log_dir)
 sa_area = process_directory_area_dict(systolic_array_log_dir)
+bt_area = process_directory_area_dict(bram_tree_log_dir)
 
 # Process all data (for LUT utilization vs achieved frequency and area over frequency plots)
 ra_all = process_directory_all(register_array_log_dir)
 rt_all = process_directory_all(register_tree_log_dir)
 sa_all = process_directory_all(systolic_array_log_dir)
+bt_all = process_directory_all(bram_tree_log_dir)
 
 # ----- Compute Derived Data -----
 
@@ -152,6 +156,7 @@ def compute_final_achieved(data):
 ra_final_freq = compute_final_achieved(ra_achieved)
 rt_final_freq = compute_final_achieved(rt_achieved)
 sa_final_freq = compute_final_achieved(sa_achieved)
+bt_final_freq = compute_final_achieved(bt_achieved)
 
 def compute_utilization_vs_freq(data_dict):
     """
@@ -172,6 +177,7 @@ def compute_utilization_vs_freq(data_dict):
 ra_util_x, ra_util_y = compute_utilization_vs_freq(ra_all)
 rt_util_x, rt_util_y = compute_utilization_vs_freq(rt_all)
 sa_util_x, sa_util_y = compute_utilization_vs_freq(sa_all)
+bt_util_x, bt_util_y = compute_utilization_vs_freq(bt_all)
 
 def compute_raw_performance(data_dict, arch, operation):
     """
@@ -219,9 +225,9 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
 
 # Performance factors for area over (achieved frequency * performance) plots
 performances = {
-    "enqueue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1}, # for register_tree, this value is just a placeholder.
-    "dequeue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2},
-    "replace": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2},
+    "enqueue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1, "bram_tree": 0},
+    "dequeue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/4},
+    "replace": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/4}
 }
 
 ra_raw_enq = compute_raw_performance(ra_all, "register_array", "enqueue")
@@ -231,10 +237,12 @@ rt_raw_enq = compute_raw_performance(rt_all, "register_tree", "enqueue")
 ra_raw_deq = compute_raw_performance(ra_all, "register_array", "dequeue")
 sa_raw_deq = compute_raw_performance(sa_all, "systolic_array", "dequeue")
 rt_raw_deq = compute_raw_performance(rt_all, "register_tree", "dequeue")
+bt_raw_deq = compute_raw_performance(bt_all, "bram_tree", "dequeue")
 
 ra_raw_rep = compute_raw_performance(ra_all, "register_array", "replace")
 sa_raw_rep = compute_raw_performance(sa_all, "systolic_array", "replace")
 rt_raw_rep = compute_raw_performance(rt_all, "register_tree", "replace")
+bt_raw_rep = compute_raw_performance(bt_all, "bram_tree", "replace")
 
 ra_area_enq = compute_area_over_freq_perf(ra_all, "register_array", "enqueue")
 sa_area_enq = compute_area_over_freq_perf(sa_all, "systolic_array", "enqueue")
@@ -267,10 +275,13 @@ rt_qs = sorted(rt_final_freq.keys())
 rt_freqs = [rt_final_freq[q] for q in rt_qs]
 sa_qs = sorted(sa_final_freq.keys())
 sa_freqs = [sa_final_freq[q] for q in sa_qs]
+bt_qs = sorted(bt_final_freq.keys())
+bt_freqs = [bt_final_freq[q] for q in bt_qs]
 
 ax.plot(ra_qs, ra_freqs, 'o-', label='Register Array')
 ax.plot(sa_qs, sa_freqs, 'd-', label='Systolic Array')
 ax.plot(rt_qs, rt_freqs, 'x-', label='Register Tree')
+ax.plot(bt_qs, bt_freqs, 's-', label='BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('Achieved Frequency (MHz)')
 ax.set_title('Achieved Frequency vs Queue Size')
@@ -341,10 +352,12 @@ ax = axs[1, 1]
 ra_x, ra_y = sort_xy(*ra_raw_deq)
 rt_x, rt_y = sort_xy(*rt_raw_deq)
 sa_x, sa_y = sort_xy(*sa_raw_deq)
+bt_x, bt_y = sort_xy(*bt_raw_deq)
 
 ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
+ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Dequeue: Performance vs Queue Size')
@@ -366,10 +379,12 @@ ax = axs[1, 2]
 ra_x, ra_y = sort_xy(*ra_raw_rep)
 rt_x, rt_y = sort_xy(*rt_raw_rep)
 sa_x, sa_y = sort_xy(*sa_raw_rep)
+bt_x, bt_y = sort_xy(*bt_raw_rep)
 
 ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
+ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Replace: Performance vs Queue Size')
