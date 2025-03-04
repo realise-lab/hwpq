@@ -1,6 +1,6 @@
 module bram_tree_tb;
   // Parameters matching the module under test
-  localparam integer QueueSize = 15;
+  localparam integer QueueSize = 7;
   localparam integer DataWidth = 16;
 
   // Clock and reset signals

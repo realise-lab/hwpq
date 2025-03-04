@@ -19,9 +19,9 @@ module bram_tree #(
   //-------------------------------------------------------------------------
 
   // BRAM local parameters
-  localparam integer BRAM_WIDTH = 18;  // width of the BRAMs, as Xilinx BRAMs are only supported for width of
+  localparam integer BRAM_WIDTH = 16;  // width of the BRAMs, as Xilinx BRAMs are only supported for width of
                                        // 0, 1, 2, 4, 9, 18, 36, 72
-  localparam integer BRAM_DEPTH = 1024;  // depth of the BRAMs, 18 Kb = 18 * 1024 bits
+  localparam integer BRAM_DEPTH = 32768;  // depth of the BRAMs, 18 Kb = 18 * 1024 bits
   localparam integer ADDRESS_WIDTH = $clog2(BRAM_DEPTH);  // width for the address/index of the BRAMs
 
   // General local parameters

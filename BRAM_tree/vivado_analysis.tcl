@@ -1,5 +1,5 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {7 15 31 63 127 255 511 1023 2047}
+set queue_sizes {7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535}
 
 # Create the results directory if it doesn't exist
 file mkdir ./vivado_BRAM_tree_analysis_results_16bit
@@ -28,7 +28,7 @@ foreach queue_size $queue_sizes {
     set log_file "./vivado_BRAM_tree_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
-    for {set freq 450} {$freq <= 800} {incr freq 50} {
+    for {set freq 100} {$freq <= 800} {incr freq 50} {
 
         open_project ./vivado_BRAM_tree/vivado_BRAM_tree.xpr
 
@@ -111,7 +111,7 @@ foreach queue_size $queue_sizes {
             }
 
             if {$in_section_2} {
-                if {[regexp {\|\s*Block RAM Tile\s*\|\s*([0-9]+\.[0-9]+)+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match bram_util bram_util_percent]} {
+                if {[regexp {\|\s*Block RAM Tile\s*\|\s*([0-9]+\.?[0-9]*)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match bram_util bram_util_percent]} {
                     set bram_util_number $bram_util
                     set bram_util_percentage $bram_util_percent
                 }
