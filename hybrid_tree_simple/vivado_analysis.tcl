@@ -2,7 +2,7 @@
 set queue_sizes {7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535}
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_BRAM_tree_analysis_results_16bit
+file mkdir ./vivado_hybrid_tree_simple_analysis_results_16bit
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
@@ -25,7 +25,7 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_BRAM_tree_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./vivado_hybrid_tree_simple_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {

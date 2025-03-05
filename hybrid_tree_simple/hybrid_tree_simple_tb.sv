@@ -1,6 +1,6 @@
 module bram_tree_tb;
   // Parameters matching the module under test
-  localparam integer QueueSize = 7;
+  localparam integer QueueSize = 15;
   localparam integer DataWidth = 16;
 
   // Clock and reset signals
@@ -78,31 +78,31 @@ module bram_tree_tb;
       end else begin
         if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 2) begin
           if (i - 3 == 0) begin
-            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[0] = ref_queue[3];
+            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-3] = ref_queue[3];
           end else if (i - 3 == 1) begin
-            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[1] = ref_queue[4];
+            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-3] = ref_queue[4];
           end else if (i - 3 == 2) begin
-            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[2] = ref_queue[5];
+            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-3] = ref_queue[5];
           end else if (i - 3 == 3) begin
-            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[3] = ref_queue[6];
+            uut.gen_bram[2].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-3] = ref_queue[6];
           end
         end else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 3) begin
           if (i - 7 == 0) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[0] = ref_queue[7];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[7];
           end else if (i - 7 == 1) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[1] = ref_queue[8];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[8];
           end else if (i - 7 == 2) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[2] = ref_queue[9];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[9];
           end else if (i - 7 == 3) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[3] = ref_queue[10];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[10];
           end else if (i - 7 == 4) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[4] = ref_queue[11];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[11];
           end else if (i - 7 == 5) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[5] = ref_queue[12];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[12];
           end else if (i - 7 == 6) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[6] = ref_queue[13];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[13];
           end else if (i - 7 == 7) begin
-            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[7] = ref_queue[14];
+            uut.gen_bram[3].bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i-7] = ref_queue[14];
           end
         end
       end
