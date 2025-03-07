@@ -343,7 +343,7 @@ def sort_xy(x, y):
 # ----- Plotting -----
 
 # Create a 3x3 grid of subplots
-fig, axs = plt.subplots(4, 3, figsize=(32, 24))
+fig, axs = plt.subplots(3, 3, figsize=(32, 24))
 
 # Subplot 1: Achieved Frequency vs Queue Size
 ax = axs[0, 0]
@@ -362,7 +362,7 @@ ax.plot(ra_qs, ra_freqs, 'o-', label='Register Array')
 ax.plot(sa_qs, sa_freqs, 'd-', label='Systolic Array')
 ax.plot(rt_qs, rt_freqs, 'x-', label='Register Tree')
 ax.plot(bt_qs, bt_freqs, 's-', label='BRAM Tree')
-ax.plot(ht_qs, ht_freqs, 's-', label='Hybrid Tree Simple')
+ax.plot(ht_qs, ht_freqs, 'H-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('Achieved Frequency (MHz)')
 ax.set_title('Achieved Frequency vs Queue Size')
@@ -387,7 +387,7 @@ ax.plot(ra_qs_area, ra_area_vals, 'o-', label='Register Array')
 ax.plot(sa_qs_area, sa_area_vals, 'd-', label='Systolic Array')
 ax.plot(rt_qs_area, rt_area_vals, 'x-', label='Register Tree')
 ax.plot(bt_qs_area, bt_area_vals, 's-', label='BRAM Tree')
-ax.plot(ht_qs_area, ht_area_vals, 's-', label='Hybrid Tree Simple')
+ax.plot(ht_qs_area, ht_area_vals, 'H-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('LUT Utilization (Count)')
 ax.set_title('LUT Utilization vs Queue Size')
@@ -449,7 +449,7 @@ ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.plot(ht_x, ht_y, 's-', label='Hybrid Tree Simple')
+ax.plot(ht_x, ht_y, 'H-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Dequeue: Performance vs Queue Size')
@@ -478,7 +478,7 @@ ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.plot(ht_x, ht_y, 's-', label='Hybrid Tree Simple')
+ax.plot(ht_x, ht_y, 'H-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Replace: Performance vs Queue Size')
@@ -596,48 +596,48 @@ ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
 #             horizontalalignment='left', verticalalignment='top')
 
 # Subplot 11: Dequeue -> Area/(Achieved Frequency * Performance) vs Queue Size
-ax = axs[3, 1]
-bt_x, bt_y = sort_xy(*bt_bram_deq)
+# ax = axs[3, 1]
+# bt_x, bt_y = sort_xy(*bt_bram_deq)
 
-ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.set_xlabel('Queue Size')
-ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
-ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
-ax.set_xscale('log', base=2)
-ax.set_yscale('log')
-ax.grid(True)
-ax.legend()
-ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
-            xytext=(0.5, 0.08), textcoords='axes fraction',
-            arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-            horizontalalignment='left', verticalalignment='top')
-ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
-            xytext=(0.95, 0.5), textcoords='axes fraction',
-            arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-            horizontalalignment='left', verticalalignment='top')
+# ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
+# ax.set_xlabel('Queue Size')
+# ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
+# ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
+# ax.set_xscale('log', base=2)
+# ax.set_yscale('log')
+# ax.grid(True)
+# ax.legend()
+# ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
+#             xytext=(0.5, 0.08), textcoords='axes fraction',
+#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
+#             horizontalalignment='left', verticalalignment='top')
+# ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
+#             xytext=(0.95, 0.5), textcoords='axes fraction',
+#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
+#             horizontalalignment='left', verticalalignment='top')
 
 # Subplot 12: Replace -> Area/(Achieved Frequency * Performance) vs Queue Size
-ax = axs[3, 2]
-bt_x, bt_y = sort_xy(*bt_bram_rep)
+# ax = axs[3, 2]
+# bt_x, bt_y = sort_xy(*bt_bram_rep)
 
-ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.set_xlabel('Queue Size')
-ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
-ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
-ax.set_xscale('log', base=2)
-ax.set_yscale('log')
-ax.grid(True)
-ax.legend()
-ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
-            xytext=(0.5, 0.08), textcoords='axes fraction',
-            arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-            horizontalalignment='left', verticalalignment='top')
-ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
-            xytext=(0.95, 0.5), textcoords='axes fraction',
-            arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-            horizontalalignment='left', verticalalignment='top')
+# ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
+# ax.set_xlabel('Queue Size')
+# ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
+# ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
+# ax.set_xscale('log', base=2)
+# ax.set_yscale('log')
+# ax.grid(True)
+# ax.legend()
+# ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
+#             xytext=(0.5, 0.08), textcoords='axes fraction',
+#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
+#             horizontalalignment='left', verticalalignment='top')
+# ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
+#             xytext=(0.95, 0.5), textcoords='axes fraction',
+#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
+#             horizontalalignment='left', verticalalignment='top')
 
-plt.tight_layout()
+# plt.tight_layout()
 
 # Save the combined figure
 output_dir = "vivado_analysis_results_plots_16bit"
