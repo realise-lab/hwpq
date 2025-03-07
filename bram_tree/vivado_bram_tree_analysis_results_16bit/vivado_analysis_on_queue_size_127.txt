@@ -1,0 +1,71 @@
+Frequency: 100 MHz -> Synthesis: 34s -> 34s
+Frequency: 100 MHz -> Implementation: 2m 19s -> 139s
+Frequency: 100 MHz -> Power: 0.579 W
+Frequency: 100 MHz -> LUTs Util%: 0.94 %
+Frequency: 100 MHz -> BRAM Util%: 100.00 %
+Frequency: 100 MHz -> BRAM Util: 300
+Frequency: 100 MHz -> WNS: 2.515 ns
+Frequency: 100 MHz -> Achieved Frequency: 133.601 MHz
+
+
+Frequency: 150 MHz -> Synthesis: 35s -> 35s
+Frequency: 150 MHz -> Implementation: 2m 19s -> 139s
+Frequency: 150 MHz -> Power: 0.642 W
+Frequency: 150 MHz -> LUTs Util%: 0.94 %
+Frequency: 150 MHz -> BRAM Util%: 100.00 %
+Frequency: 150 MHz -> BRAM Util: 300
+Frequency: 150 MHz -> WNS: 0.581 ns
+Frequency: 150 MHz -> Achieved Frequency: 164.321 MHz
+
+
+Frequency: 200 MHz -> Synthesis: 35s -> 35s
+Frequency: 200 MHz -> Implementation: 2m 29s -> 149s
+Frequency: 200 MHz -> Power: 0.707 W
+Frequency: 200 MHz -> LUTs Util%: 0.94 %
+Frequency: 200 MHz -> BRAM Util%: 100.00 %
+Frequency: 200 MHz -> BRAM Util: 300
+Frequency: 200 MHz -> WNS: 0.246 ns
+Frequency: 200 MHz -> Achieved Frequency: 210.349 MHz
+
+
+Frequency: 250 MHz -> Synthesis: 35s -> 35s
+Frequency: 250 MHz -> Implementation: 2m 57s -> 177s
+Frequency: 250 MHz -> Power: 0.770 W
+Frequency: 250 MHz -> LUTs Util%: 0.94 %
+Frequency: 250 MHz -> BRAM Util%: 100.00 %
+Frequency: 250 MHz -> BRAM Util: 300
+Frequency: 250 MHz -> WNS: 0.089 ns
+Frequency: 250 MHz -> Achieved Frequency: 255.689 MHz
+
+
+Frequency: 300 MHz -> Synthesis: 34s -> 34s
+Frequency: 300 MHz -> Implementation: 3m 34s -> 214s
+Frequency: 300 MHz -> Power: 0.836 W
+Frequency: 300 MHz -> LUTs Util%: 0.97 %
+Frequency: 300 MHz -> BRAM Util%: 100.00 %
+Frequency: 300 MHz -> BRAM Util: 300
+Frequency: 300 MHz -> WNS: -0.277 ns
+Frequency: 300 MHz -> Achieved Frequency: 276.983 MHz
+
+
+Frequency: 350 MHz -> Synthesis: 36s -> 36s
+Frequency: 350 MHz -> Implementation: 3m 47s -> 227s
+Frequency: 350 MHz -> Power: 0.908 W
+Frequency: 350 MHz -> LUTs Util%: 1.05 %
+Frequency: 350 MHz -> BRAM Util%: 100.00 %
+Frequency: 350 MHz -> BRAM Util: 300
+Frequency: 350 MHz -> WNS: -0.752 ns
+Frequency: 350 MHz -> Achieved Frequency: 277.074 MHz
+
+
+Frequency: 400 MHz -> Synthesis: 36s -> 36s
+Frequency: 400 MHz -> Implementation: 3m 55s -> 235s
+Frequency: 400 MHz -> Power: 0.979 W
+Frequency: 400 MHz -> LUTs Util%: 1.08 %
+Frequency: 400 MHz -> BRAM Util%: 100.00 %
+Frequency: 400 MHz -> BRAM Util: 300
+Frequency: 400 MHz -> WNS: -1.124 ns
+Frequency: 400 MHz -> Achieved Frequency: 275.938 MHz
+
+
+WNS exceeded -1 ns, finished

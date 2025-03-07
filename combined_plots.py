@@ -157,8 +157,8 @@ def process_directory_all(log_dir):
             file_path = os.path.join(log_dir, file_name)
             freqs, achieved_freqs = parse_achieved_frequencies(file_path)
             util_list = parse_area_utilization_list(file_path)
-            # If parsing BRAM tree directory, include BRAM utilization
-            if "BRAM_tree" in log_dir:
+            # If parsing BRAM tree/Hybrid tree directory, include BRAM utilization
+            if "bram_tree" in log_dir or "hybrid_tree" in log_dir:
                 bram_list = parse_bram_utilization_list(file_path)
             else:
                 bram_list = None
@@ -171,28 +171,33 @@ def process_directory_all(log_dir):
 register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
 register_tree_log_dir  = "register_tree/vivado_register_tree_analysis_results_16bit/"
 systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
-bram_tree_log_dir = "BRAM_tree/vivado_BRAM_tree_analysis_results_16bit/"
+bram_tree_log_dir = "bram_tree/vivado_bram_tree_analysis_results_16bit/"
+hybrid_tree_simple_log_dir = "hybrid_tree_simple/vivado_hybrid_tree_simple_analysis_results_16bit/"
 
 # Process achieved frequency data
 ra_achieved = process_directory_achieved(register_array_log_dir)
 rt_achieved = process_directory_achieved(register_tree_log_dir)
 sa_achieved = process_directory_achieved(systolic_array_log_dir)
 bt_achieved = process_directory_achieved(bram_tree_log_dir)
+ht_achieved = process_directory_achieved(hybrid_tree_simple_log_dir)
 
 # Process area utilization (using dict to compute average) data
 ra_area = process_directory_area_dict(register_array_log_dir)
 rt_area = process_directory_area_dict(register_tree_log_dir)
 sa_area = process_directory_area_dict(systolic_array_log_dir)
 bt_area = process_directory_area_dict(bram_tree_log_dir)
+ht_area = process_directory_area_dict(hybrid_tree_simple_log_dir)
 
 # Process BRAM utilization data
 bt_bram = process_directory_bram_dict(bram_tree_log_dir)
+ht_bram = process_directory_bram_dict(hybrid_tree_simple_log_dir)
 
 # Process all data (for LUT utilization vs achieved frequency and area over frequency plots)
 ra_all = process_directory_all(register_array_log_dir)
 rt_all = process_directory_all(register_tree_log_dir)
 sa_all = process_directory_all(systolic_array_log_dir)
 bt_all = process_directory_all(bram_tree_log_dir)
+ht_all = process_directory_all(hybrid_tree_simple_log_dir)
 
 # ----- Compute Derived Data -----
 
@@ -210,6 +215,7 @@ ra_final_freq = compute_final_achieved(ra_achieved)
 rt_final_freq = compute_final_achieved(rt_achieved)
 sa_final_freq = compute_final_achieved(sa_achieved)
 bt_final_freq = compute_final_achieved(bt_achieved)
+ht_final_freq = compute_final_achieved(ht_achieved)
 
 def compute_utilization_vs_freq(data_dict):
     """
@@ -231,6 +237,7 @@ ra_util_x, ra_util_y = compute_utilization_vs_freq(ra_all)
 rt_util_x, rt_util_y = compute_utilization_vs_freq(rt_all)
 sa_util_x, sa_util_y = compute_utilization_vs_freq(sa_all)
 bt_util_x, bt_util_y = compute_utilization_vs_freq(bt_all)
+ht_util_x, ht_util_y = compute_utilization_vs_freq(ht_all)
 
 def compute_raw_performance(data_dict, arch, operation):
     """
@@ -257,6 +264,7 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
     """
     For each queue size, compute: 
     For BRAM tree: (BRAM utilization count) / (max achieved frequency * performance factor)
+    For Hybrid tree: (BRAM utilization count) / (max achieved frequency * performance factor)
     For others: (LUT Utilization count) / (max achieved frequency * performance factor).
     For register_tree with operation 'enqueue', performance_factor = 1 / log2(queue_size).
     Returns two lists: x (queue size) and y (computed value).
@@ -268,7 +276,7 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
             max_achieved = max(achieved)
             idx = achieved.index(max_achieved)
             
-            if arch == "bram_tree":
+            if arch in ["bram_tree", "hybrid_tree_simple"]:
                 # For BRAM tree, use BRAM utilization
                 util = bram_list[idx]
                 area_count = util  # BRAM utilization is already a count
@@ -290,8 +298,8 @@ def compute_area_over_freq_perf(data_dict, arch, operation):
 # Performance factors for area over (achieved frequency * performance) plots
 performances = {
     "enqueue": {"register_array": 1/2, "systolic_array": 1/2},
-    "dequeue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/4},
-    "replace": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/4}
+    "dequeue": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/7, "hybrid_tree_simple": 1/4},
+    "replace": {"register_array": 1/2, "systolic_array": 1/2, "register_tree": 1/2, "bram_tree":1/7, "hybrid_tree_simple": 1/4}
 }
 
 ra_raw_enq = compute_raw_performance(ra_all, "register_array", "enqueue")
@@ -302,11 +310,13 @@ ra_raw_deq = compute_raw_performance(ra_all, "register_array", "dequeue")
 sa_raw_deq = compute_raw_performance(sa_all, "systolic_array", "dequeue")
 rt_raw_deq = compute_raw_performance(rt_all, "register_tree", "dequeue")
 bt_raw_deq = compute_raw_performance(bt_all, "bram_tree", "dequeue")
+ht_raw_deq = compute_raw_performance(ht_all, "hybrid_tree_simple", "dequeue")
 
 ra_raw_rep = compute_raw_performance(ra_all, "register_array", "replace")
 sa_raw_rep = compute_raw_performance(sa_all, "systolic_array", "replace")
 rt_raw_rep = compute_raw_performance(rt_all, "register_tree", "replace")
 bt_raw_rep = compute_raw_performance(bt_all, "bram_tree", "replace")
+ht_raw_rep = compute_raw_performance(ht_all, "hybrid_tree_simple", "replace")
 
 ra_area_enq = compute_area_over_freq_perf(ra_all, "register_array", "enqueue")
 sa_area_enq = compute_area_over_freq_perf(sa_all, "systolic_array", "enqueue")
@@ -316,11 +326,13 @@ ra_area_deq = compute_area_over_freq_perf(ra_all, "register_array", "dequeue")
 sa_area_deq = compute_area_over_freq_perf(sa_all, "systolic_array", "dequeue")
 rt_area_deq = compute_area_over_freq_perf(rt_all, "register_tree", "dequeue")
 bt_bram_deq = compute_area_over_freq_perf(bt_all, "bram_tree", "dequeue")
+ht_bram_deq = compute_area_over_freq_perf(ht_all, "hybrid_tree_simple", "dequeue")
 
 ra_area_rep = compute_area_over_freq_perf(ra_all, "register_array", "replace")
 sa_area_rep = compute_area_over_freq_perf(sa_all, "systolic_array", "replace")
 rt_area_rep = compute_area_over_freq_perf(rt_all, "register_tree", "replace")
 bt_bram_rep = compute_area_over_freq_perf(bt_all, "bram_tree", "replace")
+ht_bram_rep = compute_area_over_freq_perf(ht_all, "hybrid_tree_simple", "replace")
 
 # Utility function to sort x, y pairs based on x value
 
@@ -343,11 +355,14 @@ sa_qs = sorted(sa_final_freq.keys())
 sa_freqs = [sa_final_freq[q] for q in sa_qs]
 bt_qs = sorted(bt_final_freq.keys())
 bt_freqs = [bt_final_freq[q] for q in bt_qs]
+ht_qs = sorted(ht_final_freq.keys())
+ht_freqs = [ht_final_freq[q] for q in ht_qs]
 
 ax.plot(ra_qs, ra_freqs, 'o-', label='Register Array')
 ax.plot(sa_qs, sa_freqs, 'd-', label='Systolic Array')
 ax.plot(rt_qs, rt_freqs, 'x-', label='Register Tree')
 ax.plot(bt_qs, bt_freqs, 's-', label='BRAM Tree')
+ax.plot(ht_qs, ht_freqs, 's-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('Achieved Frequency (MHz)')
 ax.set_title('Achieved Frequency vs Queue Size')
@@ -365,11 +380,14 @@ sa_qs_area = sorted(sa_area.keys())
 sa_area_vals = [sa_area[q] for q in sa_qs_area]
 bt_qs_area = sorted(bt_area.keys())
 bt_area_vals = [bt_area[q] for q in bt_qs_area]
+ht_qs_area = sorted(ht_area.keys())
+ht_area_vals = [ht_area[q] for q in ht_qs_area]
 
 ax.plot(ra_qs_area, ra_area_vals, 'o-', label='Register Array')
 ax.plot(sa_qs_area, sa_area_vals, 'd-', label='Systolic Array')
 ax.plot(rt_qs_area, rt_area_vals, 'x-', label='Register Tree')
 ax.plot(bt_qs_area, bt_area_vals, 's-', label='BRAM Tree')
+ax.plot(ht_qs_area, ht_area_vals, 's-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('LUT Utilization (Count)')
 ax.set_title('LUT Utilization vs Queue Size')
@@ -378,11 +396,15 @@ ax.set_yscale('log')
 ax.grid(True)
 ax.legend()
 
-# Subplot 3: LUT Utilization vs Queue Size
+# Subplot 3: BRAM Utilization vs Queue Size
 ax = axs[0, 2]
 bt_qs_x = sorted(bt_bram.keys())
 bt_qs_y = [bt_bram[q] for q in bt_qs_x]
+ht_qs_x = sorted(ht_bram.keys())
+ht_qs_y = [ht_bram[q] for q in ht_qs_x]
+
 ax.plot(bt_qs_x, bt_qs_y, 's-', label='BRAM Tree')
+ax.plot(ht_qs_x, ht_qs_y, 's-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('BRAM Utilization (Count)')
 ax.set_title('BRAM Utilization vs Queue Size')
@@ -421,11 +443,13 @@ ra_x, ra_y = sort_xy(*ra_raw_deq)
 rt_x, rt_y = sort_xy(*rt_raw_deq)
 sa_x, sa_y = sort_xy(*sa_raw_deq)
 bt_x, bt_y = sort_xy(*bt_raw_deq)
+ht_x, ht_y = sort_xy(*ht_raw_deq)
 
 ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
+ax.plot(ht_x, ht_y, 's-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Dequeue: Performance vs Queue Size')
@@ -448,11 +472,13 @@ ra_x, ra_y = sort_xy(*ra_raw_rep)
 rt_x, rt_y = sort_xy(*rt_raw_rep)
 sa_x, sa_y = sort_xy(*sa_raw_rep)
 bt_x, bt_y = sort_xy(*bt_raw_rep)
+ht_x, ht_y = sort_xy(*ht_raw_rep)
 
 ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
+ax.plot(ht_x, ht_y, 's-', label='Hybrid Tree Simple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Replace: Performance vs Queue Size')

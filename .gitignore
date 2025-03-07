@@ -15,10 +15,12 @@ vivado_systolic_array_tcl/
 vivado_systolic_array_16bit_tcl/
 vivado_register_array_tcl/
 vivado_register_tree_tcl/
-vivado_BRAM_tree_tcl/
+vivado_bram_tree_tcl/
+vivado_hybrid_tree_simple_tcl/
 
 # Vivado project files
 vivado_systolic_array/
 vivado_register_array/
 vivado_register_tree/
-vivado_BRAM_tree/
+vivado_hybrid_tree_simple/
+vivado_bram_tree/
