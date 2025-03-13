@@ -9,6 +9,7 @@
 # Python environment file
 .venv/
 .python-version
+__pycache__/
 
 # Vivado analysis tcl files
 vivado_systolic_array_tcl/

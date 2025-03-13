@@ -1,0 +1,195 @@
+Frequency: 100 MHz -> Synthesis: 40s -> 40s
+Frequency: 100 MHz -> Implementation: 1m 6s -> 66s
+Frequency: 100 MHz -> Power: 0.469 W
+Frequency: 100 MHz -> CLB LUTs Used: 1373
+Frequency: 100 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 100 MHz -> CLB Registers Used: 508
+Frequency: 100 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 100 MHz -> BRAM Util: 0
+Frequency: 100 MHz -> BRAM Util%: 0.00 %
+Frequency: 100 MHz -> WNS: 5.572 ns
+Frequency: 100 MHz -> Achieved Frequency: 225.836 MHz
+
+
+Frequency: 150 MHz -> Synthesis: 41s -> 41s
+Frequency: 150 MHz -> Implementation: 1m 7s -> 67s
+Frequency: 150 MHz -> Power: 0.478 W
+Frequency: 150 MHz -> CLB LUTs Used: 1373
+Frequency: 150 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 150 MHz -> CLB Registers Used: 508
+Frequency: 150 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 150 MHz -> BRAM Util: 0
+Frequency: 150 MHz -> BRAM Util%: 0.00 %
+Frequency: 150 MHz -> WNS: 3.283 ns
+Frequency: 150 MHz -> Achieved Frequency: 295.537 MHz
+
+
+Frequency: 200 MHz -> Synthesis: 40s -> 40s
+Frequency: 200 MHz -> Implementation: 1m 7s -> 67s
+Frequency: 200 MHz -> Power: 0.487 W
+Frequency: 200 MHz -> CLB LUTs Used: 1373
+Frequency: 200 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 200 MHz -> CLB Registers Used: 508
+Frequency: 200 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 200 MHz -> BRAM Util: 0
+Frequency: 200 MHz -> BRAM Util%: 0.00 %
+Frequency: 200 MHz -> WNS: 1.985 ns
+Frequency: 200 MHz -> Achieved Frequency: 331.675 MHz
+
+
+Frequency: 250 MHz -> Synthesis: 40s -> 40s
+Frequency: 250 MHz -> Implementation: 1m 7s -> 67s
+Frequency: 250 MHz -> Power: 0.497 W
+Frequency: 250 MHz -> CLB LUTs Used: 1373
+Frequency: 250 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 250 MHz -> CLB Registers Used: 508
+Frequency: 250 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 250 MHz -> BRAM Util: 0
+Frequency: 250 MHz -> BRAM Util%: 0.00 %
+Frequency: 250 MHz -> WNS: 1.101 ns
+Frequency: 250 MHz -> Achieved Frequency: 344.947 MHz
+
+
+Frequency: 300 MHz -> Synthesis: 41s -> 41s
+Frequency: 300 MHz -> Implementation: 1m 7s -> 67s
+Frequency: 300 MHz -> Power: 0.506 W
+Frequency: 300 MHz -> CLB LUTs Used: 1373
+Frequency: 300 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 300 MHz -> CLB Registers Used: 508
+Frequency: 300 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 300 MHz -> BRAM Util: 0
+Frequency: 300 MHz -> BRAM Util%: 0.00 %
+Frequency: 300 MHz -> WNS: 0.839 ns
+Frequency: 300 MHz -> Achieved Frequency: 400.909 MHz
+
+
+Frequency: 350 MHz -> Synthesis: 40s -> 40s
+Frequency: 350 MHz -> Implementation: 1m 5s -> 65s
+Frequency: 350 MHz -> Power: 0.510 W
+Frequency: 350 MHz -> CLB LUTs Used: 1373
+Frequency: 350 MHz -> CLB LUTs Util%: 0.97 %
+Frequency: 350 MHz -> CLB Registers Used: 508
+Frequency: 350 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 350 MHz -> BRAM Util: 0
+Frequency: 350 MHz -> BRAM Util%: 0.00 %
+Frequency: 350 MHz -> WNS: 0.399 ns
+Frequency: 350 MHz -> Achieved Frequency: 406.811 MHz
+
+
+Frequency: 400 MHz -> Synthesis: 41s -> 41s
+Frequency: 400 MHz -> Implementation: 1m 19s -> 79s
+Frequency: 400 MHz -> Power: 0.521 W
+Frequency: 400 MHz -> CLB LUTs Used: 1381
+Frequency: 400 MHz -> CLB LUTs Util%: 0.98 %
+Frequency: 400 MHz -> CLB Registers Used: 508
+Frequency: 400 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 400 MHz -> BRAM Util: 0
+Frequency: 400 MHz -> BRAM Util%: 0.00 %
+Frequency: 400 MHz -> WNS: 0.313 ns
+Frequency: 400 MHz -> Achieved Frequency: 457.247 MHz
+
+
+Frequency: 450 MHz -> Synthesis: 41s -> 41s
+Frequency: 450 MHz -> Implementation: 1m 22s -> 82s
+Frequency: 450 MHz -> Power: 0.526 W
+Frequency: 450 MHz -> CLB LUTs Used: 1381
+Frequency: 450 MHz -> CLB LUTs Util%: 0.98 %
+Frequency: 450 MHz -> CLB Registers Used: 508
+Frequency: 450 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 450 MHz -> BRAM Util: 0
+Frequency: 450 MHz -> BRAM Util%: 0.00 %
+Frequency: 450 MHz -> WNS: 0.249 ns
+Frequency: 450 MHz -> Achieved Frequency: 506.785 MHz
+
+
+Frequency: 500 MHz -> Synthesis: 44s -> 44s
+Frequency: 500 MHz -> Implementation: 1m 27s -> 87s
+Frequency: 500 MHz -> Power: 0.536 W
+Frequency: 500 MHz -> CLB LUTs Used: 1379
+Frequency: 500 MHz -> CLB LUTs Util%: 0.98 %
+Frequency: 500 MHz -> CLB Registers Used: 508
+Frequency: 500 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 500 MHz -> BRAM Util: 0
+Frequency: 500 MHz -> BRAM Util%: 0.00 %
+Frequency: 500 MHz -> WNS: 0.064 ns
+Frequency: 500 MHz -> Achieved Frequency: 516.529 MHz
+
+
+Frequency: 550 MHz -> Synthesis: 40s -> 40s
+Frequency: 550 MHz -> Implementation: 1m 53s -> 113s
+Frequency: 550 MHz -> Power: 0.552 W
+Frequency: 550 MHz -> CLB LUTs Used: 1393
+Frequency: 550 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 550 MHz -> CLB Registers Used: 508
+Frequency: 550 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 550 MHz -> BRAM Util: 0
+Frequency: 550 MHz -> BRAM Util%: 0.00 %
+Frequency: 550 MHz -> WNS: -0.139 ns
+Frequency: 550 MHz -> Achieved Frequency: 510.939 MHz
+
+
+Frequency: 600 MHz -> Synthesis: 40s -> 40s
+Frequency: 600 MHz -> Implementation: 1m 50s -> 110s
+Frequency: 600 MHz -> Power: 0.559 W
+Frequency: 600 MHz -> CLB LUTs Used: 1401
+Frequency: 600 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 600 MHz -> CLB Registers Used: 508
+Frequency: 600 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 600 MHz -> BRAM Util: 0
+Frequency: 600 MHz -> BRAM Util%: 0.00 %
+Frequency: 600 MHz -> WNS: -0.205 ns
+Frequency: 600 MHz -> Achieved Frequency: 534.283 MHz
+
+
+Frequency: 650 MHz -> Synthesis: 41s -> 41s
+Frequency: 650 MHz -> Implementation: 1m 49s -> 109s
+Frequency: 650 MHz -> Power: 0.570 W
+Frequency: 650 MHz -> CLB LUTs Used: 1397
+Frequency: 650 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 650 MHz -> CLB Registers Used: 508
+Frequency: 650 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 650 MHz -> BRAM Util: 0
+Frequency: 650 MHz -> BRAM Util%: 0.00 %
+Frequency: 650 MHz -> WNS: -0.318 ns
+Frequency: 650 MHz -> Achieved Frequency: 538.659 MHz
+
+
+Frequency: 700 MHz -> Synthesis: 41s -> 41s
+Frequency: 700 MHz -> Implementation: 1m 45s -> 105s
+Frequency: 700 MHz -> Power: 0.571 W
+Frequency: 700 MHz -> CLB LUTs Used: 1394
+Frequency: 700 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 700 MHz -> CLB Registers Used: 508
+Frequency: 700 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 700 MHz -> BRAM Util: 0
+Frequency: 700 MHz -> BRAM Util%: 0.00 %
+Frequency: 700 MHz -> WNS: -0.492 ns
+Frequency: 700 MHz -> Achieved Frequency: 520.678 MHz
+
+
+Frequency: 750 MHz -> Synthesis: 40s -> 40s
+Frequency: 750 MHz -> Implementation: 1m 37s -> 97s
+Frequency: 750 MHz -> Power: 0.579 W
+Frequency: 750 MHz -> CLB LUTs Used: 1397
+Frequency: 750 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 750 MHz -> CLB Registers Used: 508
+Frequency: 750 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 750 MHz -> BRAM Util: 0
+Frequency: 750 MHz -> BRAM Util%: 0.00 %
+Frequency: 750 MHz -> WNS: -0.599 ns
+Frequency: 750 MHz -> Achieved Frequency: 517.509 MHz
+
+
+Frequency: 800 MHz -> Synthesis: 40s -> 40s
+Frequency: 800 MHz -> Implementation: 1m 45s -> 105s
+Frequency: 800 MHz -> Power: 0.586 W
+Frequency: 800 MHz -> CLB LUTs Used: 1389
+Frequency: 800 MHz -> CLB LUTs Util%: 0.99 %
+Frequency: 800 MHz -> CLB Registers Used: 508
+Frequency: 800 MHz -> CLB Registers Util%: 0.18 %
+Frequency: 800 MHz -> BRAM Util: 0
+Frequency: 800 MHz -> BRAM Util%: 0.00 %
+Frequency: 800 MHz -> WNS: -0.629 ns
+Frequency: 800 MHz -> Achieved Frequency: 532.198 MHz
+
+

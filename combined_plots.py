@@ -41,10 +41,10 @@ def parse_area_utilization_dict(file_path):
     utilization_data = {}
     with open(file_path, "r") as f:
         for line in f:
-            if "Frequency" in line and "LUTs Util%" in line:
+            if "Frequency" in line and "CLB LUTs Util%" in line:
                 parts = line.split("->")
                 freq = float(parts[0].split(":")[1].strip().split(" ")[0])
-                util = float(parts[1].strip().split(" ")[2])
+                util = float(parts[1].strip().split(" ")[3])
                 utilization_data[freq] = util
     return utilization_data
 
@@ -56,9 +56,9 @@ def parse_area_utilization_list(file_path):
     utilization_data = []
     with open(file_path, "r") as f:
         for line in f:
-            if "Frequency" in line and "LUTs Util%" in line:
+            if "Frequency" in line and "CLB LUTs Util%" in line:
                 parts = line.split("->")
-                util = float(parts[1].strip().split(" ")[2])
+                util = float(parts[1].strip().split(" ")[3])
                 utilization_data.append(util)
     return utilization_data
 
@@ -168,36 +168,36 @@ def process_directory_all(log_dir):
 # ----- Data Processing for Architectures -----
 
 # Define log directories
-register_array_log_dir = "register_array/vivado_register_array_analysis_results_16bit/"
-register_tree_log_dir  = "register_tree/vivado_register_tree_analysis_results_16bit/"
-systolic_array_log_dir = "systolic_array/vivado_systolic_array_analysis_results_16bit/"
-bram_tree_log_dir = "bram_tree/vivado_bram_tree_analysis_results_16bit/"
-hybrid_tree_simple_log_dir = "hybrid_tree_simple/vivado_hybrid_tree_simple_analysis_results_16bit/"
+register_array_log_dir = "register_array/vivado_analysis_results_16bit/"
+register_tree_log_dir  = "register_tree/vivado_analysis_results_16bit/"
+systolic_array_log_dir = "systolic_array/vivado_analysis_results_16bit/"
+bram_tree_log_dir = "bram_tree/vivado_analysis_results_16bit/"
+pipelined_bram_tree_log_dir = "pipelined_bram_tree/vivado_analysis_results_16bit/"
 
 # Process achieved frequency data
 ra_achieved = process_directory_achieved(register_array_log_dir)
 rt_achieved = process_directory_achieved(register_tree_log_dir)
 sa_achieved = process_directory_achieved(systolic_array_log_dir)
 bt_achieved = process_directory_achieved(bram_tree_log_dir)
-ht_achieved = process_directory_achieved(hybrid_tree_simple_log_dir)
+ht_achieved = process_directory_achieved(pipelined_bram_tree_log_dir)
 
 # Process area utilization (using dict to compute average) data
 ra_area = process_directory_area_dict(register_array_log_dir)
 rt_area = process_directory_area_dict(register_tree_log_dir)
 sa_area = process_directory_area_dict(systolic_array_log_dir)
 bt_area = process_directory_area_dict(bram_tree_log_dir)
-ht_area = process_directory_area_dict(hybrid_tree_simple_log_dir)
+ht_area = process_directory_area_dict(pipelined_bram_tree_log_dir)
 
 # Process BRAM utilization data
 bt_bram = process_directory_bram_dict(bram_tree_log_dir)
-ht_bram = process_directory_bram_dict(hybrid_tree_simple_log_dir)
+ht_bram = process_directory_bram_dict(pipelined_bram_tree_log_dir)
 
 # Process all data (for LUT utilization vs achieved frequency and area over frequency plots)
 ra_all = process_directory_all(register_array_log_dir)
 rt_all = process_directory_all(register_tree_log_dir)
 sa_all = process_directory_all(systolic_array_log_dir)
 bt_all = process_directory_all(bram_tree_log_dir)
-ht_all = process_directory_all(hybrid_tree_simple_log_dir)
+ht_all = process_directory_all(pipelined_bram_tree_log_dir)
 
 # ----- Compute Derived Data -----
 
@@ -362,7 +362,7 @@ ax.plot(ra_qs, ra_freqs, 'o-', label='Register Array')
 ax.plot(sa_qs, sa_freqs, 'd-', label='Systolic Array')
 ax.plot(rt_qs, rt_freqs, 'x-', label='Register Tree')
 ax.plot(bt_qs, bt_freqs, 's-', label='BRAM Tree')
-ax.plot(ht_qs, ht_freqs, 'H-', label='Hybrid Tree Simple')
+ax.plot(ht_qs, ht_freqs, 'H-', label='Pipelined BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('Achieved Frequency (MHz)')
 ax.set_title('Achieved Frequency vs Queue Size')
@@ -387,7 +387,7 @@ ax.plot(ra_qs_area, ra_area_vals, 'o-', label='Register Array')
 ax.plot(sa_qs_area, sa_area_vals, 'd-', label='Systolic Array')
 ax.plot(rt_qs_area, rt_area_vals, 'x-', label='Register Tree')
 ax.plot(bt_qs_area, bt_area_vals, 's-', label='BRAM Tree')
-ax.plot(ht_qs_area, ht_area_vals, 'H-', label='Hybrid Tree Simple')
+ax.plot(ht_qs_area, ht_area_vals, 'H-', label='Pipelined BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('LUT Utilization (Count)')
 ax.set_title('LUT Utilization vs Queue Size')
@@ -403,8 +403,8 @@ bt_qs_y = [bt_bram[q] for q in bt_qs_x]
 ht_qs_x = sorted(ht_bram.keys())
 ht_qs_y = [ht_bram[q] for q in ht_qs_x]
 
-ax.plot(bt_qs_x, bt_qs_y, 's-', label='BRAM Tree')
-ax.plot(ht_qs_x, ht_qs_y, 's-', label='Hybrid Tree Simple')
+ax.plot(bt_qs_x, bt_qs_y, 's-', label='BRAM Tree', color='red')
+ax.plot(ht_qs_x, ht_qs_y, 'H-', label='Pipelined BRAM Tree', color='purple')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('BRAM Utilization (Count)')
 ax.set_title('BRAM Utilization vs Queue Size')
@@ -449,7 +449,7 @@ ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.plot(ht_x, ht_y, 'H-', label='Hybrid Tree Simple')
+ax.plot(ht_x, ht_y, 'H-', label='Pipelined BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Dequeue: Performance vs Queue Size')
@@ -478,7 +478,7 @@ ax.plot(ra_x, ra_y, 'o-', label='Register Array')
 ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
 ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
 ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-ax.plot(ht_x, ht_y, 'H-', label='Hybrid Tree Simple')
+ax.plot(ht_x, ht_y, 'H-', label='Pipelined BRAM Tree')
 ax.set_xlabel('Queue Size')
 ax.set_ylabel('MHz*(ops/cycle)')
 ax.set_title('Replace: Performance vs Queue Size')
@@ -569,75 +569,6 @@ ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
             xytext=(0.95, 0.5), textcoords='axes fraction',
             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
             horizontalalignment='left', verticalalignment='top')
-
-# Subplot 10: Enqueue -> Area/(Achieved Frequency * Performance) vs Queue Size
-# ax = axs[2, 0]
-# ra_x, ra_y = sort_xy(*ra_area_enq)
-# rt_x, rt_y = sort_xy(*rt_area_enq)
-# sa_x, sa_y = sort_xy(*sa_area_enq)
-
-# ax.plot(ra_x, ra_y, 'o-', label='Register Array')
-# ax.plot(sa_x, sa_y, 'd-', label='Systolic Array')
-# ax.plot(rt_x, rt_y, 'x-', label='Register Tree')
-# ax.set_xlabel('Queue Size')
-# ax.set_ylabel('LUTs/(MHz*(ops/cycle))')
-# ax.set_title('Enqueue: LUT Area/Performance vs Queue Size')
-# ax.set_xscale('log', base=2)
-# ax.set_yscale('log')
-# ax.grid(True)
-# ax.legend()
-# ax.annotate('Better', xy=(0.9, 0.05), xycoords='axes fraction',
-#             xytext=(0.5, 0.05), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-# ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
-#             xytext=(0.95, 0.5), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-
-# Subplot 11: Dequeue -> Area/(Achieved Frequency * Performance) vs Queue Size
-# ax = axs[3, 1]
-# bt_x, bt_y = sort_xy(*bt_bram_deq)
-
-# ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-# ax.set_xlabel('Queue Size')
-# ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
-# ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
-# ax.set_xscale('log', base=2)
-# ax.set_yscale('log')
-# ax.grid(True)
-# ax.legend()
-# ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
-#             xytext=(0.5, 0.08), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-# ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
-#             xytext=(0.95, 0.5), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-
-# Subplot 12: Replace -> Area/(Achieved Frequency * Performance) vs Queue Size
-# ax = axs[3, 2]
-# bt_x, bt_y = sort_xy(*bt_bram_rep)
-
-# ax.plot(bt_x, bt_y, 's-', label='BRAM Tree')
-# ax.set_xlabel('Queue Size')
-# ax.set_ylabel('BRAMs/(MHz*(ops/cycle))')
-# ax.set_title('Dequeue: BRAM Utilization/Performance vs Queue Size')
-# ax.set_xscale('log', base=2)
-# ax.set_yscale('log')
-# ax.grid(True)
-# ax.legend()
-# ax.annotate('Better', xy=(0.9, 0.08), xycoords='axes fraction',
-#             xytext=(0.5, 0.08), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-# ax.annotate('Better', xy=(0.95, 0.1), xycoords='axes fraction',
-#             xytext=(0.95, 0.5), textcoords='axes fraction',
-#             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
-#             horizontalalignment='left', verticalalignment='top')
-
-# plt.tight_layout()
 
 # Save the combined figure
 output_dir = "vivado_analysis_results_plots_16bit"

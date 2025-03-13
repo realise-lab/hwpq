@@ -1,19 +1,17 @@
-# Define the range of QUEUE_SIZE and clock frequencies to test
-set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
-
-# Create a single project
-create_project -force vivado_register_array_tcl ./vivado_register_array_tcl -part xcau25p-ffvb676-1-e
-add_files ./register_array.sv
-close_project
+# Define the range of TREE_DEPTH and clock frequencies to test
+set queue_sizes {4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288}
+# set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # Create the results directory if it doesn't exist
-file mkdir ./vivado_register_array_analysis_results_16bit
+#! Change according to the module running analysis
+file mkdir ./register_array/vivado_register_array_analysis_results_16bit 
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
 
-    # Open the register_array.sv file
-    set file_id [open "./register_array.sv" r+]
+    # Open the register_tree.sv file
+    #! Change according to the module running analysis
+    set file_id [open "./register_array/register_array.sv" r+] 
 
     # Read the file content
     set file_content [read $file_id]
@@ -30,12 +28,14 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    set log_file "./vivado_register_array_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    #! Change according to the module running analysis
+    set log_file "./register_array/vivado_register_array_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {
-
-        open_project ./vivado_register_array_tcl/vivado_register_array_tcl.xpr
+        
+        #! Change according to the module running analysis
+        open_project ./register_array/vivado_register_array/vivado_register_array.xpr
 
         # Set the clock period (in nanoseconds)
         set period_ns [expr {1000.0 / $freq}]
@@ -100,8 +100,30 @@ foreach queue_size $queue_sizes {
             }
 
             if {$in_section_1} {
-                if {[regexp {\|\s*CLB LUTs\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match luts_util]} {
+                if {[regexp {\|\s*CLB LUTs\s*\|\s*([0-9]+)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match luts_used luts_util]} {
+                    set clb_luts_used $luts_used
                     set clb_luts_util $luts_util
+                }
+                if {[regexp {\|\s*CLB Registers\s*\|\s*([0-9]+)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match registers_used registers_util]} {
+                    set clb_registers_used $registers_used
+                    set clb_registers_util $registers_util
+                }
+            }
+        }
+
+        # Extract the Util% of Block RAMs from the report
+        set in_section_3 0
+        foreach line [split $utilization_report "\n"] {
+            if {[regexp {^3\. BLOCKRAM} $line]} {
+                set in_section_3 1
+            } elseif {[regexp {^\d+\.} $line]} {
+                set in_section_3 0
+            }
+
+            if {$in_section_3} {
+                if {[regexp {\|\s*Block RAM Tile\s*\|\s*([0-9]+\.?[0-9]*)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([0-9]+\.[0-9]+)\s*\|} $line match bram_util bram_util_percent]} {
+                    set bram_used $bram_util
+                    set bram_util_percentage $bram_util_percent
                 }
             }
         }
@@ -129,7 +151,12 @@ foreach queue_size $queue_sizes {
         } else {
             puts $fileId "Frequency: ${freq} MHz -> Power: No power report"
         }
-        puts $fileId "Frequency: ${freq} MHz -> LUTs Util%: ${clb_luts_util} %"
+        puts $fileId "Frequency: ${freq} MHz -> CLB LUTs Used: ${clb_luts_used}"
+        puts $fileId "Frequency: ${freq} MHz -> CLB LUTs Util%: ${clb_luts_util} %"
+        puts $fileId "Frequency: ${freq} MHz -> CLB Registers Used: ${clb_registers_used}"
+        puts $fileId "Frequency: ${freq} MHz -> CLB Registers Util%: ${clb_registers_util} %"
+        puts $fileId "Frequency: ${freq} MHz -> BRAM Util: ${bram_used}"
+        puts $fileId "Frequency: ${freq} MHz -> BRAM Util%: ${bram_util_percentage} %"
         puts $fileId "Frequency: ${freq} MHz -> WNS: ${wns} ns"
         puts $fileId "Frequency: ${freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
         puts $fileId "\n"
@@ -147,14 +174,15 @@ foreach queue_size $queue_sizes {
     }
 }
 
-# Open the register_array.sv file
-set file_id [open "./register_array.sv" r+]
+# Open the register_tree.sv file
+#! Change according to the module running analysis
+set file_id [open "./register_array/register_array.sv" r+]
 
 # Read the file content
 set file_content [read $file_id]
 
-# Replace the parameter QUEUE_SIZE value
-set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 4"]
+# Replace the parameter TREE_DEPTH value
+set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 7"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

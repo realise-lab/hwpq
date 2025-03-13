@@ -1,17 +1,17 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
-set queue_sizes {1024 2048 4096 8192 16384 32768 65536 131072 262144 524288}
+set queue_sizes {4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288}
 # set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # Create the results directory if it doesn't exist
 #! Change according to the module running analysis
-file mkdir ./systolic_array/vivado_systolic_array_analysis_results_16bit 
+file mkdir ./hybrid_tree_simple/vivado_hybrid_tree_simple_analysis_results_16bit 
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
 
     # Open the register_tree.sv file
     #! Change according to the module running analysis
-    set file_id [open "./systolic_array/systolic_array.sv" r+] 
+    set file_id [open "./hybrid_tree_simple/hybrid_tree_simple.sv" r+] 
 
     # Read the file content
     set file_content [read $file_id]
@@ -29,13 +29,13 @@ foreach queue_size $queue_sizes {
     close $file_id
 
     #! Change according to the module running analysis
-    set log_file "./systolic_array/vivado_systolic_array_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./pipelined_bram_tree/vivado_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {
         
         #! Change according to the module running analysis
-        open_project ./systolic_array/vivado_systolic_array/vivado_systolic_array.xpr
+        open_project ./pipelined_bram_tree/vivado_pipelined_bram_tree/vivado_pipelined_bram_tree.xpr
 
         # Set the clock period (in nanoseconds)
         set period_ns [expr {1000.0 / $freq}]
@@ -176,13 +176,13 @@ foreach queue_size $queue_sizes {
 
 # Open the register_tree.sv file
 #! Change according to the module running analysis
-set file_id [open "./systolic_array/systolic_array.sv" r+]
+set file_id [open "./pipelined_bram_tree/pipelined_bram_tree.sv" r+]
 
 # Read the file content
 set file_content [read $file_id]
 
 # Replace the parameter TREE_DEPTH value
-set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 4"]
+set updated_content [regsub {parameter integer QUEUE_SIZE = \d+} $file_content "parameter integer QUEUE_SIZE = 7"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

@@ -89,9 +89,6 @@ module bram_tree #(
   // Size counter to keep track of the number of nodes in the queue
   integer queue_size, next_queue_size;
 
-  // integers for iteration
-  integer lvl_seq, itr_seq, lvl_comb, itr_comb;
-
   //-------------------------------------------------------------------------
   // FSM state declaration
   //-------------------------------------------------------------------------

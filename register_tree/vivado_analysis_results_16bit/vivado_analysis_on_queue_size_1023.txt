@@ -1,0 +1,14 @@
+Frequency: 100 MHz -> Synthesis: 19m 12s -> 1152s
+Frequency: 100 MHz -> Implementation: 13m 5s -> 785s
+Frequency: 100 MHz -> Power: 1.782 W
+Frequency: 100 MHz -> CLB LUTs Used: 104194
+Frequency: 100 MHz -> CLB LUTs Util%: 73.90 %
+Frequency: 100 MHz -> CLB Registers Used: 32766
+Frequency: 100 MHz -> CLB Registers Util%: 11.62 %
+Frequency: 100 MHz -> BRAM Util: 0
+Frequency: 100 MHz -> BRAM Util%: 0.00 %
+Frequency: 100 MHz -> WNS: -22.901 ns
+Frequency: 100 MHz -> Achieved Frequency: 30.394 MHz
+
+
+WNS exceeded -1 ns, finished

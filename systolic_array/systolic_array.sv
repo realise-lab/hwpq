@@ -1,6 +1,6 @@
 module systolic_array #(
-    parameter int QUEUE_SIZE = 8,  // Size of the buffers (number of positions)
-    parameter int DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
+    parameter integer QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
+    parameter integer DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
 ) (
     input logic CLK,
     input logic RSTn,

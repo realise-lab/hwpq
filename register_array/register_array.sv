@@ -4,7 +4,7 @@
 */
 module register_array #(
     parameter integer QUEUE_SIZE = 4,  // Define the size of the queue
-    parameter integer DATA_WIDTH = 16   // Define the width of the data
+    parameter integer DATA_WIDTH = 16  // Define the width of the data
 ) (
     input  logic                  CLK,      // Clock signal
     input  logic                  RSTn,     // Reset signal
@@ -29,20 +29,16 @@ module register_array #(
   //--------------------------------------------------------------------------
   // Main register array for the queue.
   logic [DATA_WIDTH-1:0] queue[QUEUE_SIZE-1:0];
-  // Next-state version of the queue
   logic [DATA_WIDTH-1:0] next_queue[QUEUE_SIZE-1:0];
-
 
   // Size counter for number of valid elements in the queue.
   logic [$clog2(QUEUE_SIZE):0] size, next_size;
-
 
   // Temporary signals for max-min pipeline computations.
   logic [DATA_WIDTH-1:0] max[PairCount-1:0];
   logic [DATA_WIDTH-1:0] min[PairCount-1:0];
   logic [DATA_WIDTH-1:0] stage1[QUEUE_SIZE-1:0];
   logic [DATA_WIDTH-1:0] stage2[QUEUE_SIZE-1:0];
-
 
   integer i, j;  // for loop index
 
