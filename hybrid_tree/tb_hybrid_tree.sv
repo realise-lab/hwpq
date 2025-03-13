@@ -1,7 +1,8 @@
-module bram_tree_tb;
+module tb_hybrid_tree;
   // Parameters matching the module under test
   localparam integer QueueSize = 3;
   localparam integer DataWidth = 16;
+  localparam integer ArraySize = 4;
 
   // Clock and reset signals
   logic                   CLK;
@@ -32,9 +33,10 @@ module bram_tree_tb;
   } operation_t;
 
   // Instantiate the register_tree module
-  bram_tree #(
+  hybrid_tree #(
       .QUEUE_SIZE(QueueSize),
-      .DATA_WIDTH(DataWidth)
+      .DATA_WIDTH(DataWidth),
+      .ARRAY_SIZE(ArraySize)
   ) uut (
       .CLK(CLK),
       .RSTn(RSTn),
