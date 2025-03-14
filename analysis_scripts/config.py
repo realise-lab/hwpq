@@ -1,8 +1,5 @@
 """Configuration settings for the HWPQ analysis."""
 
-# Plotting settings
-PLOT_FONT_SIZE = 16
-
 # Directory paths
 REGISTER_ARRAY_LOG_DIR = "register_array/vivado_analysis_results_16bit/"
 REGISTER_TREE_LOG_DIR = "register_tree/vivado_analysis_results_16bit/"

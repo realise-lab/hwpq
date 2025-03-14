@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import parsers
 import data_processor as dp
-from config import PLOT_FONT_SIZE, OUTPUT_DIR, OUTPUT_FILENAME
+from config import OUTPUT_DIR, OUTPUT_FILENAME
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
@@ -54,7 +54,7 @@ def setup_plot_style(font_size=None, figsize=None, dpi=None, grid=None, grid_alp
         grid_alpha (float, optional): Transparency of grid lines (0-1). Defaults to 0.3.
     """
     params = {
-        "font.size": font_size if font_size is not None else PLOT_FONT_SIZE,
+        "font.size": font_size if font_size is not None else 16,
         "figure.figsize": figsize if figsize is not None else (12, 8),
         "figure.dpi": dpi if dpi is not None else 300,
         "axes.grid": grid if grid is not None else True,
@@ -223,7 +223,7 @@ def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
     # Get architecture-specific style
     style = get_arch_style(arch_name) if arch_name else {"color": "brown", "marker": "D", "display_name": "Architecture"}
     
-    ax.plot(queue_sizes, brams, f"{style['marker']}-", color=style['color'], 
+    ax.plot(queue_sizes, brams, f"{style['marker']}-", color=style['color'],
            linewidth=2, label=style['display_name'])
     
     ax.set_xlabel('Queue Size')
@@ -358,8 +358,8 @@ def create_summary_plots(data_dict, architecture, output_path=None):
         matplotlib.figure.Figure: The figure containing all subplots
     """
     # Create a 3x3 grid of subplots
-    fig, axs = plt.subplots(4, 3, figsize=(18, 16))
-    fig.suptitle(f"Performance Analysis for {architecture} Architecture", fontsize=PLOT_FONT_SIZE+4)
+    fig, axs = plt.subplots(3, 3, figsize=(18, 16))
+    fig.suptitle(f"Performance Analysis for {architecture} Architecture", fontsize=24)
     
     # Convert display name to architecture key for style lookup
     arch_key = architecture.lower().replace(" ", "_").split("(")[0].strip()
@@ -409,8 +409,8 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     arch_list = list(data_dict_dict.keys())
     
     # Create a 3x3 grid for comparison plots
-    fig, axs = plt.subplots(4, 3, figsize=(28, 28))  # Increased height for additional row
-    fig.suptitle("Hardware Queue Architecture Comparison", fontsize=PLOT_FONT_SIZE+4)
+    fig, axs = plt.subplots(4, 3, figsize=(18, 16))  # Increased height for additional row
+    fig.suptitle("Hardware Queue Architecture Comparison", fontsize=24)
     
     # Row 1: Basic hardware metrics
     # Plot 1: Maximum achieved frequency comparison
@@ -463,6 +463,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[1, 0].set_ylabel('BRAM Utilization (%)')
     axs[1, 0].set_title('BRAM Utilization Comparison')
     axs[1, 0].set_xscale('log', base=2)
+    axs[1, 0].set_yscale('log')
     axs[1, 0].grid(True)
     axs[1, 0].legend()
     
@@ -573,7 +574,7 @@ def process_and_plot_all(base_dir, output_dir=None):
                 
             # Get arch name from directory
             arch_name = arch_dir.replace('_', ' ').title()
-            bit_width = results_dir.split('_')[-1]  # e.g., "16bit"
+            bit_width = results_dir.split('_')[-1]
             
             # Process data
             data_dict = parsers.process_directory(log_dir)
@@ -611,7 +612,7 @@ def process_and_plot_all(base_dir, output_dir=None):
 
 
 if __name__ == "__main__":
-    # Example usage
-    base_dir = "/home/charlielinux/Workspace/hwpq_qw2246"
+    # * Input base_dir as an absolute path
+    base_dir = "/Users/charlie/Workspace/pq_research/hwpq_qw2246"
     output_dir = os.path.join(base_dir, OUTPUT_DIR)
     process_and_plot_all(base_dir, output_dir)
