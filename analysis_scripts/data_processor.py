@@ -267,26 +267,11 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
     for queue_size, metrics in data_dict.items():
         if "max_achieved_frequency" in metrics:
             max_freq = metrics["max_achieved_frequency"]
+            lut_utilization = metrics["luts_util_percent"]
+            reg_utilization = metrics["registers_util_percent"]
+            bram_utilization = metrics["bram_util_percent"]
             
-            # # Determine which area metric to use based on architecture
-            # if arch in ["bram_tree", "hybrid_tree_simple"]:
-            #     # For BRAM-based architectures, use BRAM utilization
-            #     if "bram_used" in metrics:
-            #         area = metrics["bram_used"]
-            #     else:
-            #         continue  # Skip if no area info
-            # else:
-            #     # For other architectures, use LUT count
-            #     if "luts_used" in metrics:
-            #         area = metrics["luts_used"]
-            #     else:
-            #         continue  # Skip if no area info
-            
-            lut_used = metrics.get("luts_used", 0)
-            reg_used = metrics.get("registers_used", 0)
-            bram_used = metrics.get("bram_used", 0)
-            
-            area = lut_used*6 + reg_used*4 + bram_used*1200000
+            resource = np.max([lut_utilization, reg_utilization, bram_utilization])
             
             # Calculate performance factor based on architecture and operation
             if arch == "register_tree" and operation == "enqueue":
@@ -299,9 +284,9 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
             # Calculate performance
             performance = max_freq * perf_factor
             
-            # Calculate area efficiency (area/performance)
-            # Lower is better: less area for same performance
-            efficiency = area / performance if performance > 0 else float('inf')
+            # Calculate resource utilization efficiency (resource/performance)
+            # Lower is better: less resource used for same performance
+            efficiency = resource / performance if performance > 0 else float('inf')
             
             # Add to our lists
             queue_sizes.append(queue_size)
