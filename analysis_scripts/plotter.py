@@ -479,7 +479,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     plot_efficiency_comparison(axs[2, 2], data_dict_dict, arch_list, operations[2])  # Replace efficiency
     
     # Adjust layout
-    plt.tight_layout(rect=[0, 0, 1, 0.97])  # Leave space for suptitle
+    plt.tight_layout()  # Leave space for suptitle
     
     # Save if output path provided
     if output_path:
