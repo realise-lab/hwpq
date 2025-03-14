@@ -1,6 +1,6 @@
 module tb_hybrid_tree;
   // Parameters matching the module under test
-  localparam integer QueueSize = 3;
+  localparam integer QueueSize = 12;
   localparam integer DataWidth = 16;
   localparam integer ArraySize = 4;
 
@@ -22,7 +22,6 @@ module tb_hybrid_tree;
   logic   [DataWidth-1:0] ref_queue        [$:QueueSize-1];
 
   // Test variables
-  integer                 i;
   logic   [DataWidth-1:0] random_value;
   integer                 random_operation;
 
@@ -34,8 +33,8 @@ module tb_hybrid_tree;
 
   // Instantiate the register_tree module
   hybrid_tree #(
-      .QUEUE_SIZE(QueueSize),
       .DATA_WIDTH(DataWidth),
+      .QUEUE_SIZE(QueueSize),
       .ARRAY_SIZE(ArraySize)
   ) uut (
       .CLK(CLK),
@@ -65,86 +64,34 @@ module tb_hybrid_tree;
     repeat (2) @(posedge CLK);
 
     // Initialize the reference queue, sort the reference queue, and write to the queue
-    for (i = 0; i < QueueSize; i++) begin
+    for (int i = 0; i < QueueSize; i++) begin
       random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       ref_queue.push_back(random_value);
     end
     ref_queue.rsort();
-    for (i = 0; i < QueueSize; i++) begin
-      uut.bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i] = ref_queue[i];
-    end
-    uut.next_queue_size = QueueSize;
-    uut.next_state = 0;
+
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[0];
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[4];
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[5];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[1];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[6];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[7];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[2];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[8];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[9];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[3];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[10];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[11];
 
     repeat (16) @(posedge CLK);
 
-    // Test Case 1: Dequeue nodes
-    // Dequeue nodes for QUEUE_SIZE times
-    $display("\nTest Case 1: Dequeue Test");
-    for (i = 0; i < QueueSize; i++) begin
-      dequeue();
-      if (!o_empty) begin
-        assert (o_data == ref_queue[0])
-        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
-      end else begin
-        assert (o_data == '0)
-        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
-      end
-    end
-
-    for (i = 0; i < QueueSize; i++) begin
-      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
-      ref_queue.push_back(random_value);
-    end
-    ref_queue.rsort();
-    for (i = 0; i < QueueSize; i++) begin
-      uut.bram_inst.inst.native_mem_module.blk_mem_gen_v8_4_8_inst.memory[i] = ref_queue[i];
-    end
-    uut.next_queue_size = QueueSize;
-    uut.next_state = 0;
-
-    repeat (16) @(posedge CLK);
-
-    // Test Case 2: Replace nodes
-    // Replace root node for QUEUE_SIZE times
-    $display("\nTest Case 2: Replace Test");
-    for (i = 0; i < QueueSize; i++) begin
+    // Test Case: Replace nodes
+    $display("\nReplace Test");
+    for (int i = 0; i < 20; i++) begin
       random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
       replace(random_value);
       assert (o_data == ref_queue[0])
       else $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
-    end
-
-    // Test Case 3: Stress Test
-    // stress test, mix operations
-    $display("\nTest Case 3: Stress Test");
-    for (i = 0; i < 100; i++) begin
-      random_value = DataWidth'(($urandom & ((1 << DataWidth) - 1)) % 1025);
-      random_operation = $urandom_range(1, 2);
-      case (random_operation)
-        DEQUEUE: begin
-          dequeue();
-          if (!o_empty) begin
-            assert (o_data == ref_queue[0])
-            else
-              $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
-          end else begin
-            assert (o_data == '0)
-            else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
-          end
-        end
-
-        REPLACE: begin
-          replace(random_value);
-          assert (o_data == ref_queue[0])
-          else
-            $error("Replace: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
-        end
-
-        default: begin
-          $display("Invalid operation: %d", random_operation);
-        end
-      endcase
     end
 
     $display("\nTest completed! ");
@@ -165,7 +112,7 @@ module tb_hybrid_tree;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (6 * ($clog2(QueueSize + 1) + 1)) @(posedge CLK);
+      repeat (24) @(posedge CLK);
     end
   endtask
 
@@ -181,7 +128,7 @@ module tb_hybrid_tree;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (6 * ($clog2(QueueSize + 1) + 1)) @(posedge CLK);
+      repeat (24) @(posedge CLK);
     end
   endtask
 

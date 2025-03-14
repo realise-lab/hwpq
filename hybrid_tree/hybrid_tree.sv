@@ -64,11 +64,11 @@ module hybrid_tree #(
   assign replace = i_wrt && i_read;
 
   // size tracker
-  logic [$clog2(QUEUE_SIZE)-1:0] size;
-  logic [$clog2(QUEUE_SIZE)-1:0] next_size;
+  logic [$clog2(QUEUE_SIZE)-1:0] queue_size;
+  logic [$clog2(QUEUE_SIZE)-1:0] next_queue_size;
   logic empty, full;
-  assign empty = (size == 0);
-  assign full  = (size == QUEUE_SIZE);
+  assign empty = (queue_size == 0);
+  assign full  = (queue_size == QUEUE_SIZE);
 
   // iteration counter
   integer seq_itr, comb_itr;
@@ -87,35 +87,35 @@ module hybrid_tree #(
   logic next_bram_dequeue[ARRAY_SIZE-1:0];
   logic bram_replace[ARRAY_SIZE-1:0];
   logic next_bram_replace[ARRAY_SIZE-1:0];
-  genvar bram_signals_gen;
-  generate
-    for (bram_signals_gen = 0; bram_signals_gen < ARRAY_SIZE; bram_signals_gen++) begin
-      if (bram_enqueue[bram_signals_gen]) begin
-        assign bram_i_wrt[bram_signals_gen]  = 1;
-        assign bram_i_read[bram_signals_gen] = 0;
+  
+  always_comb begin : bram_signals_logic
+    for (int i = 0; i < ARRAY_SIZE; i++) begin
+      if (bram_enqueue[i]) begin
+        bram_i_wrt[i]  = 1;
+        bram_i_read[i] = 0;
       end 
-      else if (bram_dequeue[bram_signals_gen]) begin
-        assign bram_i_wrt[bram_signals_gen]  = 0;
-        assign bram_i_read[bram_signals_gen] = 1;
+      else if (bram_dequeue[i]) begin
+        bram_i_wrt[i]  = 0;
+        bram_i_read[i] = 1;
       end 
-      else if (bram_replace[bram_signals_gen]) begin
-        assign bram_i_wrt[bram_signals_gen]  = 1;
-        assign bram_i_read[bram_signals_gen] = 1;
+      else if (bram_replace[i]) begin
+        bram_i_wrt[i]  = 1;
+        bram_i_read[i] = 1;
       end 
       else begin
-        assign bram_i_wrt[bram_signals_gen]  = 0;
-        assign bram_i_read[bram_signals_gen] = 0;
+        bram_i_wrt[i]  = 0;
+        bram_i_read[i] = 0;
       end
     end
-  endgenerate
-
+  end
+  
   //-------------------------------------------------------------------------
   // Internal modules instantiation
   //-------------------------------------------------------------------------
   genvar bram_tree_gen;
   generate
     for (bram_tree_gen = 0; bram_tree_gen < ARRAY_SIZE; bram_tree_gen++) begin : gen_bram_tree
-      bram_tree #(
+      pipelined_bram_tree #(
           .DATA_WIDTH(DATA_WIDTH),
           .QUEUE_SIZE(BRAM_SIZE)
       ) bram_tree_inst (
@@ -140,22 +140,22 @@ module hybrid_tree #(
         level_0_data[seq_itr]   <= '{default: 0};
         level_0_target[seq_itr] <= '{default: 0};
         level_1_data[seq_itr]   <= '{default: 0};
-        level_1_valid[seq_itr]  <= '{default: 0};
-        bram_enqueue[seq_itr]   <= '{default: 0};
-        bram_dequeue[seq_itr]   <= '{default: 0};
-        bram_replace[seq_itr]   <= '{default: 0};
+        level_1_valid[seq_itr]  <= '0;
+        bram_enqueue[seq_itr]   <= '0;
+        bram_dequeue[seq_itr]   <= '0;
+        bram_replace[seq_itr]   <= '0;
         bram_i_data[seq_itr]    <= '{default: 0};
       end
     end else begin
-      for (comb_itr = 0; comb_itr < ARRAY_SIZE; comb_itr++) begin
-        level_0_data[comb_itr]   <= next_level_0_data[comb_itr];
-        level_0_target[comb_itr] <= next_level_0_target[comb_itr];
-        level_1_data[comb_itr]   <= next_level_1_data[comb_itr];
-        level_1_valid[comb_itr]  <= next_level_1_valid[comb_itr];
-        bram_enqueue[comb_itr]   <= next_bram_enqueue[comb_itr];
-        bram_dequeue[comb_itr]   <= next_bram_dequeue[comb_itr];
-        bram_replace[comb_itr]   <= next_bram_replace[comb_itr];
-        bram_i_data[comb_itr]    <= next_bram_i_data[comb_itr];
+      for (seq_itr = 0; seq_itr < ARRAY_SIZE; seq_itr++) begin
+        level_0_data[seq_itr]   <= next_level_0_data[seq_itr];
+        level_0_target[seq_itr] <= next_level_0_target[seq_itr];
+        level_1_data[seq_itr]   <= next_level_1_data[seq_itr];
+        level_1_valid[seq_itr]  <= next_level_1_valid[seq_itr];
+        bram_enqueue[seq_itr]   <= next_bram_enqueue[seq_itr];
+        bram_dequeue[seq_itr]   <= next_bram_dequeue[seq_itr];
+        bram_replace[seq_itr]   <= next_bram_replace[seq_itr];
+        bram_i_data[seq_itr]    <= next_bram_i_data[seq_itr];
       end
     end
   end
@@ -166,9 +166,9 @@ module hybrid_tree #(
       next_level_0_target[comb_itr] = level_0_target[comb_itr];
       next_level_1_data[comb_itr]   = level_1_data[comb_itr];
       next_level_1_valid[comb_itr]  = level_1_valid[comb_itr];
-      next_bram_enqueue[comb_itr]   = '{default: 0};
-      next_bram_dequeue[comb_itr]   = '{default: 0};
-      next_bram_replace[comb_itr]   = '{default: 0};
+      next_bram_enqueue[comb_itr]   = '0;
+      next_bram_dequeue[comb_itr]   = '0;
+      next_bram_replace[comb_itr]   = '0;
       next_bram_i_data[comb_itr]    = bram_i_data[comb_itr];
     end
 
@@ -224,30 +224,29 @@ module hybrid_tree #(
         end
       end
     end
-
   end
 
   //-------------------------------------------------------------------------
   // Queue size counter
   //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : size_seq
+  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
     if (!RSTn) begin
-      size <= 0;
+      queue_size <= 0;
     end else begin
-      size <= next_size;
+      queue_size <= next_queue_size;
     end
   end
 
-  always_comb begin : size_comb
-    next_size = size;
+  always_comb begin : queue_size_comb
+    next_queue_size = queue_size;
     if (i_wrt && !i_read) begin  // enqueue
-      next_size = size + 1;
+      next_queue_size = queue_size + 1;
     end else if (!i_wrt && i_read) begin  // dequeue
-      next_size = size - 1;
+      next_queue_size = queue_size - 1;
     end else if (i_wrt && i_read) begin  // replace
-      next_size = size;
-      if (size == 0 && i_data != 0) begin  // this would be a special case for replace
-        next_size = size + 1;
+      next_queue_size = queue_size;
+      if (queue_size == 0 && i_data != 0) begin  // this would be a special case for replace
+        next_queue_size = queue_size + 1;
       end
     end
   end

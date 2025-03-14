@@ -358,7 +358,7 @@ def create_summary_plots(data_dict, architecture, output_path=None):
         matplotlib.figure.Figure: The figure containing all subplots
     """
     # Create a 3x3 grid of subplots
-    fig, axs = plt.subplots(3, 3, figsize=(18, 16))
+    fig, axs = plt.subplots(4, 3, figsize=(18, 16))
     fig.suptitle(f"Performance Analysis for {architecture} Architecture", fontsize=PLOT_FONT_SIZE+4)
     
     # Convert display name to architecture key for style lookup
@@ -408,18 +408,82 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Get available architecture names from the data
     arch_list = list(data_dict_dict.keys())
     
-    # Create a 2x3 grid for comparison plots
-    fig, axs = plt.subplots(2, 3, figsize=(18, 12))
+    # Create a 3x3 grid for comparison plots
+    fig, axs = plt.subplots(4, 3, figsize=(28, 28))  # Increased height for additional row
     fig.suptitle("Hardware Queue Architecture Comparison", fontsize=PLOT_FONT_SIZE+4)
     
-    # Row 1: Performance comparisons for different operations
-    operations = ["enqueue", "dequeue", "replace"]
-    for idx, operation in enumerate(operations):
-        plot_performance_comparison(axs[0, idx], data_dict_dict, arch_list, operation)
+    # Row 1: Basic hardware metrics
+    # Plot 1: Maximum achieved frequency comparison
+    for arch_name, data_dict in data_dict_dict.items():
+        style = get_arch_style(arch_name)
+        queue_sizes, frequencies = dp.get_max_achieved_frequency(data_dict)
+        axs[0, 0].plot(queue_sizes, frequencies, f"{style['marker']}-", color=style['color'],
+                      label=style['display_name'], linewidth=2)
+    axs[0, 0].set_xlabel('Queue Size')
+    axs[0, 0].set_ylabel('Maximum Frequency (MHz)')
+    axs[0, 0].set_title('Maximum Achieved Frequency')
+    axs[0, 0].set_xscale('log', base=2)
+    axs[0, 0].grid(True)
+    axs[0, 0].legend()
     
-    # Row 2: Resource efficiency comparisons for different operations
-    for idx, operation in enumerate(operations):
-        plot_efficiency_comparison(axs[1, idx], data_dict_dict, arch_list, operation)
+    # Plot 2: LUT utilization comparison
+    for arch_name, data_dict in data_dict_dict.items():
+        style = get_arch_style(arch_name)
+        queue_sizes, lut_percentages = dp.get_lut_utilization(data_dict)
+        axs[0, 1].plot(queue_sizes, lut_percentages, f"{style['marker']}-", color=style['color'],
+                      label=style['display_name'], linewidth=2)
+    axs[0, 1].set_xlabel('Queue Size')
+    axs[0, 1].set_ylabel('LUT Utilization (%)')
+    axs[0, 1].set_title('LUT Utilization Comparison')
+    axs[0, 1].set_xscale('log', base=2)
+    axs[0, 1].grid(True)
+    axs[0, 1].legend()
+    
+    # Plot 3: Register utilization comparison
+    for arch_name, data_dict in data_dict_dict.items():
+        style = get_arch_style(arch_name)
+        queue_sizes, reg_percentages = dp.get_register_utilization(data_dict)
+        axs[0, 2].plot(queue_sizes, reg_percentages, f"{style['marker']}-", color=style['color'],
+                      label=style['display_name'], linewidth=2)
+    axs[0, 2].set_xlabel('Queue Size')
+    axs[0, 2].set_ylabel('Register Utilization (%)')
+    axs[0, 2].set_title('Register Utilization Comparison')
+    axs[0, 2].set_xscale('log', base=2)
+    axs[0, 2].grid(True)
+    axs[0, 2].legend()
+    
+    # Plot 4: BRAM utilization comparison
+    for arch_name, data_dict in data_dict_dict.items():
+        style = get_arch_style(arch_name)
+        queue_sizes, bram_percentages = dp.get_bram_utilization(data_dict)
+        if any(bram_percentages):  # Only plot if there's actual BRAM usage
+            axs[1, 0].plot(queue_sizes, bram_percentages, f"{style['marker']}-", color=style['color'],
+                          label=style['display_name'], linewidth=2)
+    axs[1, 0].set_xlabel('Queue Size')
+    axs[1, 0].set_ylabel('BRAM Utilization (%)')
+    axs[1, 0].set_title('BRAM Utilization Comparison')
+    axs[1, 0].set_xscale('log', base=2)
+    axs[1, 0].grid(True)
+    axs[1, 0].legend()
+    
+    # Row 2 and 3: Performance and efficiency comparisons
+    operations = ["enqueue", "dequeue", "replace"]
+    
+    # Performance comparisons for different operations
+    # Create filtered arch_list for enqueue operation (exclude BRAM trees)
+    enqueue_arch_list = [arch for arch in arch_list if "bram_tree" not in arch.lower()]
+    enqueue_data_dict = {arch: data for arch, data in data_dict_dict.items() if "bram_tree" not in arch.lower()}
+    
+    # Use filtered lists for enqueue operations
+    plot_performance_comparison(axs[1, 1], enqueue_data_dict, enqueue_arch_list, operations[0])  # Enqueue performance
+    plot_performance_comparison(axs[1, 2], data_dict_dict, arch_list, operations[1])  # Dequeue performance
+    plot_performance_comparison(axs[2, 0], data_dict_dict, arch_list, operations[2])  # Replace performance
+    
+    # Resource efficiency comparisons for different operations
+    plot_efficiency_comparison(axs[2, 1], enqueue_data_dict, enqueue_arch_list, operations[0])  # Enqueue efficiency
+    plot_efficiency_comparison(axs[2, 2], data_dict_dict, arch_list, operations[1])  # Dequeue efficiency
+    plot_efficiency_comparison(axs[3, 0], data_dict_dict, arch_list, operations[2])  # Replace efficiency
+    
     
     # Adjust layout
     plt.tight_layout(rect=[0, 0, 1, 0.97])  # Leave space for suptitle
