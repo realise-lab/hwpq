@@ -89,7 +89,7 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -118,7 +118,7 @@ def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_lut_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -147,7 +147,7 @@ def plot_lut_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_register_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -176,7 +176,7 @@ def plot_register_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None)
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_register_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -205,7 +205,7 @@ def plot_register_utilization_vs_queue_size(ax, data_dict, title=None, arch_name
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -234,7 +234,7 @@ def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -263,7 +263,7 @@ def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=Non
     
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=10)
+        ax.legend(fontsize=12)
 
 
 def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None):
@@ -291,7 +291,7 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
     ax.set_title(title or f"{operation.capitalize()} Performance")
     ax.set_xscale('log', base=2)
     ax.grid(True)
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=12)
     
     # Add "Better" annotation with arrow pointing up (higher is better)
     ax.annotate('Better', xy=(0.9, 0.9), xycoords='axes fraction',
@@ -329,7 +329,7 @@ def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
     ax.set_xscale('log', base=2)
     ax.set_yscale('log')
     ax.grid(True)
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=12)
     
     # Add "Better" annotation with arrow pointing down (lower is better)
     ax.annotate('Better', xy=(0.9, 0.1), xycoords='axes fraction',
@@ -417,7 +417,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[0, 0].set_title('Maximum Achieved Frequency')
     axs[0, 0].set_xscale('log', base=2)
     axs[0, 0].grid(True)
-    axs[0, 0].legend(fontsize=10)
+    axs[0, 0].legend(fontsize=12)
     
     # Plot 2: LUT utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
@@ -430,7 +430,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[0, 1].set_title('LUT Utilization Comparison')
     axs[0, 1].set_xscale('log', base=2)
     axs[0, 1].grid(True)
-    axs[0, 1].legend(fontsize=10)
+    axs[0, 1].legend(fontsize=12)
     
     # Plot 3: Register utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
@@ -443,7 +443,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[0, 2].set_title('Register Utilization Comparison')
     axs[0, 2].set_xscale('log', base=2)
     axs[0, 2].grid(True)
-    axs[0, 2].legend(fontsize=10)
+    axs[0, 2].legend(fontsize=12)
     
     # Plot 4: BRAM utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
@@ -458,7 +458,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[0, 3].set_xscale('log', base=2)
     axs[0, 3].set_yscale('log')
     axs[0, 3].grid(True)
-    axs[0, 3].legend(fontsize=10)
+    axs[0, 3].legend(fontsize=12)
     
     # Row 2 and 3: Performance and efficiency comparisons
     operations = ["enqueue", "dequeue", "replace"]
@@ -605,6 +605,6 @@ def process_and_plot_all(base_dir, output_dir=None):
 
 if __name__ == "__main__":
     # * Input base_dir as an absolute path
-    base_dir = "/Users/charlie/Workspace/pq_research/hwpq_qw2246"
+    base_dir = "./"
     output_dir = os.path.join(base_dir, OUTPUT_DIR)
     process_and_plot_all(base_dir, output_dir)
