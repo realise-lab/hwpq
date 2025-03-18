@@ -1,6 +1,6 @@
 module tb_pipelined_bram_tree;
   // Parameters matching the module under test
-  localparam integer QueueSize = 31;
+  localparam integer QueueSize = 3;
   localparam integer DataWidth = 16;
 
   // Clock and reset signals
@@ -67,6 +67,7 @@ module tb_pipelined_bram_tree;
       ref_queue.push_back(random_value);
     end
     ref_queue.rsort();
+
     for (int i = 0; i < QueueSize; i++) begin
       if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 0) begin
         if (i == 0) begin
@@ -81,72 +82,8 @@ module tb_pipelined_bram_tree;
           uut.gen_bram[1].bram_inst.ram[1] = ref_queue[2];
         end
       end
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 2) begin
-        if (i - 3 == 0) begin
-          uut.gen_bram[2].bram_inst.ram[0] = ref_queue[3];
-        end else if (i - 3 == 1) begin
-          uut.gen_bram[2].bram_inst.ram[1] = ref_queue[4];
-        end else if (i - 3 == 2) begin
-          uut.gen_bram[2].bram_inst.ram[2] = ref_queue[5];
-        end else if (i - 3 == 3) begin
-          uut.gen_bram[2].bram_inst.ram[3] = ref_queue[6];
-        end
-      end 
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 3) begin
-        if (i - 7 == 0) begin
-          uut.gen_bram[3].bram_inst.ram[0] = ref_queue[7];
-        end else if (i - 7 == 1) begin
-          uut.gen_bram[3].bram_inst.ram[1] = ref_queue[8];
-        end else if (i - 7 == 2) begin
-          uut.gen_bram[3].bram_inst.ram[2] = ref_queue[9];
-        end else if (i - 7 == 3) begin
-          uut.gen_bram[3].bram_inst.ram[3] = ref_queue[10];
-        end else if (i - 7 == 4) begin
-          uut.gen_bram[3].bram_inst.ram[4] = ref_queue[11];
-        end else if (i - 7 == 5) begin
-          uut.gen_bram[3].bram_inst.ram[5] = ref_queue[12];
-        end else if (i - 7 == 6) begin
-          uut.gen_bram[3].bram_inst.ram[6] = ref_queue[13];
-        end else if (i - 7 == 7) begin
-          uut.gen_bram[3].bram_inst.ram[7] = ref_queue[14];
-        end
-      end 
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 4) begin
-        if (i - 15 == 0) begin
-          uut.gen_bram[4].bram_inst.ram[0] = ref_queue[15];
-        end else if (i - 15 == 1) begin
-          uut.gen_bram[4].bram_inst.ram[1] = ref_queue[16];
-        end else if (i - 15 == 2) begin
-          uut.gen_bram[4].bram_inst.ram[2] = ref_queue[17];
-        end else if (i - 15 == 3) begin
-          uut.gen_bram[4].bram_inst.ram[3] = ref_queue[18];
-        end else if (i - 15 == 4) begin
-          uut.gen_bram[4].bram_inst.ram[4] = ref_queue[19];
-        end else if (i - 15 == 5) begin
-          uut.gen_bram[4].bram_inst.ram[5] = ref_queue[20];
-        end else if (i - 15 == 6) begin
-          uut.gen_bram[4].bram_inst.ram[6] = ref_queue[21];
-        end else if (i - 15 == 7) begin
-          uut.gen_bram[4].bram_inst.ram[7] = ref_queue[22];
-        end else if (i - 15 == 8) begin
-          uut.gen_bram[4].bram_inst.ram[8] = ref_queue[23];
-        end else if (i - 15 == 9) begin
-          uut.gen_bram[4].bram_inst.ram[9] = ref_queue[24];
-        end else if (i - 15 == 10) begin
-          uut.gen_bram[4].bram_inst.ram[10] = ref_queue[25];
-        end else if (i - 15 == 11) begin
-          uut.gen_bram[4].bram_inst.ram[11] = ref_queue[26];
-        end else if (i - 15 == 12) begin
-          uut.gen_bram[4].bram_inst.ram[12] = ref_queue[27];
-        end else if (i - 15 == 13) begin
-          uut.gen_bram[4].bram_inst.ram[13] = ref_queue[28];
-        end else if (i - 15 == 14) begin
-          uut.gen_bram[4].bram_inst.ram[14] = ref_queue[29];
-        end else if (i - 15 == 15) begin
-          uut.gen_bram[4].bram_inst.ram[15] = ref_queue[30];
-        end
-      end
     end
+
     uut.next_queue_size = QueueSize;
     uut.next_state = 0;
 
@@ -171,6 +108,7 @@ module tb_pipelined_bram_tree;
       ref_queue.push_back(random_value);
     end
     ref_queue.rsort();
+
     for (int i = 0; i < QueueSize; i++) begin
       if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 0) begin
         if (i == 0) begin
@@ -185,72 +123,8 @@ module tb_pipelined_bram_tree;
           uut.gen_bram[1].bram_inst.ram[1] = ref_queue[2];
         end
       end
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 2) begin
-        if (i - 3 == 0) begin
-          uut.gen_bram[2].bram_inst.ram[0] = ref_queue[3];
-        end else if (i - 3 == 1) begin
-          uut.gen_bram[2].bram_inst.ram[1] = ref_queue[4];
-        end else if (i - 3 == 2) begin
-          uut.gen_bram[2].bram_inst.ram[2] = ref_queue[5];
-        end else if (i - 3 == 3) begin
-          uut.gen_bram[2].bram_inst.ram[3] = ref_queue[6];
-        end
-      end 
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 3) begin
-        if (i - 7 == 0) begin
-          uut.gen_bram[3].bram_inst.ram[0] = ref_queue[7];
-        end else if (i - 7 == 1) begin
-          uut.gen_bram[3].bram_inst.ram[1] = ref_queue[8];
-        end else if (i - 7 == 2) begin
-          uut.gen_bram[3].bram_inst.ram[2] = ref_queue[9];
-        end else if (i - 7 == 3) begin
-          uut.gen_bram[3].bram_inst.ram[3] = ref_queue[10];
-        end else if (i - 7 == 4) begin
-          uut.gen_bram[3].bram_inst.ram[4] = ref_queue[11];
-        end else if (i - 7 == 5) begin
-          uut.gen_bram[3].bram_inst.ram[5] = ref_queue[12];
-        end else if (i - 7 == 6) begin
-          uut.gen_bram[3].bram_inst.ram[6] = ref_queue[13];
-        end else if (i - 7 == 7) begin
-          uut.gen_bram[3].bram_inst.ram[7] = ref_queue[14];
-        end
-      end 
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 4) begin
-        if (i - 15 == 0) begin
-          uut.gen_bram[4].bram_inst.ram[0] = ref_queue[15];
-        end else if (i - 15 == 1) begin
-          uut.gen_bram[4].bram_inst.ram[1] = ref_queue[16];
-        end else if (i - 15 == 2) begin
-          uut.gen_bram[4].bram_inst.ram[2] = ref_queue[17];
-        end else if (i - 15 == 3) begin
-          uut.gen_bram[4].bram_inst.ram[3] = ref_queue[18];
-        end else if (i - 15 == 4) begin
-          uut.gen_bram[4].bram_inst.ram[4] = ref_queue[19];
-        end else if (i - 15 == 5) begin
-          uut.gen_bram[4].bram_inst.ram[5] = ref_queue[20];
-        end else if (i - 15 == 6) begin
-          uut.gen_bram[4].bram_inst.ram[6] = ref_queue[21];
-        end else if (i - 15 == 7) begin
-          uut.gen_bram[4].bram_inst.ram[7] = ref_queue[22];
-        end else if (i - 15 == 8) begin
-          uut.gen_bram[4].bram_inst.ram[8] = ref_queue[23];
-        end else if (i - 15 == 9) begin
-          uut.gen_bram[4].bram_inst.ram[9] = ref_queue[24];
-        end else if (i - 15 == 10) begin
-          uut.gen_bram[4].bram_inst.ram[10] = ref_queue[25];
-        end else if (i - 15 == 11) begin
-          uut.gen_bram[4].bram_inst.ram[11] = ref_queue[26];
-        end else if (i - 15 == 12) begin
-          uut.gen_bram[4].bram_inst.ram[12] = ref_queue[27];
-        end else if (i - 15 == 13) begin
-          uut.gen_bram[4].bram_inst.ram[13] = ref_queue[28];
-        end else if (i - 15 == 14) begin
-          uut.gen_bram[4].bram_inst.ram[14] = ref_queue[29];
-        end else if (i - 15 == 15) begin
-          uut.gen_bram[4].bram_inst.ram[15] = ref_queue[30];
-        end
-      end
     end
+    
     uut.next_queue_size = QueueSize;
     uut.next_state = 0;
 

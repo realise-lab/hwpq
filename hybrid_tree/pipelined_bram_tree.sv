@@ -17,6 +17,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Local parameters
   //-------------------------------------------------------------------------
+
   // General local parameters
   localparam integer TREE_DEPTH = $clog2(QUEUE_SIZE + 1);  // depth of the heap tree
   localparam integer NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of actual slots needed for the queue
@@ -27,13 +28,10 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Internal used wires and registers
   //-------------------------------------------------------------------------
-  // Registers for root node and its children
-  logic [DATA_WIDTH-1:0] level_0;
-  logic [DATA_WIDTH-1:0] next_level_0;
 
   // Memory used wires and registers
-  logic [ADDRESS_WIDTH-1:0] addr_a[TREE_DEPTH-1:0];
-  logic [ADDRESS_WIDTH-1:0] addr_b[TREE_DEPTH-1:0];
+  logic [31:0] addr_a[TREE_DEPTH-1:0];
+  logic [31:0] addr_b[TREE_DEPTH-1:0];
   logic [DATA_WIDTH-1:0] dout_a[TREE_DEPTH-1:0];
   logic [DATA_WIDTH-1:0] dout_b[TREE_DEPTH-1:0];
   logic [DATA_WIDTH-1:0] din_a[TREE_DEPTH-1:0];
@@ -41,8 +39,8 @@ module pipelined_bram_tree #(
   logic we_a[TREE_DEPTH-1:0];
   logic we_b[TREE_DEPTH-1:0];
 
-  logic [ADDRESS_WIDTH-1:0] next_addr_a[TREE_DEPTH-1:0];
-  logic [ADDRESS_WIDTH-1:0] next_addr_b[TREE_DEPTH-1:0];
+  logic [31:0] next_addr_a[TREE_DEPTH-1:0];
+  logic [31:0] next_addr_b[TREE_DEPTH-1:0];
   logic [DATA_WIDTH-1:0] next_din_a[TREE_DEPTH-1:0];
   logic [DATA_WIDTH-1:0] next_din_b[TREE_DEPTH-1:0];
   logic next_we_a[TREE_DEPTH-1:0];
@@ -74,6 +72,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // FSM state declaration
   //-------------------------------------------------------------------------
+
   typedef enum logic [2:0] {
     IDLE         = 3'd0,
     READ_MEM     = 3'd1,
@@ -88,6 +87,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Memory declaration and initialization
   //-------------------------------------------------------------------------
+
   genvar i;
   generate
     for (i = 0; i < TREE_DEPTH; i++) begin : gen_bram  // Using BRAM starts from level 2
@@ -114,6 +114,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Comparator instantiation
   //-------------------------------------------------------------------------
+
   comparator #(
       .DATA_WIDTH(DATA_WIDTH)
   ) comparator_inst (
@@ -128,6 +129,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // FSM
   //-------------------------------------------------------------------------
+
   always_ff @(posedge CLK or negedge RSTn) begin : fsm_seq
     if (!RSTn) begin
       state <= IDLE;
@@ -143,7 +145,8 @@ module pipelined_bram_tree #(
         next_state = READ_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
+        end
+        else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -152,7 +155,8 @@ module pipelined_bram_tree #(
         next_state = WAIT;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
+        end
+        else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -161,7 +165,8 @@ module pipelined_bram_tree #(
         next_state = WRITE_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
+        end
+        else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -170,7 +175,8 @@ module pipelined_bram_tree #(
         next_state = READ_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
+        end
+        else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -187,7 +193,8 @@ module pipelined_bram_tree #(
         next_state = COMPARE_SWAP;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end else if (i_wrt && i_read) begin  // replace
+        end
+        else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -201,11 +208,11 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // BRAM read & write, heap management
   //-------------------------------------------------------------------------
+
   always_ff @(posedge CLK or negedge RSTn) begin : bram_seq
     if (!RSTn) begin
       parent_lvl <= '0;
       parent_idx <= '0;
-      level_0 <= '0;
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin  // initialize BRAMs' ports
         addr_a[lvl_seq] <= '0;
         addr_b[lvl_seq] <= '0;
@@ -220,7 +227,6 @@ module pipelined_bram_tree #(
     end else begin
       parent_lvl <= next_parent_lvl;
       parent_idx <= next_parent_idx;
-      level_0 <= next_level_0;
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
         addr_a[lvl_seq] <= next_addr_a[lvl_seq];
         addr_b[lvl_seq] <= next_addr_b[lvl_seq];
@@ -238,7 +244,6 @@ module pipelined_bram_tree #(
   always_comb begin : bram_comb
     next_parent_lvl = parent_lvl;
     next_parent_idx = parent_idx;
-    next_level_0 = level_0;
     for (lvl_comb = 0; lvl_comb < TREE_DEPTH; lvl_comb++) begin
       next_addr_a[lvl_comb] = addr_a[lvl_comb];
       next_addr_b[lvl_comb] = addr_b[lvl_comb];
@@ -322,6 +327,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Queue size counter
   //-------------------------------------------------------------------------
+
   always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
     if (!RSTn) begin
       queue_size <= 0;
@@ -348,8 +354,8 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Assignments for status and output.
   //-------------------------------------------------------------------------
-  assign o_full  = (queue_size == QUEUE_SIZE);
-  assign o_empty = (queue_size == 0);
+  assign o_full  = (queue_size >= QUEUE_SIZE);
+  assign o_empty = (queue_size <= 0);
   assign o_data  = dout_a[0];
 
 endmodule

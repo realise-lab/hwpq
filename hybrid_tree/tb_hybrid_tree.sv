@@ -61,7 +61,7 @@ module tb_hybrid_tree;
     // Reset the module
     @(posedge CLK);
     RSTn = 1;
-    repeat (2) @(posedge CLK);
+    @(posedge CLK);
 
     // Initialize the reference queue, sort the reference queue, and write to the queue
     for (int i = 0; i < QueueSize; i++) begin
@@ -69,6 +69,15 @@ module tb_hybrid_tree;
       ref_queue.push_back(random_value);
     end
     ref_queue.rsort();
+
+    uut.next_level_0_data[0] = ref_queue[0];
+    uut.next_level_0_target[0] = 0;
+    uut.next_level_0_data[1] = ref_queue[1];
+    uut.next_level_0_target[1] = 1;
+    uut.next_level_0_data[2] = ref_queue[2];
+    uut.next_level_0_target[2] = 2;
+    uut.next_level_0_data[3] = ref_queue[3];
+    uut.next_level_0_target[3] = 3;
 
     uut.gen_bram_tree[0].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[0];
     uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[4];
@@ -83,7 +92,17 @@ module tb_hybrid_tree;
     uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[10];
     uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[11];
 
-    repeat (16) @(posedge CLK);
+    uut.gen_bram_tree[0].bram_tree_inst.next_queue_size = 3;
+    uut.gen_bram_tree[1].bram_tree_inst.next_queue_size = 3;
+    uut.gen_bram_tree[2].bram_tree_inst.next_queue_size = 3;
+    uut.gen_bram_tree[3].bram_tree_inst.next_queue_size = 3;
+
+    uut.gen_bram_tree[0].bram_tree_inst.next_state = 0;
+    uut.gen_bram_tree[1].bram_tree_inst.next_state = 0;
+    uut.gen_bram_tree[2].bram_tree_inst.next_state = 0;
+    uut.gen_bram_tree[3].bram_tree_inst.next_state = 0;
+
+    repeat (8) @(posedge CLK);
 
     // Test Case: Replace nodes
     $display("\nReplace Test");

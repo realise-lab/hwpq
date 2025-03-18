@@ -1,5 +1,5 @@
 module hybrid_tree #(
-    parameter integer DATA_WIDTH = 16,
+    parameter integer DATA_WIDTH = 12,
     parameter integer ARRAY_SIZE = 4,
     parameter integer QUEUE_SIZE = 28
 ) (
@@ -59,19 +59,43 @@ module hybrid_tree #(
 
   // input signals reroute
   logic enqueue, dequeue, replace;
+  logic
+      enqueue_done,
+      dequeue_done,
+      replace_done,
+      next_enqueue_done,
+      next_dequeue_done,
+      next_replace_done;
   assign enqueue = i_wrt && !i_read;
   assign dequeue = !i_wrt && i_read;
   assign replace = i_wrt && i_read;
 
-  // size tracker
-  logic [$clog2(QUEUE_SIZE)-1:0] queue_size;
-  logic [$clog2(QUEUE_SIZE)-1:0] next_queue_size;
+  // size tracker, full and empty flags
+  logic [$clog2(QUEUE_SIZE)-1:0] size;
+  logic [$clog2(QUEUE_SIZE)-1:0] next_size;
   logic empty, full;
-  assign empty = (queue_size == 0);
-  assign full  = (queue_size == QUEUE_SIZE);
 
-  // iteration counter
-  integer seq_itr, comb_itr;
+  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
+    if (!RSTn) begin
+      size <= 0;
+    end else begin
+      size <= next_size;
+    end
+  end
+
+  always_comb begin : size_comb
+    next_size = size;
+    if (i_wrt && !i_read) begin  // enqueue
+      next_size = size + 1;
+    end else if (!i_wrt && i_read) begin  // dequeue
+      next_size = size - 1;
+    end else if (i_wrt && i_read) begin  // replace
+      next_size = size;
+      if (size == 0 && i_data != 0) begin  // this would be a special case for replace
+        next_size = size + 1;
+      end
+    end
+  end
 
   // BRAM input & output signals
   logic bram_i_wrt[ARRAY_SIZE-1:0];
@@ -87,28 +111,25 @@ module hybrid_tree #(
   logic next_bram_dequeue[ARRAY_SIZE-1:0];
   logic bram_replace[ARRAY_SIZE-1:0];
   logic next_bram_replace[ARRAY_SIZE-1:0];
-  
+
   always_comb begin : bram_signals_logic
     for (int i = 0; i < ARRAY_SIZE; i++) begin
       if (bram_enqueue[i]) begin
         bram_i_wrt[i]  = 1;
         bram_i_read[i] = 0;
-      end 
-      else if (bram_dequeue[i]) begin
+      end else if (bram_dequeue[i]) begin
         bram_i_wrt[i]  = 0;
         bram_i_read[i] = 1;
-      end 
-      else if (bram_replace[i]) begin
+      end else if (bram_replace[i]) begin
         bram_i_wrt[i]  = 1;
         bram_i_read[i] = 1;
-      end 
-      else begin
+      end else begin
         bram_i_wrt[i]  = 0;
         bram_i_read[i] = 0;
       end
     end
   end
-  
+
   //-------------------------------------------------------------------------
   // Internal modules instantiation
   //-------------------------------------------------------------------------
@@ -136,124 +157,115 @@ module hybrid_tree #(
   //-------------------------------------------------------------------------
   always_ff @(posedge CLK or negedge RSTn) begin : array_seq
     if (!RSTn) begin
-      for (seq_itr = 0; seq_itr < ARRAY_SIZE; seq_itr++) begin
-        level_0_data[seq_itr]   <= '{default: 0};
-        level_0_target[seq_itr] <= '{default: 0};
-        level_1_data[seq_itr]   <= '{default: 0};
-        level_1_valid[seq_itr]  <= '0;
-        bram_enqueue[seq_itr]   <= '0;
-        bram_dequeue[seq_itr]   <= '0;
-        bram_replace[seq_itr]   <= '0;
-        bram_i_data[seq_itr]    <= '{default: 0};
+      for (int i = 0; i < ARRAY_SIZE; i++) begin
+        level_0_data[i]   <= '{default: 0};
+        level_0_target[i] <= '{default: 0};
+        level_1_data[i]   <= '{default: 0};
+        level_1_valid[i]  <= '0;
+        enqueue_done      <= '1;
+        dequeue_done      <= '1;
+        replace_done      <= '1;
+        bram_enqueue[i]   <= '0;
+        bram_dequeue[i]   <= '0;
+        bram_replace[i]   <= '0;
+        bram_i_data[i]    <= '{default: 0};
       end
     end else begin
-      for (seq_itr = 0; seq_itr < ARRAY_SIZE; seq_itr++) begin
-        level_0_data[seq_itr]   <= next_level_0_data[seq_itr];
-        level_0_target[seq_itr] <= next_level_0_target[seq_itr];
-        level_1_data[seq_itr]   <= next_level_1_data[seq_itr];
-        level_1_valid[seq_itr]  <= next_level_1_valid[seq_itr];
-        bram_enqueue[seq_itr]   <= next_bram_enqueue[seq_itr];
-        bram_dequeue[seq_itr]   <= next_bram_dequeue[seq_itr];
-        bram_replace[seq_itr]   <= next_bram_replace[seq_itr];
-        bram_i_data[seq_itr]    <= next_bram_i_data[seq_itr];
+      for (int i = 0; i < ARRAY_SIZE; i++) begin
+        level_0_data[i]   <= next_level_0_data[i];
+        level_0_target[i] <= next_level_0_target[i];
+        level_1_data[i]   <= next_level_1_data[i];
+        level_1_valid[i]  <= next_level_1_valid[i];
+        enqueue_done      <= next_enqueue_done;
+        dequeue_done      <= next_dequeue_done;
+        replace_done      <= next_replace_done;
+        bram_enqueue[i]   <= next_bram_enqueue[i];
+        bram_dequeue[i]   <= next_bram_dequeue[i];
+        bram_replace[i]   <= next_bram_replace[i];
+        bram_i_data[i]    <= next_bram_i_data[i];
       end
     end
   end
 
   always_comb begin : array_comb
-    for (comb_itr = 0; comb_itr < ARRAY_SIZE; comb_itr++) begin
-      next_level_0_data[comb_itr]   = level_0_data[comb_itr];
-      next_level_0_target[comb_itr] = level_0_target[comb_itr];
-      next_level_1_data[comb_itr]   = level_1_data[comb_itr];
-      next_level_1_valid[comb_itr]  = level_1_valid[comb_itr];
-      next_bram_enqueue[comb_itr]   = '0;
-      next_bram_dequeue[comb_itr]   = '0;
-      next_bram_replace[comb_itr]   = '0;
-      next_bram_i_data[comb_itr]    = bram_i_data[comb_itr];
+    for (int i = 0; i < ARRAY_SIZE; i++) begin
+      next_level_0_data[i]   = level_0_data[i];
+      next_level_0_target[i] = level_0_target[i];
+      next_level_1_data[i]   = level_1_data[i];
+      next_level_1_valid[i]  = level_1_valid[i];
+      next_enqueue_done      = enqueue_done;
+      next_dequeue_done      = dequeue_done;
+      next_replace_done      = replace_done;
+      next_bram_enqueue[i]   = '0;
+      next_bram_dequeue[i]   = '0;
+      next_bram_replace[i]   = '0;
+      next_bram_i_data[i]    = bram_i_data[i];
+    end
+
+    for (int i = 0; i < ARRAY_SIZE; i++) begin
+      next_level_1_data[i] = bram_o_data[i];
+      if (bram_o_data[i] != 0) begin
+        next_level_1_valid[i] = 1;
+      end
     end
 
     // Handle Replace operation
     if (replace) begin
-      if (empty) begin
-        // If empty, just insert the new item to the most left node
-        if (i_data != 0) begin
-          next_level_0_data[0] = i_data;
+      next_level_0_data[0] = i_data;
+      next_replace_done = 1'b0;
+    end
+    if (!replace_done) begin
+      if (level_1_valid[level_0_target[0]]) begin // if level_1 data of the corresponding tree is valid
+        if (i_data < level_1_data[level_0_target[0]]) begin // need to signal BRAM tree module to replace
+          next_level_0_data[0] = level_1_data[level_0_target[0]];
+          next_level_1_data[level_0_target[0]] = 0;
+          next_level_1_valid[level_0_target[0]] = 0;
+          next_bram_replace[level_0_target[0]] = 1;
+          next_bram_i_data[level_0_target[0]] = i_data;
         end
-      end 
-      else begin
-        // Replace the root with new value and do pulsation
-        next_level_0_data[0] = i_data;
+        next_replace_done = 1'b1;
+      end
+    end
 
-        // Check if the target level 1 node is valid
-        if (level_1_valid[level_0_target[0]]) begin
-          // Compare with the level 1 node
-          if (i_data < level_1_data[level_0_target[0]]) begin
-            // New item is smaller, swap with level 1 node
-            next_level_0_data[0] = level_1_data[level_0_target[0]];
-            next_level_1_data[level_0_target[0]] = i_data;
-            // This is where we need to send signals to corresponding BRAM
-            next_bram_replace[level_0_target[0]] = 1;
-            next_bram_i_data[level_0_target[0]] = i_data;
-          end
-          // If new item is larger or equal, it stays in level_0_data[0]
+    // First phase (even-odd)
+    for (int i = 0; i < ARRAY_SIZE - 1; i += 2) begin
+      if (i + 1 < ARRAY_SIZE) begin
+        if (level_0_data[i] < level_0_data[i+1]) begin
+          next_level_0_data[i] = level_0_data[i+1];
+          next_level_0_data[i+1] = level_0_data[i];
+          next_level_0_target[i] = level_0_target[i+1];
+          next_level_0_target[i+1] = level_0_target[i];
         end
-        // If level 1 node is invalid, new item stays in level_0_data[0]
+      end
+    end
 
-        // First phase (even-odd)
-        for (int i = 0; i < ARRAY_SIZE - 1; i += 2) begin
-          if (i + 1 < ARRAY_SIZE) begin
-            if (next_level_0_data[i] < next_level_0_data[i+1]) begin
-              // Swap data and tree tags
-              next_level_0[i] ^= next_level_0[i+1];
-              next_level_0[i+1] ^= next_level_0[i];
-              next_level_0[i] ^= next_level_0[i+1];
-            end
-          end
-        end
-
-        // Second phase (odd-even)
-        for (int i = 1; i < ARRAY_SIZE - 1; i += 2) begin
-          if (i + 1 < ARRAY_SIZE) begin
-            if (next_level_0_data[i] < next_level_0_data[i+1]) begin
-              // Swap data and tree tags
-              next_level_0[i] ^= next_level_0[i+1];
-              next_level_0[i+1] ^= next_level_0[i];
-              next_level_0[i] ^= next_level_0[i+1];
-            end
-          end
+    // Second phase (odd-even)
+    for (int i = 1; i < ARRAY_SIZE - 1; i += 2) begin
+      if (i + 1 < ARRAY_SIZE) begin
+        if (level_0_data[i] < level_0_data[i+1]) begin
+          next_level_0_data[i] = level_0_data[i+1];
+          next_level_0_data[i+1] = level_0_data[i];
+          next_level_0_target[i] = level_0_target[i+1];
+          next_level_0_target[i+1] = level_0_target[i];
         end
       end
     end
   end
 
-  //-------------------------------------------------------------------------
-  // Queue size counter
-  //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
-    if (!RSTn) begin
-      queue_size <= 0;
-    end else begin
-      queue_size <= next_queue_size;
+  always_comb begin : empty_check
+    empty = 1'b1;
+    for (int i = 0; i < ARRAY_SIZE; i++) begin
+      empty = empty & bram_o_empty[i];  // AND operation to ensure all are empty
     end
   end
 
-  always_comb begin : queue_size_comb
-    next_queue_size = queue_size;
-    if (i_wrt && !i_read) begin  // enqueue
-      next_queue_size = queue_size + 1;
-    end else if (!i_wrt && i_read) begin  // dequeue
-      next_queue_size = queue_size - 1;
-    end else if (i_wrt && i_read) begin  // replace
-      next_queue_size = queue_size;
-      if (queue_size == 0 && i_data != 0) begin  // this would be a special case for replace
-        next_queue_size = queue_size + 1;
-      end
+  always_comb begin : full_check
+    full = 1'b1;
+    for (int i = 0; i < ARRAY_SIZE; i++) begin
+      full = full & bram_o_full[i];  // AND operation to ensure all are full
     end
   end
 
-  //-------------------------------------------------------------------------
-  // Assignments for status and output.
-  //-------------------------------------------------------------------------
   assign o_empty = empty;
   assign o_full  = full;
   assign o_data  = level_0_data[0];

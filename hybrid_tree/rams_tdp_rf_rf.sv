@@ -8,13 +8,13 @@ module rams_tdp_rf_rf #(
     input logic clka,
     input logic ena,
     input logic wea,
-    input logic [$clog2(DEPTH)-1:0] addra,
+    input logic [31:0] addra,
     input logic [WIDTH-1:0] dia,
     output logic [WIDTH-1:0] doa,
     input logic clkb,
     input logic enb,
     input logic web,
-    input logic [$clog2(DEPTH)-1:0] addrb,
+    input logic [31:0] addrb,
     input logic [WIDTH-1:0] dib,
     output logic [WIDTH-1:0] dob
 );
