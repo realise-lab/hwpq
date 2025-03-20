@@ -15,6 +15,7 @@ module tb_pipelined_bram_tree;
   // Output signals
   logic                   o_full;
   logic                   o_empty;
+  logic                   o_valid;
   logic   [DataWidth-1:0] o_data;
 
   // Reference array for verification
@@ -42,6 +43,7 @@ module tb_pipelined_bram_tree;
       .i_data(i_data),
       .o_full(o_full),
       .o_empty(o_empty),
+      .o_valid(o_valid),
       .o_data(o_data)
   );
 
@@ -73,12 +75,10 @@ module tb_pipelined_bram_tree;
         if (i == 0) begin
           uut.gen_bram[0].bram_inst.ram[0] = ref_queue[0];
         end
-      end
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 1) begin
+      end else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 1) begin
         if (i == 1) begin
           uut.gen_bram[1].bram_inst.ram[0] = ref_queue[1];
-        end
-        else if (i == 2) begin
+        end else if (i == 2) begin
           uut.gen_bram[1].bram_inst.ram[1] = ref_queue[2];
         end
       end
@@ -114,17 +114,15 @@ module tb_pipelined_bram_tree;
         if (i == 0) begin
           uut.gen_bram[0].bram_inst.ram[0] = ref_queue[0];
         end
-      end
-      else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 1) begin
+      end else if ($clog2(i + 1) - (((i + 1) & i) ? 1 : 0) == 1) begin
         if (i == 1) begin
           uut.gen_bram[1].bram_inst.ram[0] = ref_queue[1];
-        end
-        else if (i == 2) begin
+        end else if (i == 2) begin
           uut.gen_bram[1].bram_inst.ram[1] = ref_queue[2];
         end
       end
     end
-    
+
     uut.next_queue_size = QueueSize;
     uut.next_state = 0;
 

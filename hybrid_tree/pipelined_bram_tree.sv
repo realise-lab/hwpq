@@ -11,6 +11,7 @@ module pipelined_bram_tree #(
     // Outputs
     output logic                  o_full,   // High if the heap is full
     output logic                  o_empty,  // High if the heap is empty
+    output logic                  o_valid,
     output logic [DATA_WIDTH-1:0] o_data    // Output data (popped value)
 );
 
@@ -68,6 +69,9 @@ module pipelined_bram_tree #(
 
   // integers for iteration
   integer lvl_seq, itr_seq, lvl_comb, itr_comb;
+
+  // valid signal to indicate the sorting is done
+  logic valid, next_valid;
 
   //-------------------------------------------------------------------------
   // FSM state declaration
@@ -145,8 +149,7 @@ module pipelined_bram_tree #(
         next_state = READ_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end
-        else if (i_wrt && i_read) begin  // replace
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -155,8 +158,7 @@ module pipelined_bram_tree #(
         next_state = WAIT;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end
-        else if (i_wrt && i_read) begin  // replace
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -165,8 +167,7 @@ module pipelined_bram_tree #(
         next_state = WRITE_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end
-        else if (i_wrt && i_read) begin  // replace
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -175,8 +176,7 @@ module pipelined_bram_tree #(
         next_state = READ_MEM;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end
-        else if (i_wrt && i_read) begin  // replace
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -193,8 +193,7 @@ module pipelined_bram_tree #(
         next_state = COMPARE_SWAP;
         if (!i_wrt && i_read) begin  // dequeue
           next_state = DEQUEUE;
-        end
-        else if (i_wrt && i_read) begin  // replace
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
         end
       end
@@ -224,6 +223,7 @@ module pipelined_bram_tree #(
       comp_parent_in <= '0;
       comp_left_child_in <= '0;
       comp_right_child_in <= '0;
+      valid <= '1;
     end else begin
       parent_lvl <= next_parent_lvl;
       parent_idx <= next_parent_idx;
@@ -238,6 +238,7 @@ module pipelined_bram_tree #(
       comp_parent_in <= next_comp_parent_in;
       comp_left_child_in <= next_comp_left_child_in;
       comp_right_child_in <= next_comp_right_child_in;
+      valid <= next_valid;
     end
   end
 
@@ -255,6 +256,8 @@ module pipelined_bram_tree #(
     next_comp_parent_in = comp_parent_in;
     next_comp_left_child_in = comp_left_child_in;
     next_comp_right_child_in = comp_right_child_in;
+    next_valid = valid;
+
     case (state)
       IDLE: begin
       end
@@ -286,9 +289,10 @@ module pipelined_bram_tree #(
         end else begin  // if no change, then we are done
           next_parent_lvl = 'd0;
           next_parent_idx = 'd0;
+          next_valid = 1'b1;
         end
 
-       if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
+        if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
           next_parent_lvl = 'd0;
           next_parent_idx = 'd0;
           next_we_a[parent_lvl] = 1'b0;
@@ -306,6 +310,7 @@ module pipelined_bram_tree #(
         next_we_a[0] = 1'b1;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
+        next_valid = 'd0;
       end
 
       REPLACE: begin
@@ -314,6 +319,7 @@ module pipelined_bram_tree #(
         next_we_a[0] = 1'b1;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
+        next_valid = 'd0;
       end
 
       WAIT: begin  // this is a do nothing state, just for reading from RAM
@@ -356,6 +362,7 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   assign o_full  = (queue_size >= QUEUE_SIZE);
   assign o_empty = (queue_size <= 0);
+  assign o_valid = valid;
   assign o_data  = dout_a[0];
 
 endmodule

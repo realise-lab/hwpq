@@ -1,8 +1,7 @@
 module tb_hybrid_tree;
   // Parameters matching the module under test
-  localparam integer QueueSize = 12;
+  localparam integer QueueSize = 16;
   localparam integer DataWidth = 16;
-  localparam integer ArraySize = 4;
 
   // Clock and reset signals
   logic                   CLK;
@@ -33,9 +32,8 @@ module tb_hybrid_tree;
 
   // Instantiate the register_tree module
   hybrid_tree #(
-      .DATA_WIDTH(DataWidth),
       .QUEUE_SIZE(QueueSize),
-      .ARRAY_SIZE(ArraySize)
+      .DATA_WIDTH(DataWidth)
   ) uut (
       .CLK(CLK),
       .RSTn(RSTn),
@@ -79,18 +77,23 @@ module tb_hybrid_tree;
     uut.next_level_0_data[3] = ref_queue[3];
     uut.next_level_0_target[3] = 3;
 
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[0];
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[4];
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[5];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[1];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[6];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[7];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[2];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[8];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[9];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[3];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[10];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[11];
+    uut.next_level_1_data[0] = ref_queue[4];
+    uut.next_level_1_data[1] = ref_queue[5];
+    uut.next_level_1_data[2] = ref_queue[6];
+    uut.next_level_1_data[3] = ref_queue[7];
+
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[4];
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[8];
+    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[9];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[5];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[10];
+    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[11];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[6];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[12];
+    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[13];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[7];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[14];
+    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[15];
 
     uut.gen_bram_tree[0].bram_tree_inst.next_queue_size = 3;
     uut.gen_bram_tree[1].bram_tree_inst.next_queue_size = 3;
@@ -101,6 +104,8 @@ module tb_hybrid_tree;
     uut.gen_bram_tree[1].bram_tree_inst.next_state = 0;
     uut.gen_bram_tree[2].bram_tree_inst.next_state = 0;
     uut.gen_bram_tree[3].bram_tree_inst.next_state = 0;
+
+    uut.next_size = 4;
 
     repeat (8) @(posedge CLK);
 
@@ -147,7 +152,7 @@ module tb_hybrid_tree;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (24) @(posedge CLK);
+      repeat (6) @(posedge CLK);
     end
   endtask
 

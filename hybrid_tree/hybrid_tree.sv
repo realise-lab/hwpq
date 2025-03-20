@@ -1,7 +1,6 @@
 module hybrid_tree #(
-    parameter integer DATA_WIDTH = 12,
-    parameter integer ARRAY_SIZE = 4,
-    parameter integer QUEUE_SIZE = 28
+    parameter integer QUEUE_SIZE = 16,
+    parameter integer DATA_WIDTH = 16
 ) (
     input  logic                  CLK,
     input  logic                  RSTn,
@@ -18,8 +17,9 @@ module hybrid_tree #(
   //-------------------------------------------------------------------------
   // Local parameters
   //-------------------------------------------------------------------------
+  localparam integer ARRAY_SIZE = 4;
   localparam integer BRAM_COUNT = ARRAY_SIZE;
-  localparam integer BRAM_SIZE = QUEUE_SIZE / BRAM_COUNT;
+  localparam integer BRAM_SIZE = (QUEUE_SIZE - ARRAY_SIZE) / BRAM_COUNT;
   localparam integer BRAM_DEPTH = $clog2(BRAM_SIZE + 1);
 
   //-------------------------------------------------------------------------
@@ -27,8 +27,10 @@ module hybrid_tree #(
   //-------------------------------------------------------------------------
   // Level 0 register array data structure
   logic [DATA_WIDTH-1:0] level_0_data[ARRAY_SIZE-1:0];
+  logic [DATA_WIDTH-1:0] level_0_data_phase_1[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] next_level_0_data[ARRAY_SIZE-1:0];
   logic [$clog2(ARRAY_SIZE)-1:0] level_0_target[ARRAY_SIZE-1:0];
+  logic [$clog2(ARRAY_SIZE)-1:0] level_0_target_phase_1[ARRAY_SIZE-1:0];
   logic [$clog2(ARRAY_SIZE)-1:0] next_level_0_target[ARRAY_SIZE-1:0];
   logic [(DATA_WIDTH + $clog2(ARRAY_SIZE))-1:0] level_0[ARRAY_SIZE-1:0];
   logic [(DATA_WIDTH + $clog2(ARRAY_SIZE))-1:0] next_level_0[ARRAY_SIZE-1:0];
@@ -45,15 +47,12 @@ module hybrid_tree #(
   logic [DATA_WIDTH-1:0] level_1_data[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] next_level_1_data[ARRAY_SIZE-1:0];
   logic level_1_valid[ARRAY_SIZE-1:0];
-  logic next_level_1_valid[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH:0] level_1[ARRAY_SIZE-1:0];
-  logic [DATA_WIDTH:0] next_level_1[ARRAY_SIZE-1:0];
 
   genvar lv_1_gen;
   generate
     for (lv_1_gen = 0; lv_1_gen < ARRAY_SIZE; lv_1_gen++) begin : gen_level_1_assignments
       assign level_1[lv_1_gen] = {level_1_valid[lv_1_gen], level_1_data[lv_1_gen]};
-      assign next_level_1[lv_1_gen] = {next_level_1_valid[lv_1_gen], next_level_1_data[lv_1_gen]};
     end
   endgenerate
 
@@ -83,7 +82,7 @@ module hybrid_tree #(
     end
   end
 
-  always_comb begin : size_comb
+  always_comb begin : size_comb  // FIXME
     next_size = size;
     if (i_wrt && !i_read) begin  // enqueue
       next_size = size + 1;
@@ -104,6 +103,7 @@ module hybrid_tree #(
   logic [DATA_WIDTH-1:0] next_bram_i_data[ARRAY_SIZE-1:0];
   logic bram_o_full[ARRAY_SIZE-1:0];
   logic bram_o_empty[ARRAY_SIZE-1:0];
+  logic bram_o_valid[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] bram_o_data[ARRAY_SIZE-1:0];
   logic bram_enqueue[ARRAY_SIZE-1:0];
   logic next_bram_enqueue[ARRAY_SIZE-1:0];
@@ -130,6 +130,14 @@ module hybrid_tree #(
     end
   end
 
+  genvar bram_lvl_1_gen;
+  generate
+    for (bram_lvl_1_gen = 0; bram_lvl_1_gen < ARRAY_SIZE; bram_lvl_1_gen++) begin
+      assign level_1_data[bram_lvl_1_gen]  = bram_o_data[bram_lvl_1_gen];
+      assign level_1_valid[bram_lvl_1_gen] = bram_o_valid[bram_lvl_1_gen];
+    end
+  endgenerate
+
   //-------------------------------------------------------------------------
   // Internal modules instantiation
   //-------------------------------------------------------------------------
@@ -147,6 +155,7 @@ module hybrid_tree #(
           .i_data(bram_i_data[bram_tree_gen]),
           .o_full(bram_o_full[bram_tree_gen]),
           .o_empty(bram_o_empty[bram_tree_gen]),
+          .o_valid(bram_o_valid[bram_tree_gen]),
           .o_data(bram_o_data[bram_tree_gen])
       );
     end
@@ -161,7 +170,7 @@ module hybrid_tree #(
         level_0_data[i]   <= '{default: 0};
         level_0_target[i] <= '{default: 0};
         level_1_data[i]   <= '{default: 0};
-        level_1_valid[i]  <= '0;
+        level_1_valid[i]  <= '1;
         enqueue_done      <= '1;
         dequeue_done      <= '1;
         replace_done      <= '1;
@@ -175,7 +184,6 @@ module hybrid_tree #(
         level_0_data[i]   <= next_level_0_data[i];
         level_0_target[i] <= next_level_0_target[i];
         level_1_data[i]   <= next_level_1_data[i];
-        level_1_valid[i]  <= next_level_1_valid[i];
         enqueue_done      <= next_enqueue_done;
         dequeue_done      <= next_dequeue_done;
         replace_done      <= next_replace_done;
@@ -192,7 +200,6 @@ module hybrid_tree #(
       next_level_0_data[i]   = level_0_data[i];
       next_level_0_target[i] = level_0_target[i];
       next_level_1_data[i]   = level_1_data[i];
-      next_level_1_valid[i]  = level_1_valid[i];
       next_enqueue_done      = enqueue_done;
       next_dequeue_done      = dequeue_done;
       next_replace_done      = replace_done;
@@ -202,65 +209,79 @@ module hybrid_tree #(
       next_bram_i_data[i]    = bram_i_data[i];
     end
 
-    for (int i = 0; i < ARRAY_SIZE; i++) begin
-      next_level_1_data[i] = bram_o_data[i];
-      if (bram_o_data[i] != 0) begin
-        next_level_1_valid[i] = 1;
+    // Handle Replace operation
+    if (replace) begin
+      next_level_0_data[0] = i_data;  // The left-most register is replaced with the new data
+      if (level_1_valid[level_0_target[0]]) begin
+        // based on the tree tag, the new item is locally compared with the level 1 node of the corresponding tree
+        if (level_1_data[level_0_target[0]] < i_data) begin // if the new item is larger than the level 1 node
+          // new item stays at the left-most register
+        end else begin
+          // new item is sent to the corresponding tree
+          next_bram_i_data[level_0_target[0]] = i_data;
+          next_bram_replace[level_0_target[0]] = 1'b1;
+          // once bram received new item, need to wait for the bram output to be valid
+          next_level_0_data[0] = level_1_data[level_0_target[0]];
+        end
+      end else begin  // if the node is marked as invalid, the comparison stalls
+        next_replace_done = 1'b0;
       end
     end
 
-    // Handle Replace operation
-    if (replace) begin
-      next_level_0_data[0] = i_data;
-      next_replace_done = 1'b0;
-    end
     if (!replace_done) begin
-      if (level_1_valid[level_0_target[0]]) begin // if level_1 data of the corresponding tree is valid
-        if (i_data < level_1_data[level_0_target[0]]) begin // need to signal BRAM tree module to replace
-          next_level_0_data[0] = level_1_data[level_0_target[0]];
-          next_level_1_data[level_0_target[0]] = 0;
-          next_level_1_valid[level_0_target[0]] = 0;
-          next_bram_replace[level_0_target[0]] = 1;
+      if (level_1_valid[level_0_target[0]]) begin
+        // based on the tree tag, the new item is locally compared with the level 1 node of the corresponding tree
+        if (level_1_data[level_0_target[0]] < i_data) begin // if the new item is larger than the level 1 node
+          // new item stays at the left-most register
+        end else begin
+          // new item is sent to the corresponding tree
           next_bram_i_data[level_0_target[0]] = i_data;
+          next_bram_replace[level_0_target[0]] = 1'b1;
+          // and the left-most register is updated with the level 1 node's value
+          next_level_0_data[0] = level_1_data[level_0_target[0]];
         end
         next_replace_done = 1'b1;
       end
     end
 
-    // First phase (even-odd)
-    for (int i = 0; i < ARRAY_SIZE - 1; i += 2) begin
-      if (i + 1 < ARRAY_SIZE) begin
-        if (level_0_data[i] < level_0_data[i+1]) begin
-          next_level_0_data[i] = level_0_data[i+1];
-          next_level_0_data[i+1] = level_0_data[i];
-          next_level_0_target[i] = level_0_target[i+1];
-          next_level_0_target[i+1] = level_0_target[i];
+    if (enqueue_done && dequeue_done && replace_done) begin
+      // First phase (even-odd)
+      for (int i = 0; i < ARRAY_SIZE - 1; i += 2) begin
+        if (i + 1 < ARRAY_SIZE) begin
+          if (level_0_data[i] < level_0_data[i+1]) begin
+            next_level_0_data[i] = level_0_data[i+1];
+            next_level_0_data[i+1] = level_0_data[i];
+            next_level_0_target[i] = level_0_target[i+1];
+            next_level_0_target[i+1] = level_0_target[i];
+          end
         end
       end
-    end
-
-    // Second phase (odd-even)
-    for (int i = 1; i < ARRAY_SIZE - 1; i += 2) begin
-      if (i + 1 < ARRAY_SIZE) begin
-        if (level_0_data[i] < level_0_data[i+1]) begin
-          next_level_0_data[i] = level_0_data[i+1];
-          next_level_0_data[i+1] = level_0_data[i];
-          next_level_0_target[i] = level_0_target[i+1];
-          next_level_0_target[i+1] = level_0_target[i];
+      // Second phase (odd-even)
+      for (int i = 1; i < ARRAY_SIZE - 1; i += 2) begin
+        if (i + 1 < ARRAY_SIZE) begin
+          if (next_level_0_data[i] < next_level_0_data[i+1]) begin
+            // swap data and target without using a temporary variable
+            next_level_0_data[i] = next_level_0_data[i] ^ next_level_0_data[i+1];
+            next_level_0_data[i+1] = next_level_0_data[i] ^ next_level_0_data[i+1];
+            next_level_0_data[i] = next_level_0_data[i] ^ next_level_0_data[i+1];
+            next_level_0_target[i] = next_level_0_target[i] ^ next_level_0_target[i+1];
+            next_level_0_target[i+1] = next_level_0_target[i] ^ next_level_0_target[i+1];
+            next_level_0_target[i] = next_level_0_target[i] ^ next_level_0_target[i+1];
+          end
         end
       end
     end
   end
 
   always_comb begin : empty_check
-    empty = 1'b1;
+    empty = (size == 0);
     for (int i = 0; i < ARRAY_SIZE; i++) begin
       empty = empty & bram_o_empty[i];  // AND operation to ensure all are empty
     end
   end
 
   always_comb begin : full_check
-    full = 1'b1;
+    full = (size == ARRAY_SIZE);
     for (int i = 0; i < ARRAY_SIZE; i++) begin
       full = full & bram_o_full[i];  // AND operation to ensure all are full
     end
