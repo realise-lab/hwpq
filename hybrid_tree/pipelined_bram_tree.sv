@@ -95,7 +95,7 @@ module pipelined_bram_tree #(
   genvar i;
   generate
     for (i = 0; i < TREE_DEPTH; i++) begin : gen_bram  // Using BRAM starts from level 2
-      rams_tdp_rf_rf #(
+      rams_tdp_wf_wf #(
           .WIDTH(DATA_WIDTH),
           .DEPTH(1 << i)
       ) bram_inst (
@@ -182,11 +182,11 @@ module pipelined_bram_tree #(
       end
 
       DEQUEUE: begin
-        next_state = READ_MEM;
+        next_state = WAIT;
       end
 
       REPLACE: begin
-        next_state = READ_MEM;
+        next_state = WAIT;
       end
 
       WAIT: begin
@@ -266,6 +266,9 @@ module pipelined_bram_tree #(
         next_addr_a[parent_lvl]   = parent_idx;
         next_addr_a[parent_lvl+1] = 2 * parent_idx;
         next_addr_b[parent_lvl+1] = 2 * parent_idx + 1;
+        if (parent_lvl == 0 || parent_lvl == 1) begin
+          next_valid = 1'b1;
+        end
       end
 
       COMPARE_SWAP: begin
@@ -289,7 +292,7 @@ module pipelined_bram_tree #(
         end else begin  // if no change, then we are done
           next_parent_lvl = 'd0;
           next_parent_idx = 'd0;
-          next_valid = 1'b1;
+          // next_valid = 1'b1;
         end
 
         if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
@@ -308,6 +311,8 @@ module pipelined_bram_tree #(
         next_addr_a[0] = 'd0;
         next_din_a[0] = 'd0;
         next_we_a[0] = 1'b1;
+        next_addr_a[1] = 'd0;
+        next_addr_b[1] = 'd1;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
         next_valid = 'd0;
@@ -317,6 +322,8 @@ module pipelined_bram_tree #(
         next_addr_a[0] = 'd0;
         next_din_a[0] = i_data;
         next_we_a[0] = 1'b1;
+        next_addr_a[1] = 'd0;
+        next_addr_b[1] = 'd1;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
         next_valid = 'd0;

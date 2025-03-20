@@ -1,7 +1,6 @@
 // Dual-Port Block RAM with Two Write Ports
-// File: rams_tdp_rf_rf.v
 
-module rams_tdp_rf_rf #(
+module rams_tdp_wf_wf #(
     parameter integer WIDTH = 16,
     parameter integer DEPTH = 1024
 ) (
@@ -23,15 +22,23 @@ module rams_tdp_rf_rf #(
 
   always @(posedge clka) begin
     if (ena) begin
-      if (wea) ram[addra] <= dia;
-      doa <= ram[addra];
+      if (wea) begin
+        ram[addra] <= dia;
+        doa <= dia;
+      end else begin
+        doa <= ram[addra];
+      end
     end
   end
 
   always @(posedge clkb) begin
     if (enb) begin
-      if (web) ram[addrb] <= dib;
-      dob <= ram[addrb];
+      if (web) begin
+        ram[addrb] <= dib;
+        dob <= dib;
+      end else begin
+        dob <= ram[addrb];
+      end
     end
   end
 

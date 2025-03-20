@@ -152,7 +152,7 @@ module tb_hybrid_tree;
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (6) @(posedge CLK);
+      repeat (4) @(posedge CLK);
     end
   endtask
 
