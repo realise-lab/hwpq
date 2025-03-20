@@ -29,6 +29,11 @@ module pipelined_bram_tree #(
   //-------------------------------------------------------------------------
   // Internal used wires and registers
   //-------------------------------------------------------------------------
+  // Registers for root node and its children
+  logic [DATA_WIDTH-1:0] level_0;
+  logic [DATA_WIDTH-1:0] level_1[2];
+  logic [DATA_WIDTH-1:0] next_level_0;
+  logic [DATA_WIDTH-1:0] next_level_1[2];
 
   // Memory used wires and registers
   logic [31:0] addr_a[TREE_DEPTH-1:0];
@@ -94,10 +99,10 @@ module pipelined_bram_tree #(
 
   genvar i;
   generate
-    for (i = 0; i < TREE_DEPTH; i++) begin : gen_bram  // Using BRAM starts from level 2
+    for (i = 2; i < TREE_DEPTH; i++) begin : gen_bram
       rams_tdp_wf_wf #(
           .WIDTH(DATA_WIDTH),
-          .DEPTH(1 << i)
+          .DEPTH((1 << i))
       ) bram_inst (
           .clka (CLK),
           .ena  (1'b1),
@@ -182,11 +187,11 @@ module pipelined_bram_tree #(
       end
 
       DEQUEUE: begin
-        next_state = WAIT;
+        next_state = COMPARE_SWAP;
       end
 
       REPLACE: begin
-        next_state = WAIT;
+        next_state = COMPARE_SWAP;
       end
 
       WAIT: begin
@@ -212,6 +217,10 @@ module pipelined_bram_tree #(
     if (!RSTn) begin
       parent_lvl <= '0;
       parent_idx <= '0;
+      level_0 <= '0;
+      for (itr_seq = 0; itr_seq < 2; itr_seq++) begin  // initialize 2 registers on level_1 
+        level_1[itr_seq] <= '0;
+      end
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin  // initialize BRAMs' ports
         addr_a[lvl_seq] <= '0;
         addr_b[lvl_seq] <= '0;
@@ -227,6 +236,10 @@ module pipelined_bram_tree #(
     end else begin
       parent_lvl <= next_parent_lvl;
       parent_idx <= next_parent_idx;
+      level_0 <= next_level_0;
+      for (itr_seq = 0; itr_seq < 2; itr_seq++) begin
+        level_1[itr_seq] <= next_level_1[itr_seq];
+      end
       for (lvl_seq = 0; lvl_seq < TREE_DEPTH; lvl_seq++) begin
         addr_a[lvl_seq] <= next_addr_a[lvl_seq];
         addr_b[lvl_seq] <= next_addr_b[lvl_seq];
@@ -245,6 +258,10 @@ module pipelined_bram_tree #(
   always_comb begin : bram_comb
     next_parent_lvl = parent_lvl;
     next_parent_idx = parent_idx;
+    next_level_0 = level_0;
+    for (itr_comb = 0; itr_comb < 2; itr_comb++) begin
+      next_level_1[itr_comb] = level_1[itr_comb];
+    end
     for (lvl_comb = 0; lvl_comb < TREE_DEPTH; lvl_comb++) begin
       next_addr_a[lvl_comb] = addr_a[lvl_comb];
       next_addr_b[lvl_comb] = addr_b[lvl_comb];
@@ -263,70 +280,108 @@ module pipelined_bram_tree #(
       end
 
       READ_MEM: begin  // in order to read from BRAMs, we will need to send addresses in
-        next_addr_a[parent_lvl]   = parent_idx;
-        next_addr_a[parent_lvl+1] = 2 * parent_idx;
-        next_addr_b[parent_lvl+1] = 2 * parent_idx + 1;
-        if (parent_lvl == 0 || parent_lvl == 1) begin
-          next_valid = 1'b1;
+        if (parent_lvl == 'd1) begin
+          next_addr_a[2] = 2 * parent_idx;
+          next_addr_b[2] = 2 * parent_idx + 1;
+        end else if (parent_lvl > 'd1) begin
+          next_addr_a[parent_lvl]   = parent_idx;
+          next_addr_a[parent_lvl+1] = 2 * parent_idx;
+          next_addr_b[parent_lvl+1] = 2 * parent_idx + 1;
         end
+        // if (parent_lvl == 0 || parent_lvl == 1) begin
+        //   next_valid = 1'b1;
+        // end
       end
 
       COMPARE_SWAP: begin
-        next_comp_parent_in = dout_a[parent_lvl];
-        next_comp_left_child_in = dout_a[parent_lvl+1];
-        next_comp_right_child_in = dout_b[parent_lvl+1];
+        if (parent_lvl == 'd0) begin
+          next_comp_parent_in = level_0;
+          next_comp_left_child_in = level_1[0];
+          next_comp_right_child_in = level_1[1];
+        end else if (parent_lvl == 'd1) begin
+          next_comp_parent_in = level_1[parent_idx];
+          next_comp_left_child_in = dout_a[2];
+          next_comp_right_child_in = dout_b[2];
+        end else if (parent_lvl > 'd1) begin
+          next_comp_parent_in = dout_a[parent_lvl];
+          next_comp_left_child_in = dout_a[parent_lvl+1];
+          next_comp_right_child_in = dout_b[parent_lvl+1];
+        end
       end
 
       WRITE_MEM: begin  // in order to write to BRAMs, we need enable write signals
-        next_din_a[parent_lvl]   = comp_parent_out;
-        next_din_a[parent_lvl+1] = comp_left_child_out;
-        next_din_b[parent_lvl+1] = comp_right_child_out;
+        if (parent_lvl == 'd0) begin
+          next_level_0 = comp_parent_out;
+          next_level_1[0] = comp_left_child_out;
+          next_level_1[1] = comp_right_child_out;
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = 'd1;
+            next_parent_idx = 0;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = 'd1;
+            next_parent_idx = 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
+          next_valid = 1'b1;
+        end else if (parent_lvl == 'd1) begin
+          next_level_1[parent_idx] = comp_parent_out;
+          next_din_a[2] = comp_left_child_out;
+          next_din_b[2] = comp_right_child_out;
+          // find where the next parent index is
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = 'd2;
+            next_parent_idx = 2 * parent_idx;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = 'd2;
+            next_parent_idx = 2 * parent_idx + 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
 
-        // find where the next parent index is
-        if (comp_left_child_out != comp_left_child_in) begin
-          next_parent_lvl = parent_lvl + 1;
-          next_parent_idx = 2 * parent_idx;
-        end else if (comp_right_child_out != comp_right_child_in) begin
-          next_parent_lvl = parent_lvl + 1;
-          next_parent_idx = 2 * parent_idx + 1;
-        end else begin  // if no change, then we are done
-          next_parent_lvl = 'd0;
-          next_parent_idx = 'd0;
-          // next_valid = 1'b1;
-        end
+          next_we_a[2] = 1'b1;
+          next_we_b[2] = 1'b1;
+        end else if (parent_lvl > 'd1) begin
+          next_din_a[parent_lvl]   = comp_parent_out;
+          next_din_a[parent_lvl+1] = comp_left_child_out;
+          next_din_b[parent_lvl+1] = comp_right_child_out;
+          // find where the next parent index is
+          if (comp_left_child_out != comp_left_child_in) begin
+            next_parent_lvl = parent_lvl + 1;
+            next_parent_idx = 2 * parent_idx;
+          end else if (comp_right_child_out != comp_right_child_in) begin
+            next_parent_lvl = parent_lvl + 1;
+            next_parent_idx = 2 * parent_idx + 1;
+          end else begin  // if no change, then we are done
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+          end
 
-        if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
-          next_parent_lvl = 'd0;
-          next_parent_idx = 'd0;
-          next_we_a[parent_lvl] = 1'b0;
-          next_we_b[parent_lvl] = 1'b0;
-        end else begin
-          next_we_a[parent_lvl]   = 1'b1;
-          next_we_a[parent_lvl+1] = 1'b1;
-          next_we_b[parent_lvl+1] = 1'b1;
+          if (parent_lvl == TREE_DEPTH - 1) begin  // if we are at the last level
+            next_parent_lvl = 'd0;
+            next_parent_idx = 'd0;
+            next_we_a[parent_lvl] = 1'b0;
+            next_we_b[parent_lvl] = 1'b0;
+          end else begin
+            next_we_a[parent_lvl]   = 1'b1;
+            next_we_a[parent_lvl+1] = 1'b1;
+            next_we_b[parent_lvl+1] = 1'b1;
+          end
         end
       end
 
       DEQUEUE: begin
-        next_addr_a[0] = 'd0;
-        next_din_a[0] = 'd0;
-        next_we_a[0] = 1'b1;
-        next_addr_a[1] = 'd0;
-        next_addr_b[1] = 'd1;
+        next_level_0 = 'd0;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
-        next_valid = 'd0;
       end
 
       REPLACE: begin
-        next_addr_a[0] = 'd0;
-        next_din_a[0] = i_data;
-        next_we_a[0] = 1'b1;
-        next_addr_a[1] = 'd0;
-        next_addr_b[1] = 'd1;
+        next_level_0 = i_data;
         next_parent_lvl = 'd0;
         next_parent_idx = 'd0;
-        next_valid = 'd0;
       end
 
       WAIT: begin  // this is a do nothing state, just for reading from RAM
@@ -370,6 +425,6 @@ module pipelined_bram_tree #(
   assign o_full  = (queue_size >= QUEUE_SIZE);
   assign o_empty = (queue_size <= 0);
   assign o_valid = valid;
-  assign o_data  = dout_a[0];
+  assign o_data  = level_0;
 
 endmodule

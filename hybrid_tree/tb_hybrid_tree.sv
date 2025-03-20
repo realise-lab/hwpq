@@ -77,23 +77,18 @@ module tb_hybrid_tree;
     uut.next_level_0_data[3] = ref_queue[3];
     uut.next_level_0_target[3] = 3;
 
-    uut.next_level_1_data[0] = ref_queue[4];
-    uut.next_level_1_data[1] = ref_queue[5];
-    uut.next_level_1_data[2] = ref_queue[6];
-    uut.next_level_1_data[3] = ref_queue[7];
-
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[4];
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[8];
-    uut.gen_bram_tree[0].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[9];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[5];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[10];
-    uut.gen_bram_tree[1].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[11];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[6];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[12];
-    uut.gen_bram_tree[2].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[13];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[0].bram_inst.ram[0] = ref_queue[7];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[0] = ref_queue[14];
-    uut.gen_bram_tree[3].bram_tree_inst.gen_bram[1].bram_inst.ram[1] = ref_queue[15];
+    uut.gen_bram_tree[0].bram_tree_inst.next_level_0 = ref_queue[4];
+    uut.gen_bram_tree[0].bram_tree_inst.next_level_1[0] = ref_queue[8];
+    uut.gen_bram_tree[0].bram_tree_inst.next_level_1[1] = ref_queue[9];
+    uut.gen_bram_tree[1].bram_tree_inst.next_level_0 = ref_queue[5];
+    uut.gen_bram_tree[1].bram_tree_inst.next_level_1[0] = ref_queue[10];
+    uut.gen_bram_tree[1].bram_tree_inst.next_level_1[1] = ref_queue[11];
+    uut.gen_bram_tree[2].bram_tree_inst.next_level_0 = ref_queue[6];
+    uut.gen_bram_tree[2].bram_tree_inst.next_level_1[0] = ref_queue[12];
+    uut.gen_bram_tree[2].bram_tree_inst.next_level_1[1] = ref_queue[13];
+    uut.gen_bram_tree[3].bram_tree_inst.next_level_0 = ref_queue[7];
+    uut.gen_bram_tree[3].bram_tree_inst.next_level_1[0] = ref_queue[14];
+    uut.gen_bram_tree[3].bram_tree_inst.next_level_1[1] = ref_queue[15];
 
     uut.gen_bram_tree[0].bram_tree_inst.next_queue_size = 3;
     uut.gen_bram_tree[1].bram_tree_inst.next_queue_size = 3;

@@ -1,5 +1,5 @@
 module hybrid_tree #(
-    parameter integer QUEUE_SIZE = 16,
+    parameter integer QUEUE_SIZE = 32,
     parameter integer DATA_WIDTH = 16
 ) (
     input  logic                  CLK,
@@ -27,10 +27,8 @@ module hybrid_tree #(
   //-------------------------------------------------------------------------
   // Level 0 register array data structure
   logic [DATA_WIDTH-1:0] level_0_data[ARRAY_SIZE-1:0];
-  logic [DATA_WIDTH-1:0] level_0_data_phase_1[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] next_level_0_data[ARRAY_SIZE-1:0];
   logic [$clog2(ARRAY_SIZE)-1:0] level_0_target[ARRAY_SIZE-1:0];
-  logic [$clog2(ARRAY_SIZE)-1:0] level_0_target_phase_1[ARRAY_SIZE-1:0];
   logic [$clog2(ARRAY_SIZE)-1:0] next_level_0_target[ARRAY_SIZE-1:0];
   logic [(DATA_WIDTH + $clog2(ARRAY_SIZE))-1:0] level_0[ARRAY_SIZE-1:0];
   logic [(DATA_WIDTH + $clog2(ARRAY_SIZE))-1:0] next_level_0[ARRAY_SIZE-1:0];
@@ -47,14 +45,14 @@ module hybrid_tree #(
   logic [DATA_WIDTH-1:0] level_1_data[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] next_level_1_data[ARRAY_SIZE-1:0];
   logic level_1_valid[ARRAY_SIZE-1:0];
-  logic [DATA_WIDTH:0] level_1[ARRAY_SIZE-1:0];
+  // logic [DATA_WIDTH:0] level_1[ARRAY_SIZE-1:0];
 
-  genvar lv_1_gen;
-  generate
-    for (lv_1_gen = 0; lv_1_gen < ARRAY_SIZE; lv_1_gen++) begin : gen_level_1_assignments
-      assign level_1[lv_1_gen] = {level_1_valid[lv_1_gen], level_1_data[lv_1_gen]};
-    end
-  endgenerate
+  // genvar lv_1_gen;
+  // generate
+  //   for (lv_1_gen = 0; lv_1_gen < ARRAY_SIZE; lv_1_gen++) begin : gen_level_1_assignments
+  //     assign level_1[lv_1_gen] = {level_1_valid[lv_1_gen], level_1_data[lv_1_gen]};
+  //   end
+  // endgenerate
 
   // input signals reroute
   logic enqueue, dequeue, replace;
@@ -82,7 +80,7 @@ module hybrid_tree #(
     end
   end
 
-  always_comb begin : size_comb  // FIXME
+  always_comb begin : size_comb  // TODO - this can be optimized
     next_size = size;
     if (i_wrt && !i_read) begin  // enqueue
       next_size = size + 1;
@@ -169,8 +167,8 @@ module hybrid_tree #(
       for (int i = 0; i < ARRAY_SIZE; i++) begin
         level_0_data[i]   <= '{default: 0};
         level_0_target[i] <= '{default: 0};
-        level_1_data[i]   <= '{default: 0};
-        level_1_valid[i]  <= '1;
+        // level_1_data[i]   <= '{default: 0};
+        // level_1_valid[i]  <= '1;
         enqueue_done      <= '1;
         dequeue_done      <= '1;
         replace_done      <= '1;
@@ -183,7 +181,7 @@ module hybrid_tree #(
       for (int i = 0; i < ARRAY_SIZE; i++) begin
         level_0_data[i]   <= next_level_0_data[i];
         level_0_target[i] <= next_level_0_target[i];
-        level_1_data[i]   <= next_level_1_data[i];
+        // level_1_data[i]   <= next_level_1_data[i];
         enqueue_done      <= next_enqueue_done;
         dequeue_done      <= next_dequeue_done;
         replace_done      <= next_replace_done;
@@ -199,7 +197,7 @@ module hybrid_tree #(
     for (int i = 0; i < ARRAY_SIZE; i++) begin
       next_level_0_data[i]   = level_0_data[i];
       next_level_0_target[i] = level_0_target[i];
-      next_level_1_data[i]   = level_1_data[i];
+      // next_level_1_data[i]   = level_1_data[i];
       next_enqueue_done      = enqueue_done;
       next_dequeue_done      = dequeue_done;
       next_replace_done      = replace_done;
