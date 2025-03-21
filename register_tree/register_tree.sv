@@ -1,5 +1,5 @@
 module register_tree #(
-    parameter integer QUEUE_SIZE = 3,
+    parameter integer QUEUE_SIZE = 2047,
     parameter integer DATA_WIDTH = 16
 ) (
     // Synchronous Control
@@ -19,23 +19,27 @@ module register_tree #(
     Parameters
   */
   localparam integer TreeDepth = $clog2(QUEUE_SIZE);  // depth of the tree
-  localparam integer NodesNeeded = (1 << (TreeDepth + 1)) - 1;  // number of nodes needed to initialize
+  localparam integer NodesNeeded = (1 << TreeDepth) - 1;  // number of nodes needed to initialize
   localparam integer CompCount = NodesNeeded / 2;  // number of comparators
 
   /*
     Registers
   */
   // Register array to store the tree nodes
-  logic [         DATA_WIDTH-1:0] queue          [NodesNeeded];
+  logic [DATA_WIDTH-1:0] queue     [NodesNeeded];
+  logic [DATA_WIDTH-1:0] next_queue[NodesNeeded];
+  logic [DATA_WIDTH-1:0] enqueue_idx, next_enqueue_idx;
   // Size counter to keep track of the number of nodes in the queue
   logic [$clog2(NodesNeeded)-1:0] size;
+  logic [$clog2(NodesNeeded)-1:0] next_size;
+  logic empty, full;
   // Wires to connect the comparator units
-  logic [         DATA_WIDTH-1:0] old_parent     [  CompCount];
-  logic [         DATA_WIDTH-1:0] old_left_child [  CompCount];
-  logic [         DATA_WIDTH-1:0] old_right_child[  CompCount];
-  logic [         DATA_WIDTH-1:0] new_parent     [  CompCount];
-  logic [         DATA_WIDTH-1:0] new_left_child [  CompCount];
-  logic [         DATA_WIDTH-1:0] new_right_child[  CompCount];
+  logic [DATA_WIDTH-1:0] old_parent     [CompCount];
+  logic [DATA_WIDTH-1:0] old_left_child [CompCount];
+  logic [DATA_WIDTH-1:0] old_right_child[CompCount];
+  logic [DATA_WIDTH-1:0] new_parent     [CompCount];
+  logic [DATA_WIDTH-1:0] new_left_child [CompCount];
+  logic [DATA_WIDTH-1:0] new_right_child[CompCount];
 
   /*
     States
@@ -44,8 +48,8 @@ module register_tree #(
     IDLE                  = 3'b000,
     COMPARE_AND_SWAP_EVEN = 3'b001,
     COMPARE_AND_SWAP_ODD  = 3'b010,
-    WRITE_TO_QUEUE        = 3'b011,
-    READ_FROM_QUEUE       = 3'b100,
+    ENQUEUE               = 3'b011,
+    DEQUEUE               = 3'b100,
     REPLACE               = 3'b101
   } state_t;
   state_t current_state, next_state;
@@ -53,7 +57,7 @@ module register_tree #(
   /*
     Generate components and initialize registers
   */
-  genvar i, level;
+  genvar i;
   // Generate comparators
   generate
     for (i = 0; i < CompCount; i++) begin : gen_comparator
@@ -82,34 +86,25 @@ module register_tree #(
   /*
     Size Tracker
   */
-  always_ff @(posedge CLK or negedge RSTn) begin : size_tracker
+  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
     if (!RSTn) begin
       size <= 0;
     end else begin
-      case (current_state)
-        IDLE: begin
-        end
+      size <= next_size;
+    end
+  end
 
-        COMPARE_AND_SWAP_EVEN: begin
-        end
-
-        COMPARE_AND_SWAP_ODD: begin
-        end
-
-        WRITE_TO_QUEUE: begin
-          size <= size + 1;
-        end
-
-        READ_FROM_QUEUE: begin
-          size <= size - 1;
-        end
-
-        REPLACE: begin
-        end
-
-        default: begin
-        end
-      endcase
+  always_comb begin : size_comb
+    next_size = size;
+    if (i_wrt && !i_read) begin  // enqueue
+      next_size = size + 1;
+    end else if (!i_wrt && i_read) begin  // dequeue
+      next_size = size - 1;
+    end else if (i_wrt && i_read) begin  // replace
+      next_size = size;
+      if (size == 0 && i_data != 0) begin  // this would be a special case for replace
+        next_size = size + 1;
+      end
     end
   end
 
@@ -125,51 +120,46 @@ module register_tree #(
   end
 
   always_comb begin : state_machine_comb_logic
-    // Default next state assignment
-    next_state = IDLE;
-
+    next_state = current_state;
     case (current_state)
       IDLE: begin
-        if (i_wrt && !i_read && size < QUEUE_SIZE) begin
-          next_state = WRITE_TO_QUEUE;
-        end else if (!i_wrt && i_read && size > 0) begin
-          next_state = READ_FROM_QUEUE;
-        end else if (i_wrt && i_read) begin
+        next_state = COMPARE_AND_SWAP_EVEN;
+        if (i_wrt && !i_read) begin  // enqueue
+          next_state = ENQUEUE;
+        end else if (!i_wrt && i_read) begin  // dequeue
+          next_state = DEQUEUE;
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
-        end else begin
-          next_state = COMPARE_AND_SWAP_EVEN;
         end
       end
 
       COMPARE_AND_SWAP_EVEN: begin
-        if (i_wrt && !i_read && size < QUEUE_SIZE) begin
-          next_state = WRITE_TO_QUEUE;
-        end else if (!i_wrt && i_read && size > 0) begin
-          next_state = READ_FROM_QUEUE;
-        end else if (i_wrt && i_read) begin
+        next_state = COMPARE_AND_SWAP_ODD;
+        if (i_wrt && !i_read) begin  // enqueue
+          next_state = ENQUEUE;
+        end else if (!i_wrt && i_read) begin  // dequeue
+          next_state = DEQUEUE;
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
-        end else begin
-          next_state = COMPARE_AND_SWAP_ODD;
         end
       end
 
       COMPARE_AND_SWAP_ODD: begin
-        if (i_wrt && !i_read && size < QUEUE_SIZE) begin
-          next_state = WRITE_TO_QUEUE;
-        end else if (!i_wrt && i_read && size > 0) begin
-          next_state = READ_FROM_QUEUE;
-        end else if (i_wrt && i_read) begin
+        next_state = COMPARE_AND_SWAP_EVEN;
+        if (i_wrt && !i_read) begin  // enqueue
+          next_state = ENQUEUE;
+        end else if (!i_wrt && i_read) begin  // dequeue
+          next_state = DEQUEUE;
+        end else if (i_wrt && i_read) begin  // replace
           next_state = REPLACE;
-        end else begin
-          next_state = COMPARE_AND_SWAP_EVEN;
         end
       end
 
-      WRITE_TO_QUEUE: begin
+      ENQUEUE: begin
         next_state = COMPARE_AND_SWAP_EVEN;
       end
 
-      READ_FROM_QUEUE: begin
+      DEQUEUE: begin
         next_state = COMPARE_AND_SWAP_EVEN;
       end
 
@@ -177,7 +167,7 @@ module register_tree #(
         next_state = COMPARE_AND_SWAP_EVEN;
       end
 
-      default: begin
+      default: begin  // Fault Proof
         next_state = IDLE;
       end
     endcase
@@ -186,69 +176,81 @@ module register_tree #(
   /*
     Queue Management
   */
-  int itr, lvl;
-  always_ff @(posedge CLK or negedge RSTn) begin : queue_management
+  always_ff @(posedge CLK or negedge RSTn) begin : queue_management_seq
     if (!RSTn) begin
-      for (itr = 0; itr < NodesNeeded; itr++) begin
+      for (int itr = 0; itr < NodesNeeded; itr++) begin
         queue[itr] <= '0;
       end
+      enqueue_idx <= 0;
     end else begin
-      case (current_state)
-        IDLE: begin
-        end
-
-        COMPARE_AND_SWAP_EVEN: begin
-          for (lvl = 0; lvl < TreeDepth; lvl = lvl + 2) begin
-            // Compute level bounds directly
-            automatic int s = (1 << lvl) - 1;  // start index
-            automatic int e = (1 << (lvl + 1)) - 2;  // end index
-            for (itr = s; itr <= e; itr++) begin
-              queue[itr] <= new_parent[itr];
-              queue[2*itr+1] <= new_left_child[itr];
-              queue[2*itr+2] <= new_right_child[itr];
-            end
-          end
-        end
-
-        COMPARE_AND_SWAP_ODD: begin
-          for (lvl = 1; lvl < TreeDepth; lvl = lvl + 2) begin
-            // Compute level bounds directly
-            automatic int s = (1 << lvl) - 1;  // start index
-            automatic int e = (1 << (lvl + 1)) - 2;  // end index
-            for (itr = s; itr <= e; itr++) begin
-              queue[itr] <= new_parent[itr];
-              queue[2*itr+1] <= new_left_child[itr];
-              queue[2*itr+2] <= new_right_child[itr];
-            end
-          end
-        end
-
-        WRITE_TO_QUEUE: begin
-          for (itr = (1 << TreeDepth) - 1; itr < (1 << (TreeDepth + 1)) - 1; itr++) begin
-            if (queue[itr] == '0) begin
-              queue[itr] <= i_data;
-              break;
-            end
-          end
-        end
-
-        READ_FROM_QUEUE: begin
-          queue[0] <= '0;
-        end
-
-        REPLACE: begin
-          queue[0] <= i_data;
-        end
-
-        default: begin
-        end
-      endcase
+      for (int itr = 0; itr < NodesNeeded; itr++) begin
+        queue[itr] <= next_queue[itr];
+      end
+      enqueue_idx <= next_enqueue_idx;
     end
   end
 
+  always_comb begin : queue_management_comb
+    next_queue = queue;
+    next_enqueue_idx = 0;
+    case (current_state)
+      IDLE: begin
+        next_queue = queue;
+      end
+
+      COMPARE_AND_SWAP_EVEN: begin
+        for (int lvl = 0; lvl < TreeDepth; lvl++) begin
+          if (lvl % 2 == 0 && lvl < TreeDepth - 1) begin  // even level
+            for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
+              next_queue[i] = new_parent[i];
+              next_queue[2*i+1] = new_left_child[i];
+              next_queue[2*i+2] = new_right_child[i];
+            end
+          end
+        end
+      end
+
+      COMPARE_AND_SWAP_ODD: begin
+        for (int lvl = 0; lvl < TreeDepth; lvl++) begin
+          if (lvl % 2 == 1 && lvl < TreeDepth - 1) begin  // even level
+            for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
+              next_queue[i] = new_parent[i];
+              next_queue[2*i+1] = new_left_child[i];
+              next_queue[2*i+2] = new_right_child[i];
+            end
+          end
+        end
+      end
+
+      ENQUEUE: begin
+        for (int i = 0; i < size; i++) begin
+          if (queue[i] == 0) begin
+            next_enqueue_idx = (i > next_enqueue_idx) ? i : next_enqueue_idx;
+          end
+        end
+        next_queue[next_enqueue_idx] = i_data;
+      end
+
+      DEQUEUE: begin
+        next_queue[0] = '0;
+      end
+
+      REPLACE: begin
+        next_queue[0] = i_data;
+      end
+
+      default: begin
+        next_queue = queue;
+      end
+    endcase
+
+  end
+
   // Assign outputs
-  assign o_full  = size == QUEUE_SIZE;
-  assign o_empty = size == 0;
-  assign o_data  = (size > 0) ? queue[0] : '0;
+  assign empty = (size <= 0) ? 'b1 : 'b0;
+  assign full = (size >= QUEUE_SIZE) ? 'b1 : 'b0;
+  assign o_full = full;
+  assign o_empty = empty;
+  assign o_data = !empty ? queue[0] : 'd0;
 
 endmodule

@@ -4,7 +4,7 @@ set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 
 
 # Create the results directory if it doesn't exist
 #! Change according to the module running analysis
-file mkdir ./register_tree/vivado_register_tree_analysis_results_16bit 
+file mkdir ./register_tree/vivado_analysis_results_16bit 
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
@@ -28,8 +28,8 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    #! Change according to the module running analysis
-    set log_file "./register_tree/vivado_register_tree_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    # NOTE - Change according to the module running analysis
+    set log_file "./register_tree/vivado_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {

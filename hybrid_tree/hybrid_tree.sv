@@ -1,5 +1,5 @@
 module hybrid_tree #(
-    parameter integer QUEUE_SIZE = 32,
+    parameter integer QUEUE_SIZE = 4,
     parameter integer DATA_WIDTH = 16
 ) (
     input  logic                  CLK,

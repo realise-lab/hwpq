@@ -1,12 +1,12 @@
 """Configuration settings for the HWPQ analysis."""
 
 # Directory paths
-REGISTER_ARRAY_LOG_DIR = "register_array/vivado_analysis_results_16bit/"
-REGISTER_TREE_LOG_DIR = "register_tree/vivado_analysis_results_16bit/"
-SYSTOLIC_ARRAY_LOG_DIR = "systolic_array/vivado_analysis_results_16bit/"
-BRAM_TREE_LOG_DIR = "bram_tree/vivado_analysis_results_16bit/"
-PIPELINED_BRAM_TREE_LOG_DIR = "pipelined_bram_tree/vivado_analysis_results_16bit/"
-HYBRID_TREE_LOG_DIR = "hybrid_tree/vivado_analysis_results_16bit/"
+# REGISTER_ARRAY_LOG_DIR = "register_array/vivado_analysis_results_16bit/"
+# REGISTER_TREE_LOG_DIR = "register_tree/vivado_analysis_results_16bit/"
+# SYSTOLIC_ARRAY_LOG_DIR = "systolic_array/vivado_analysis_results_16bit/"
+# BRAM_TREE_LOG_DIR = "bram_tree/vivado_analysis_results_16bit/"
+# PIPELINED_BRAM_TREE_LOG_DIR = "pipelined_bram_tree/vivado_analysis_results_16bit/"
+# HYBRID_TREE_LOG_DIR = "hybrid_tree/vivado_analysis_results_16bit/"
 
 # Output settings
 OUTPUT_DIR = "vivado_analysis_results_plots"
@@ -24,14 +24,16 @@ PERFORMANCE_FACTORS = {
         "register_array": 1/2, 
         "systolic_array": 1/2, 
         "register_tree": 1/2, 
-        "bram_tree": 1/7, 
-        "pipelined_bram_tree": 1/4
+        "bram_tree": 1/8, 
+        "pipelined_bram_tree": 1/4,
+        "hybrid_tree": 1/2
     },
     "replace": {
         "register_array": 1/2, 
         "systolic_array": 1/2, 
         "register_tree": 1/2, 
-        "bram_tree": 1/7, 
-        "pipelined_bram_tree": 1/4
+        "bram_tree": 1/8, 
+        "pipelined_bram_tree": 1/4,
+        "hybrid_tree": 1/2
     }
 }

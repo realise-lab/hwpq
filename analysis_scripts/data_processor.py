@@ -248,6 +248,26 @@ def compute_performance(data_dict, arch, operation):
     return sort_xy(queue_sizes, performance_values)
 
 
+def compute_resource_utilization(data_dict):
+    queue_sizes = []
+    resource_utilization = []
+    
+    for queue_size, metrics in data_dict.items():
+        if "max_achieved_frequency" in metrics:
+            # max_freq = metrics["max_achieved_frequency"]
+            lut_utilization = metrics["luts_util_percent"]
+            reg_utilization = metrics["registers_util_percent"]
+            bram_utilization = metrics["bram_util_percent"]
+            
+            resource = np.max([lut_utilization, reg_utilization, bram_utilization])
+            
+            # Add to our lists
+            queue_sizes.append(queue_size)
+            resource_utilization.append(resource)
+    
+    # Sort by queue size for better visualization
+    return sort_xy(queue_sizes, resource_utilization)
+
 def compute_resource_utilization_efficiency(data_dict, arch, operation):
     """
     Calculate area efficiency by dividing area (LUT count, Register count and BRAM count) by performance.

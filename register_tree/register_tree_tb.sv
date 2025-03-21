@@ -1,29 +1,29 @@
 module register_tree_tb;
   // Parameters matching the module under test
-  localparam integer QueueSize = 63;
+  localparam integer QueueSize = 31;
   localparam integer DataWidth = 16;
 
   // Clock and reset signals
-  logic                  CLK;
-  logic                  RSTn;
+  logic                   CLK;
+  logic                   RSTn;
 
   // Input signals
-  logic                  i_wrt;
-  logic                  i_read;
-  logic [DataWidth-1:0]  i_data;
+  logic                   i_wrt;
+  logic                   i_read;
+  logic   [DataWidth-1:0] i_data;
 
   // Output signals
-  logic                  o_full;
-  logic                  o_empty;
-  logic [DataWidth-1:0]  o_data;
+  logic                   o_full;
+  logic                   o_empty;
+  logic   [DataWidth-1:0] o_data;
 
   // Reference array for verification
-  logic [DataWidth-1:0]  ref_queue        [$:QueueSize-1];
+  logic   [DataWidth-1:0] ref_queue        [$:QueueSize-1];
 
   // Test variables
-  integer                i;
-  logic [DataWidth-1:0]  random_value;
-  integer                random_operation;
+  integer                 i;
+  logic   [DataWidth-1:0] random_value;
+  integer                 random_operation;
 
   typedef enum integer {
     ENQUEUE = 0,
