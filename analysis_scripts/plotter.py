@@ -485,7 +485,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     
     # Performance comparisons for different operations
     # Create filtered arch_list for enqueue operation (exclude BRAM trees)
-    enqueue_arch_list = [arch for arch in arch_list if "bram_tree" not in arch.lower()]
+    enqueue_arch_list = [arch for arch in arch_list if "bram_tree" and "hybrid_tree" not in arch.lower()]
     enqueue_data_dict = {arch: data for arch, data in data_dict_dict.items() if "bram_tree" not in arch.lower()}
     
     # Use filtered lists for enqueue operations

@@ -1,13 +1,5 @@
 """Configuration settings for the HWPQ analysis."""
 
-# Directory paths
-# REGISTER_ARRAY_LOG_DIR = "register_array/vivado_analysis_results_16bit/"
-# REGISTER_TREE_LOG_DIR = "register_tree/vivado_analysis_results_16bit/"
-# SYSTOLIC_ARRAY_LOG_DIR = "systolic_array/vivado_analysis_results_16bit/"
-# BRAM_TREE_LOG_DIR = "bram_tree/vivado_analysis_results_16bit/"
-# PIPELINED_BRAM_TREE_LOG_DIR = "pipelined_bram_tree/vivado_analysis_results_16bit/"
-# HYBRID_TREE_LOG_DIR = "hybrid_tree/vivado_analysis_results_16bit/"
-
 # Output settings
 OUTPUT_DIR = "vivado_analysis_results_plots"
 OUTPUT_FILENAME = "analysis_plots.pdf"

@@ -3,14 +3,13 @@
 set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # Create the results directory if it doesn't exist
-#! Change according to the module running analysis
+# NOTE - Change according to the module running analysis
 file mkdir ./bram_tree/vivado_bram_tree_analysis_results_16bit 
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
 
-    # Open the register_tree.sv file
-    #! Change according to the module running analysis
+    # NOTE - Change according to the module running analysis
     set file_id [open "./bram_tree/bram_tree.sv" r+] 
 
     # Read the file content
@@ -28,13 +27,13 @@ foreach queue_size $queue_sizes {
     # Close the file
     close $file_id
 
-    #! Change according to the module running analysis
+    # NOTE - Change according to the module running analysis
     set log_file "./bram_tree/vivado_bram_tree_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {
         
-        #! Change according to the module running analysis
+        # NOTE - Change according to the module running analysis
         open_project ./bram_tree/vivado_bram_tree/vivado_bram_tree.xpr
 
         # Set the clock period (in nanoseconds)
@@ -174,8 +173,7 @@ foreach queue_size $queue_sizes {
     }
 }
 
-# Open the register_tree.sv file
-#! Change according to the module running analysis
+# NOTE - Change according to the module running analysis
 set file_id [open "./bram_tree/bram_tree.sv" r+]
 
 # Read the file content
