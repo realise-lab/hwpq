@@ -56,6 +56,13 @@ module RegisterTree #(
   } state_t;
   state_t current_state, next_state;
 
+  // Assign outputs
+  assign empty = (size <= 0) ? 'b1 : 'b0;
+  assign full = (size >= QUEUE_SIZE) ? 'b1 : 'b0;
+  assign o_full = full;
+  assign o_empty = empty;
+  assign o_data = !empty ? queue[0] : 'd0;
+
   /*
     Generate components and initialize registers
   */
@@ -83,19 +90,6 @@ module RegisterTree #(
       assign old_right_child[i] = (2 * i + 2 < NODES_NEEDED) ? queue[2*i+2] : '0;
     end
   endgenerate
-
-  /*
-    Size Tracker
-  */
-  always_ff @(posedge i_CLK or negedge i_RSTn)
-    if (!i_RSTn) size <= 0;
-    else size <= next_size;
-
-  always_comb
-    next_size = i_wrt && !i_read ? size + 1 :
-                !i_wrt && i_read ? size - 1 :
-                i_wrt && i_read && size == 0 && i_data != 0 ? size + 1 :
-                size;
 
   /*
     State machine control
@@ -134,18 +128,36 @@ module RegisterTree #(
     endcase
 
   /*
+    Size Tracker
+  */
+  always_ff @(posedge i_CLK or negedge i_RSTn)
+    if (!i_RSTn) size <= 0;
+    else size <= next_size;
+
+  always_comb
+    case (current_state)
+      IDLE : next_size = size;
+      COMPARE_AND_SWAP_EVEN : next_size = size;
+      COMPARE_AND_SWAP_ODD : next_size = size;
+      ENQUEUE : next_size = (!full) ? size + 1 : size;
+      DEQUEUE : next_size = (!empty) ? size - 1 : size;
+      REPLACE : next_size = (size == 0 && i_data != '0) ? size + 1 : size;
+      default : next_size = size;
+    endcase
+
+  /*
     Queue Management
   */
-  logic [DATA_WIDTH-1:0] reset_values[NODES_NEEDED];
+  logic [DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
 
   generate
-    for (genvar itr = 0; itr < NODES_NEEDED; itr++) begin : l_gen_reset_values
-      assign reset_values[itr] = '0;
+    for (genvar itr = 0; itr < NODES_NEEDED; itr++) begin : l_gen_reset_queue
+      assign reset_queue[itr] = '0;
     end
   endgenerate
 
   always_ff @(posedge i_CLK or negedge i_RSTn)
-    if (!i_RSTn) queue <= reset_values;
+    if (!i_RSTn) queue <= reset_queue;
     else queue <= next_queue;
 
   always_ff @(posedge i_CLK or negedge i_RSTn)
@@ -250,12 +262,5 @@ module RegisterTree #(
       REPLACE: next_queue = rep_queue;
       default: next_queue = queue;
     endcase
-
-  // Assign outputs
-  assign empty = (size <= 0) ? 'b1 : 'b0;
-  assign full = (size >= QUEUE_SIZE) ? 'b1 : 'b0;
-  assign o_full = full;
-  assign o_empty = empty;
-  assign o_data = !empty ? queue[0] : 'd0;
 
 endmodule
