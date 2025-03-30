@@ -18,3 +18,8 @@ vivado_register_tree/
 vivado_bram_tree/
 vivado_pipelined_bram_tree/
 vivado_hybrid_tree/
+
+work/
+.svlint.toml
+.svls.toml
+CLAUDE.md
