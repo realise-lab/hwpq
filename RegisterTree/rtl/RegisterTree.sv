@@ -1,7 +1,7 @@
 `default_nettype none
 
 module RegisterTree #(
-    parameter int QUEUE_SIZE = 15,
+    parameter int QUEUE_SIZE = 31,
     parameter int DATA_WIDTH = 16
 ) (
     // Synchronous Control
@@ -28,13 +28,14 @@ module RegisterTree #(
   */
   // Storage elements
   logic [DATA_WIDTH-1:0] queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] next_queue[NODES_NEEDED];
   logic [DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
   
   // Size counter
   logic [$clog2(NODES_NEEDED)-1:0] size;
-  logic [$clog2(NODES_NEEDED)-1:0] next_size;
   logic empty, full;
+
+  // Control signals
+  logic enqueue, dequeue, replace;
   
   // Results of each operation - calculated in parallel
   logic [DATA_WIDTH-1:0] swap_result[NODES_NEEDED];
@@ -60,6 +61,11 @@ module RegisterTree #(
   /*
   * Signals assignments
   */
+  // Control signal assignment
+  assign enqueue = i_wrt && !i_read;
+  assign dequeue = !i_wrt && i_read;
+  assign replace = i_wrt && i_read;
+  // Size counter signals
   assign empty = (size <= 0);
   assign full = (size >= QUEUE_SIZE);
   assign o_full = full;
@@ -214,6 +220,7 @@ module RegisterTree #(
     if (found_empty_idx < NODES_NEEDED) begin
       enq_result[found_empty_idx] = i_data;
     end else begin
+      // Do nothing
     end
     
     // Update size after enqueue
@@ -245,34 +252,6 @@ module RegisterTree #(
   end
 
   /*
-  * Next state selection based on input controls
-  */
-  always_comb begin : select_next_state
-    // Default - maintain current state
-    next_queue = queue;
-    next_size = size;
-    
-    // Select based on control inputs
-    if (i_wrt && !i_read) begin
-      // Enqueue operation
-      next_queue = enq_result;
-      next_size = size_after_enq;
-    end else if (!i_wrt && i_read) begin
-      // Dequeue operation
-      next_queue = deq_result;
-      next_size = size_after_deq;
-    end else if (i_wrt && i_read) begin
-      // Replace operation
-      next_queue = rep_result;
-      next_size = size_after_rep;
-    end else begin
-      // Compare and swap for heap maintenance
-      next_queue = swap_result;
-      next_size = size_after_swap;
-    end
-  end
-
-  /*
   * Sequential logic - update registers
   */
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : update_registers
@@ -281,9 +260,24 @@ module RegisterTree #(
       queue <= reset_queue;
       size <= '0;
     end else begin
-      // Normal operation - update with next values
-      queue <= next_queue;
-      size <= next_size;
+      // Normal operation - select based on control inputs
+      if (enqueue) begin
+        // Enqueue operation
+        queue <= enq_result;
+        size <= size_after_enq;
+      end else if (dequeue) begin
+        // Dequeue operation
+        queue <= deq_result;
+        size <= size_after_deq;
+      end else if (replace) begin
+        // Replace operation
+        queue <= rep_result;
+        size <= size_after_rep;
+      end else begin
+        // Compare and swap for heap maintenance
+        queue <= swap_result;
+        size <= size_after_swap;
+      end
     end
   end
 

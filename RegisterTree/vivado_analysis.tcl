@@ -3,13 +3,13 @@
 set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # NOTE Change according to the module running analysis
-file mkdir ./register_tree/vivado_analysis_results_16bit 
+file mkdir ./RegisterTree/vivado_analysis_results_16bit 
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
 
     # NOTE Change according to the module running analysis
-    set file_id [open "./register_tree/rtl/RegisterTree.sv" r+] 
+    set file_id [open "./RegisterTree/rtl/RegisterTree.sv" r+] 
 
     # Read the file content
     set file_content [read $file_id]
@@ -27,13 +27,13 @@ foreach queue_size $queue_sizes {
     close $file_id
 
     # NOTE - Change according to the module running analysis
-    set log_file "./register_tree/vivado_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+    set log_file "./RegisterTree/vivado_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
 
     # Loop through each frequency
     for {set freq 100} {$freq <= 800} {incr freq 50} {
         
         # NOTE Change according to the module running analysis
-        open_project ./register_tree/vivado_register_tree/vivado_register_tree.xpr
+        open_project ./RegisterTree/vivado_register_tree/vivado_register_tree.xpr
 
         # Set max threads
         set_param general.maxThreads 24
@@ -128,6 +128,13 @@ foreach queue_size $queue_sizes {
                 }
             }
         }
+        
+        # Set resource threshold
+        set resource_threshold 50.0
+        
+        # Flag to check if threshold is exceeded
+        set threshold_exceeded 0
+        set threshold_message ""
 
         # Report power summary and get the total on-chip power
         set power_report [report_power -return_string]
@@ -141,8 +148,6 @@ foreach queue_size $queue_sizes {
 
         # Calculate the achieved frequency using WNS and target frequency with 3 significant digits
         set achieved_frequency [format "%.3f" [expr {1000.0 / ($period_ns - $wns)}]]
-
-        set fileId [open $log_file "a+"]
 
         # Print the results to the log file
         puts $fileId "Frequency: ${freq} MHz -> Synthesis: ${synth_duration_str} -> ${synth_duration}s"
@@ -162,6 +167,18 @@ foreach queue_size $queue_sizes {
         puts $fileId "Frequency: ${freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
         puts $fileId "\n"
 
+        # Check if any resource utilization exceeds threshold
+        if {$clb_luts_util > $resource_threshold} {
+            set threshold_exceeded 1
+            set threshold_message "CLB LUTs utilization exceeded $resource_threshold% threshold: $clb_luts_util%"
+        } elseif {$clb_registers_util > $resource_threshold} {
+            set threshold_exceeded 1
+            set threshold_message "CLB Registers utilization exceeded $resource_threshold% threshold: $clb_registers_util%"
+        } elseif {$bram_util_percentage > $resource_threshold} {
+            set threshold_exceeded 1
+            set threshold_message "BRAM utilization exceeded $resource_threshold% threshold: $bram_util_percentage%"
+        }
+        
         # Break the frequency loop if WNS is less than -1 ns
         if {$wns < -1.0} {
             puts $fileId "WNS exceeded -1 ns, finished"
@@ -172,16 +189,28 @@ foreach queue_size $queue_sizes {
 
         close $fileId
         close_project
+        
+        # If threshold was exceeded, log it and exit outer loop
+        if {$threshold_exceeded} {
+            set fileId [open $log_file "a+"]
+            puts $fileId $threshold_message
+            puts $fileId "Stopping analysis for larger queue sizes"
+            close $fileId
+            
+            puts $threshold_message
+            puts "Stopping analysis for larger queue sizes"
+            break 2
+        }
     }
 }
 
 # NOTE Change according to the module running analysis
-set file_id [open "./register_tree/rtl/RegisterTree.sv" r+]
+set file_id [open "./RegisterTree/rtl/RegisterTree.sv" r+]
 
 # Read the file content
 set file_content [read $file_id]
 
-# Replace the parameter TREE_DEPTH value
+# Replace the parameter TREE_DEPTH value back to minimum
 set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 3"]
 
 # Rewind the file pointer to the beginning
