@@ -18,19 +18,27 @@ module RegisterTree #(
 );
 
   /*
-    Parameters
-  */
+  *
+  * Local Parameters
+  *
+  * */
   localparam int TREE_DEPTH = $clog2(QUEUE_SIZE);  // depth of the tree
   localparam int NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of nodes needed to initialize
   localparam int COMP_COUNT = NODES_NEEDED / 2;  // number of comparators
 
+
   /*
-    Registers
-  */
-  // Register array to store the tree nodes
-  logic [DATA_WIDTH-1:0] queue     [NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] next_queue[NODES_NEEDED];
-  logic [$clog2(NODES_NEEDED)-1:0] enqueue_idx, next_enqueue_idx;
+  *
+  * Internal Registers and Wires
+  *
+  * */
+  logic [          DATA_WIDTH-1:0] queue      [NODES_NEEDED];  // the final queue for output
+  logic [          DATA_WIDTH-1:0] next_queue [NODES_NEEDED];
+  logic [          DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
+  logic [          DATA_WIDTH-1:0] swap_queue [NODES_NEEDED];
+  logic [          DATA_WIDTH-1:0] enq_queue  [NODES_NEEDED];
+  logic [          DATA_WIDTH-1:0] deq_queue  [NODES_NEEDED];
+  logic [          DATA_WIDTH-1:0] rep_queue  [NODES_NEEDED];
   // Size counter to keep track of the number of nodes in the queue
   logic [$clog2(NODES_NEEDED)-1:0] size;
   logic [$clog2(NODES_NEEDED)-1:0] next_size;
@@ -43,224 +51,246 @@ module RegisterTree #(
   logic [DATA_WIDTH-1:0] new_left_child [COMP_COUNT];
   logic [DATA_WIDTH-1:0] new_right_child[COMP_COUNT];
 
+
   /*
-    States
-  */
+  *
+  * FSM Initialization
+  *
+  * */
   typedef enum logic [2:0] {
-    IDLE                  = 3'b000,
-    COMPARE_AND_SWAP_EVEN = 3'b001,
-    COMPARE_AND_SWAP_ODD  = 3'b010,
-    ENQUEUE               = 3'b011,
-    DEQUEUE               = 3'b100,
-    REPLACE               = 3'b101
+    IDLE             = 3'b000,
+    COMPARE_AND_SWAP = 3'b001,
+    ENQUEUE          = 3'b010,
+    DEQUEUE          = 3'b011,
+    REPLACE          = 3'b100
   } state_t;
   state_t current_state, next_state;
 
-  // Assign outputs
+
+  /*
+  *
+  * Generate components and initialize constants
+  * 
+  * */
+  generate
+    for (genvar i = 0; i < NODES_NEEDED; i++) begin : l_gen_reset_queue
+      assign reset_queue[i] = '0;
+    end
+  endgenerate
+
+
+  /*
+  *
+  * assignment
+  *
+  * */
   assign empty = (size <= 0) ? 'b1 : 'b0;
   assign full = (size >= QUEUE_SIZE) ? 'b1 : 'b0;
   assign o_full = full;
   assign o_empty = empty;
   assign o_data = !empty ? queue[0] : 'd0;
 
-  /*
-    Generate components and initialize registers
-  */
-  // Generate comparators
-  generate
-    for (genvar i = 0; i < COMP_COUNT; i++) begin : l_gen_comparator
-      Comparator #(
-          .DATA_WIDTH(DATA_WIDTH)
-      ) u_Comparator (
-          .i_parent(old_parent[i]),
-          .i_left_child(old_left_child[i]),
-          .i_right_child(old_right_child[i]),
-          .o_parent(new_parent[i]),
-          .o_left_child(new_left_child[i]),
-          .o_right_child(new_right_child[i])
-      );
-    end
-  endgenerate
-
-  // Initialize comparators
-  generate
-    for (genvar i = 0; i < COMP_COUNT; i++) begin : l_gen_comparators_init
-      assign old_parent[i] = queue[i];
-      assign old_left_child[i] = (2 * i + 1 < NODES_NEEDED) ? queue[2*i+1] : '0;
-      assign old_right_child[i] = (2 * i + 2 < NODES_NEEDED) ? queue[2*i+2] : '0;
-    end
-  endgenerate
 
   /*
-    State machine control
-  */
+  *
+  * FSM
+  *
+  * */
   always_ff @(posedge i_CLK or negedge i_RSTn)
     if (!i_RSTn) current_state <= IDLE;
     else current_state <= next_state;
-
   always_comb
     case (current_state)
-      IDLE:
-      if (i_wrt && !i_read) next_state = ENQUEUE;
-      else if (!i_wrt && i_read) next_state = DEQUEUE;
-      else if (i_wrt && i_read) next_state = REPLACE;
-      else next_state = COMPARE_AND_SWAP_EVEN;
-
-      COMPARE_AND_SWAP_EVEN:
-      if (i_wrt && !i_read) next_state = ENQUEUE;
-      else if (!i_wrt && i_read) next_state = DEQUEUE;
-      else if (i_wrt && i_read) next_state = REPLACE;
-      else next_state = COMPARE_AND_SWAP_ODD;
-
-      COMPARE_AND_SWAP_ODD:
-      if (i_wrt && !i_read) next_state = ENQUEUE;
-      else if (!i_wrt && i_read) next_state = DEQUEUE;
-      else if (i_wrt && i_read) next_state = REPLACE;
-      else next_state = COMPARE_AND_SWAP_EVEN;
-
-      ENQUEUE: next_state = COMPARE_AND_SWAP_EVEN;
-
-      DEQUEUE: next_state = COMPARE_AND_SWAP_EVEN;
-
-      REPLACE: next_state = COMPARE_AND_SWAP_EVEN;
-
+      IDLE, COMPARE_AND_SWAP: next_state = (i_wrt && !i_read) ? ENQUEUE : 
+                                           (!i_wrt && i_read) ? DEQUEUE : 
+                                           (i_wrt && i_read) ? REPLACE : 
+                                           COMPARE_AND_SWAP;
+      ENQUEUE, DEQUEUE, REPLACE: next_state = COMPARE_AND_SWAP;
       default: next_state = IDLE;
     endcase
 
+
   /*
-    Size Tracker
-  */
+  *
+  * size
+  *
+  * */
   always_ff @(posedge i_CLK or negedge i_RSTn)
     if (!i_RSTn) size <= 0;
     else size <= next_size;
-
   always_comb
     case (current_state)
-      IDLE : next_size = size;
-      COMPARE_AND_SWAP_EVEN : next_size = size;
-      COMPARE_AND_SWAP_ODD : next_size = size;
-      ENQUEUE : next_size = (!full) ? size + 1 : size;
-      DEQUEUE : next_size = (!empty) ? size - 1 : size;
-      REPLACE : next_size = (size == 0 && i_data != '0) ? size + 1 : size;
-      default : next_size = size;
+      IDLE: next_size = size;
+      COMPARE_AND_SWAP: next_size = size;
+      ENQUEUE: next_size = (!full) ? size + 1 : size;
+      DEQUEUE: next_size = (!empty) ? size - 1 : size;
+      REPLACE: next_size = (size == 0 && i_data != '0) ? size + 1 : size;
+      default: next_size = size;
     endcase
 
+
   /*
-    Queue Management
-  */
-  logic [DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
-
-  generate
-    for (genvar itr = 0; itr < NODES_NEEDED; itr++) begin : l_gen_reset_queue
-      assign reset_queue[itr] = '0;
-    end
-  endgenerate
-
-  always_ff @(posedge i_CLK or negedge i_RSTn)
+  *
+  * queue
+  *
+  * */
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : FSM_queue_seq
     if (!i_RSTn) queue <= reset_queue;
     else queue <= next_queue;
-
-  always_ff @(posedge i_CLK or negedge i_RSTn)
-    if (!i_RSTn) enqueue_idx <= '0;
-    else enqueue_idx <= next_enqueue_idx;
-
-  function automatic void f_process_even_levels(input logic [DATA_WIDTH-1:0] q_in[NODES_NEEDED],
-                                                input logic [DATA_WIDTH-1:0] parent[COMP_COUNT],
-                                                input logic [DATA_WIDTH-1:0] left[COMP_COUNT],
-                                                input logic [DATA_WIDTH-1:0] right[COMP_COUNT],
-                                                output logic [DATA_WIDTH-1:0] q_out[NODES_NEEDED]);
-    q_out = q_in;
-    for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
-      if (lvl % 2 == 0 && lvl < TREE_DEPTH - 1) begin
-        for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
-          q_out[i] = parent[i];
-          q_out[2*i+1] = left[i];
-          q_out[2*i+2] = right[i];
-        end
-      end
-    end
-  endfunction
-
-  function automatic void f_process_odd_levels(input logic [DATA_WIDTH-1:0] q_in[NODES_NEEDED],
-                                               input logic [DATA_WIDTH-1:0] parent[COMP_COUNT],
-                                               input logic [DATA_WIDTH-1:0] left[COMP_COUNT],
-                                               input logic [DATA_WIDTH-1:0] right[COMP_COUNT],
-                                               output logic [DATA_WIDTH-1:0] q_out[NODES_NEEDED]);
-    q_out = q_in;
-    for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
-      if (lvl % 2 == 1 && lvl < TREE_DEPTH - 1) begin
-        for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
-          q_out[i] = parent[i];
-          q_out[2*i+1] = left[i];
-          q_out[2*i+2] = right[i];
-        end
-      end
-    end
-  endfunction
-
-  function automatic logic [$clog2(NODES_NEEDED)-1:0] f_find_empty_idx(
-                                          input logic [DATA_WIDTH-1:0] q_in[NODES_NEEDED],
-                                          input logic [$clog2(NODES_NEEDED)-1:0] size_in);
-    logic [$clog2(NODES_NEEDED)-1:0] found_empty_idx = NODES_NEEDED;
-    for (int i = NODES_NEEDED; i >= 0; i--) begin
-      if (q_in[i] == 0) begin
-        found_empty_idx = (i < found_empty_idx) ? i : found_empty_idx;
-      end
-    end
-    return found_empty_idx;
-  endfunction
-
-  // Temporary variables for function calls and state-specific queues
-  logic [DATA_WIDTH-1:0] even_swap_queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] odd_swap_queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] enq_queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] deq_queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] rep_queue[NODES_NEEDED];
-
-  // Helper functions for each state
-  function automatic void f_prepare_even_swap_queue();
-    f_process_even_levels(queue, new_parent, new_left_child, new_right_child, even_swap_queue);
-  endfunction
-
-  function automatic void f_prepare_odd_swap_queue();
-    f_process_odd_levels(queue, new_parent, new_left_child, new_right_child, odd_swap_queue);
-  endfunction
-
-  function automatic void f_prepare_enq_queue();
-    enq_queue = queue;
-    enq_queue[f_find_empty_idx(queue, size)] = i_data;
-  endfunction
-
-  function automatic void f_prepare_deq_queue();
-    deq_queue = queue;
-    deq_queue[0] = '0;
-  endfunction
-
-  function automatic void f_prepare_rep_queue();
-    rep_queue = queue;
-    rep_queue[0] = i_data;
-  endfunction
-
-  // Call helper functions
-  always_comb f_prepare_even_swap_queue();
-  always_comb f_prepare_odd_swap_queue();
-  always_comb f_prepare_enq_queue();
-  always_comb f_prepare_deq_queue();
-  always_comb f_prepare_rep_queue();
-
-  // Derive next_enqueue_idx
-  always_comb next_enqueue_idx = (current_state == ENQUEUE) ? f_find_empty_idx(queue, size) : 0;
-
-  // State-based next_queue selection
-  always_comb
+  end
+  always_comb begin : FSM_queue_comb
     case (current_state)
       IDLE: next_queue = queue;
-      COMPARE_AND_SWAP_EVEN: next_queue = even_swap_queue;
-      COMPARE_AND_SWAP_ODD: next_queue = odd_swap_queue;
+      COMPARE_AND_SWAP: next_queue = swap_queue;
       ENQUEUE: next_queue = enq_queue;
       DEQUEUE: next_queue = deq_queue;
       REPLACE: next_queue = rep_queue;
       default: next_queue = queue;
     endcase
+  end
+
+
+  always_comb begin : prepare_swap_queue
+    // Temporary queue for even level processing
+    automatic logic [DATA_WIDTH-1:0] even_phase_queue[NODES_NEEDED];
+    even_phase_queue = queue;
+    
+    // Process even levels first
+    for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
+      if (lvl % 2 == 0 && lvl < TREE_DEPTH - 1) begin
+        for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
+          // Get parent and children
+          automatic logic [DATA_WIDTH-1:0] parent = even_phase_queue[i];
+          automatic logic [DATA_WIDTH-1:0] left_child = (2*i+1 < NODES_NEEDED) ? even_phase_queue[2*i+1] : '0;
+          automatic logic [DATA_WIDTH-1:0] right_child = (2*i+2 < NODES_NEEDED) ? even_phase_queue[2*i+2] : '0;
+          
+          // Compare logic (same as in Comparator module)
+          automatic logic left_greater_than_right = (left_child > right_child);
+          automatic logic parent_less_than_left = (parent < left_child);
+          automatic logic parent_less_than_right = (parent < right_child);
+          
+          // Determine new values based on comparison
+          logic [DATA_WIDTH-1:0] new_parent, new_left, new_right;
+          
+          // Determine new parent (largest of the three)
+          if (left_greater_than_right && parent_less_than_left) begin
+            new_parent = left_child;
+          end else if (!left_greater_than_right && parent_less_than_right) begin
+            new_parent = right_child;
+          end else begin
+            new_parent = parent;
+          end
+            
+          // Determine new left child
+          if (left_greater_than_right && parent_less_than_left) begin
+            new_left = parent;
+          end else begin
+            new_left = left_child;
+          end
+            
+          // Determine new right child
+          if (!left_greater_than_right && parent_less_than_right) begin
+            new_right = parent;
+          end else begin
+            new_right = right_child;
+          end
+          
+          // Update queue with new values
+          even_phase_queue[i] = new_parent;
+          if (2*i+1 < NODES_NEEDED) begin 
+            even_phase_queue[2*i+1] = new_left;
+          end else begin
+          end
+          if (2*i+2 < NODES_NEEDED) begin
+            even_phase_queue[2*i+2] = new_right;
+          end else begin
+          end
+        end
+      end else begin
+      end
+    end
+    
+    // Start with results from even phase processing
+    swap_queue = even_phase_queue;
+    
+    // Process odd levels
+    for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
+      if (lvl % 2 == 1 && lvl < TREE_DEPTH - 1) begin
+        for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin
+          // Get parent and children
+          automatic logic [DATA_WIDTH-1:0] parent = swap_queue[i];
+          automatic logic [DATA_WIDTH-1:0] left_child = (2*i+1 < NODES_NEEDED) ? swap_queue[2*i+1] : '0;
+          automatic logic [DATA_WIDTH-1:0] right_child = (2*i+2 < NODES_NEEDED) ? swap_queue[2*i+2] : '0;
+          
+          // Compare logic (same as in Comparator module)
+          automatic logic left_greater_than_right = (left_child > right_child);
+          automatic logic parent_less_than_left = (parent < left_child);
+          automatic logic parent_less_than_right = (parent < right_child);
+          
+          // Determine new values based on comparison
+          logic [DATA_WIDTH-1:0] new_parent, new_left, new_right;
+          
+          // Determine new parent (largest of the three)
+          if (left_greater_than_right && parent_less_than_left) begin
+            new_parent = left_child;
+          end else if (!left_greater_than_right && parent_less_than_right) begin
+            new_parent = right_child;
+          end else begin
+            new_parent = parent;
+          end
+            
+          // Determine new left child
+          if (left_greater_than_right && parent_less_than_left) begin
+            new_left = parent;
+          end else begin
+            new_left = left_child;
+          end
+            
+          // Determine new right child
+          if (!left_greater_than_right && parent_less_than_right) begin
+            new_right = parent;
+          end else begin
+            new_right = right_child;
+          end
+          
+          // Update queue with new values
+          swap_queue[i] = new_parent;
+          if (2*i+1 < NODES_NEEDED) begin
+            swap_queue[2*i+1] = new_left;
+          end else begin
+          end
+          if (2*i+2 < NODES_NEEDED) begin
+            swap_queue[2*i+2] = new_right;
+          end else begin
+          end
+        end
+      end else begin
+      end
+    end
+  end
+
+  always_comb begin : prepare_enq_queue
+    automatic logic [$clog2(NODES_NEEDED)-1:0] found_empty_idx;
+    found_empty_idx = NODES_NEEDED;
+    for (int i = NODES_NEEDED; i >= 0; i--) begin
+      if (queue[i] == 0) begin
+        found_empty_idx = (i < found_empty_idx) ? i : found_empty_idx;
+      end else begin
+        found_empty_idx = found_empty_idx;
+      end
+    end
+    enq_queue = queue;
+    enq_queue[found_empty_idx] = i_data;
+  end
+
+  always_comb begin : prepare_deq_queue
+    deq_queue = queue;
+    deq_queue[0] = '0;
+  end
+
+  always_comb begin : prepare_rep_queue
+    rep_queue = queue;
+    rep_queue[0] = i_data;
+  end
 
 endmodule
