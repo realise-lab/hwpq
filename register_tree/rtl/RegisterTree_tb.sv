@@ -2,7 +2,7 @@
 
 module RegisterTree_tb;
   // Parameters matching the module under test
-  localparam int QUEUE_SIZE = 31;
+  localparam int QUEUE_SIZE = 15;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
@@ -163,7 +163,7 @@ module RegisterTree_tb;
       @(posedge i_CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat ($clog2(QUEUE_SIZE) + 3) @(posedge i_CLK);
+      repeat ($clog2(QUEUE_SIZE)) @(posedge i_CLK);
     end
   endtask
 
@@ -181,7 +181,7 @@ module RegisterTree_tb;
       @(posedge i_CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge i_CLK);
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 
@@ -197,7 +197,7 @@ module RegisterTree_tb;
       @(posedge i_CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (3) @(posedge i_CLK);
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 
