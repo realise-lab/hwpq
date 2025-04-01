@@ -1,7 +1,7 @@
 `default_nettype none
 
 module RegisterTree #(
-    parameter int QUEUE_SIZE = 31,
+    parameter int QUEUE_SIZE = 3,
     parameter int DATA_WIDTH = 16
 ) (
     // Synchronous Control
@@ -282,3 +282,4 @@ module RegisterTree #(
   end
 
 endmodule
+

@@ -23,3 +23,7 @@ work/
 .svlint.toml
 .svls.toml
 CLAUDE.md
+
+animation_py/animation/images/
+animation_py/animation/texts/
+animation_py/animation/videos/
