@@ -58,7 +58,7 @@ foreach queue_size $queue_sizes {
       close $fileId
       reset_run synth_1
       close_project
-      break
+      break 2
     }
     
     set synth_end_time [clock seconds]
@@ -94,7 +94,7 @@ foreach queue_size $queue_sizes {
       close $fileId
       reset_run impl_1
       close_project
-      break
+      break 2
     }
     
     set impl_end_time [clock seconds]
