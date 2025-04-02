@@ -17,15 +17,15 @@ module RegisterTree #(
     output var logic [DATA_WIDTH-1:0] o_data
 );
 
-  /*
-  * Local Parameters
-  */
+  //----------------------------------------------------------------------
+  // Local Parameters
+  //----------------------------------------------------------------------
   localparam int TREE_DEPTH = $clog2(QUEUE_SIZE);  // depth of the tree
   localparam int NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of nodes needed to initialize
 
-  /*
-  * Internal Registers and Wires
-  */
+  //----------------------------------------------------------------------
+  // Internal Registers and Wires
+  //----------------------------------------------------------------------
   // Storage elements
   logic [DATA_WIDTH-1:0] queue[NODES_NEEDED];
   logic [DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
@@ -49,18 +49,18 @@ module RegisterTree #(
   logic [$clog2(NODES_NEEDED)-1:0] size_after_deq;
   logic [$clog2(NODES_NEEDED)-1:0] size_after_rep;
 
-  /*
-  * Initialize reset_queue to zeros
-  */
+  //----------------------------------------------------------------------
+  // Initialize reset_queue to zeros
+  //----------------------------------------------------------------------
   generate
     for (genvar i = 0; i < NODES_NEEDED; i++) begin : l_gen_reset_queue
       assign reset_queue[i] = '0;
     end
   endgenerate
 
-  /*
-  * Signals assignments
-  */
+  //----------------------------------------------------------------------
+  // Signals assignments
+  //----------------------------------------------------------------------
   // Control signal assignment
   assign enqueue = i_wrt && !i_read;
   assign dequeue = !i_wrt && i_read;
@@ -72,9 +72,9 @@ module RegisterTree #(
   assign o_empty = empty;
   assign o_data = !empty ? queue[0] : '0;
 
-  /*
-  * Compare and Swap operation
-  */
+  //----------------------------------------------------------------------
+  // Compare and Swap operation
+  //----------------------------------------------------------------------
   always_comb begin : prepare_swap_result
     automatic logic [DATA_WIDTH-1:0] even_phase_queue[NODES_NEEDED];
     automatic logic [DATA_WIDTH-1:0] final_swap_result[NODES_NEEDED];
@@ -198,9 +198,9 @@ module RegisterTree #(
     size_after_swap = size; // Swap doesn't change the size
   end
 
-  /*
-  * Enqueue operation
-  */
+  //----------------------------------------------------------------------
+  // Enqueue operation
+  //----------------------------------------------------------------------
   always_comb begin : prepare_enq_result
     // Find first empty slot
     automatic logic [$clog2(NODES_NEEDED)-1:0] found_empty_idx;
@@ -227,9 +227,9 @@ module RegisterTree #(
     size_after_enq = (!full) ? size + 1 : size;
   end
 
-  /*
-  * Dequeue operation
-  */
+  //----------------------------------------------------------------------
+  // Dequeue operation
+  //----------------------------------------------------------------------
   always_comb begin : prepare_deq_result
     // Create dequeue result - remove root
     deq_result = queue;
@@ -239,9 +239,9 @@ module RegisterTree #(
     size_after_deq = (!empty) ? size - 1 : size;
   end
 
-  /*
-  * Replace operation
-  */
+  //----------------------------------------------------------------------
+  // Replace operation
+  //----------------------------------------------------------------------
   always_comb begin : prepare_rep_result
     // Create replace result - replace root
     rep_result = queue;
@@ -251,9 +251,9 @@ module RegisterTree #(
     size_after_rep = (size == 0 && i_data != '0) ? size + 1 : size;
   end
 
-  /*
-  * Sequential logic - update registers
-  */
+  //----------------------------------------------------------------------
+  // Sequential logic - update registers
+  //----------------------------------------------------------------------
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : update_registers
     if (!i_RSTn) begin
       // Reset condition

@@ -1,0 +1,24 @@
+Time resolution is 1 ps
+
+Test Case 1: Dequeue Test
+
+Test Case 2: Enqueue Test
+
+Test Case 3: Replace Test
+
+Test Case 4: Stress Test
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+Enqueue: Queue full, skipping enqueue
+
+Test completed! 
+$finish called at time : 24625 ns : File "/home/charlie-wu/Workspace/hwpq_qw2246/RegisterArray/rtl/test/RegisterArray_tb.sv" Line 146

@@ -46,13 +46,13 @@ class RegisterTreeAnimation(Scene):
         # Calculate x position based on level and position in level
         x = (position_in_level - (nodes_in_level - 1) / 2) * (2**(self.TREE_DEPTH - level - 1)) * self.node_spacing_h
         # Move the tree further down in the frame
-        y = (self.TREE_DEPTH - level) * self.node_spacing_v - 3.75  # Increased vertical offset to move tree down
+        y = (self.TREE_DEPTH - level) * self.node_spacing_v - 3.5  # Increased vertical offset to move tree down
         
         return np.array([x, y, 0])
     
     def create_tree_visualization(self):
         # Create title with more space at the top
-        title = Text("RegisterTree Animation", font_size=48).to_edge(UP, buff=1.0)  # Increased top buffer even more
+        title = Text("Register Tree", font_size=48).to_edge(UP, buff=0.5)  # Increased top buffer even more
         self.add(title)
         
         # Create status displays
@@ -394,6 +394,7 @@ class RegisterTreeAnimation(Scene):
         # Start with the tree completely filled
         self.current_operation = "Initializing Tree"
         self.update_node_visualization()
+        self.wait(1)
         
         # Initialize the queue with random values to fill the tree completely
         random_values = [49, 44, 46, 41, 38, 30, 28, 9, 5, 33, 35, 16, 12, 18, 27]
@@ -404,47 +405,36 @@ class RegisterTreeAnimation(Scene):
                 self.queue[i] = value
                 self.size += 1
         
-        # Apply heap maintenance to make sure the tree is properly structured
-        # self.heap_maintenance()
-        
         # Show the initial filled state
         self.current_operation = "Tree Initialized"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
         
-        # Test Case 1: Dequeue nodes
-        self.current_operation = "Test Case 1: Dequeue Test"
+        # Test Case 1: Dequeue node
+        self.current_operation = "Dequeue"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
         
-        # Perform 2 dequeues
-        for _ in range(2):
-            self.dequeue()
+        self.dequeue()
         
-        # Test Case 2: Enqueue nodes
-        self.current_operation = "Test Case 2: Enqueue Test"
+        # Test Case 2: Enqueue node
+        self.current_operation = "Enqueue"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
         
-        # Enqueue 2 new values
-        new_values = [30, 65]
-        for value in new_values:
-            self.enqueue(value)
+        self.enqueue(30)
         
-        # Test Case 3: Replace nodes
-        self.current_operation = "Test Case 3: Replace Test"
+        # Test Case 3: Replace node
+        self.current_operation = "Replace"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
         
-        # Replace 2 values
-        replace_values = [95, 72]
-        for value in replace_values:
-            self.replace(value)
+        self.replace(72)
         
-        # Test Case 4: Stress Test (simplified)
+        # Test Case 4: Continuous operation
         self.current_operation = "Test Case 4: Stress Test"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
         
         # Mix of operations
         operations = [
@@ -458,16 +448,22 @@ class RegisterTreeAnimation(Scene):
         
         for op, value in operations:
             if op == "enqueue":
+                self.current_operation = "Enqueue"
                 self.enqueue(value)
+                self.wait(1)
             elif op == "dequeue":
+                self.current_operation = "Dequeue"
                 self.dequeue()
+                self.wait(1)
             elif op == "replace":
+                self.current_operation = "Replace"
                 self.replace(value)
+                self.wait(1)
         
         # Final state
         self.current_operation = "Animation Complete"
         self.update_node_visualization()
-        self.wait(2)
+        self.wait(1)
 
 
 # Function to generate animation
@@ -477,7 +473,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     # Set output file path
-    output_file = os.path.join(output_dir, "RegisterTreeAnime.mp4")
+    output_file = os.path.join(output_dir, "register_tree_animation.mp4")
     
     # Configure Manim for this specific scene
     config.output_file = output_file
