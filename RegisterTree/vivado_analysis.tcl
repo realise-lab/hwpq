@@ -2,7 +2,7 @@
 # Use the first list for any array-liked architectures
 # Use the second list for any tree-liked architectures
 # set queue_sizes {4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288}
-set queue_sizes {2047 4095 8191 16383 32767 65535 131071 262143 524287}
+set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # NOTE Change according to the module running analysis
 file mkdir ./RegisterTree/vivado_analysis_results_16bit 

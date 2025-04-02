@@ -1,7 +1,7 @@
 `default_nettype none
 
 module RegisterArray #(
-    parameter int QUEUE_SIZE = 4,  // Define the size of the queue
+    parameter int QUEUE_SIZE = 4096,  // Define the size of the queue
     parameter int DATA_WIDTH = 16  // Define the width of the data
 ) (
     input  var logic                  i_CLK,    // Clock signal
@@ -135,3 +135,4 @@ module RegisterArray #(
   end
 
 endmodule
+

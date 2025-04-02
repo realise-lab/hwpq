@@ -13,8 +13,8 @@ __pycache__/
 
 # Vivado project files
 vivado_systolic_array/
-vivado_register_array/
-vivado_register_tree/
+RegisterArray-vivado/
+RegisterTree-vivado/
 vivado_bram_tree/
 vivado_pipelined_bram_tree/
 vivado_hybrid_tree/

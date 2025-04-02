@@ -10,7 +10,7 @@ from config import OUTPUT_DIR
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
-    "register_array": {
+    "RegisterArray": {
         "color": "blue",
         "marker": "o",
         "display_name": "Register Array",
