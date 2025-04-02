@@ -1,23 +1,25 @@
-module systolic_array #(
-    parameter integer QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
-    parameter integer DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
+`default_nettype none
+
+module SystolicArray #(
+    parameter int QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
+    parameter int DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
 ) (
-    input logic CLK,
-    input logic RSTn,
+    input var logic                   i_CLK,
+    input var logic                   i_RSTn,
 
     // Input
-    input logic                  i_wrt,   // Enqueue signal
-    input logic                  i_read,  // Dequeue signal
-    input logic [DATA_WIDTH-1:0] i_data,  // Node data input
+    input var logic                   i_wrt,   // Enqueue signal
+    input var logic                   i_read,  // Dequeue signal
+    input var logic [DATA_WIDTH-1:0]  i_data,  // Node data input
 
     // Output
-    output logic                  o_full,   // Queue is full
-    output logic                  o_empty,  // Queue is empty
-    output logic [DATA_WIDTH-1:0] o_data    // Node data output
+    output var logic                  o_full,   // Queue is full
+    output var logic                  o_empty,  // Queue is empty
+    output var logic [DATA_WIDTH-1:0] o_data    // Node data output
 );
 
   // Constant
-  localparam logic [DATA_WIDTH-1:0] MaxValue = '1;  // Represents the maximum value
+  localparam int MAX_VALUE = 1;  // Represents the maximum value
 
   // Input Buffer (IB) and Output Buffer (OB)
   logic   [DATA_WIDTH-1:0] IB                  [  QUEUE_SIZE/2];
@@ -39,17 +41,17 @@ module systolic_array #(
   assign empty = (size == 0);
 
   // Sequential logic
-  always_ff @(posedge CLK or negedge RSTn) begin
-    if (!RSTn) begin  // Reset
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) begin  // Reset
       size <= 0;
       for (int i = 0; i < QUEUE_SIZE; i++) begin
-        IB[i] <= MaxValue;  // initialize IB to MaxValue, since this is a min-queue
-        OB[i] <= MaxValue;  // initialize OB to MaxValue, since this is a min-queue
+        IB[i] <= MAX_VALUE;  // initialize IB to MAX_VALUE, since this is a min-queue
+        OB[i] <= MAX_VALUE;  // initialize OB to MAX_VALUE, since this is a min-queue
       end
     end else begin
       // Dequeue operation
       if (i_read && !i_wrt && !empty) begin
-        OB[0] <= MaxValue;  // pop the head of OB
+        OB[0] <= MAX_VALUE;  // pop the head of OB
       end
 
       // Enqueue operation
@@ -61,12 +63,12 @@ module systolic_array #(
       if (i_wrt && i_read) begin
         if (full) begin
           IB[0] <= i_data;  // replace the head of IB
-          OB[0] <= MaxValue;  // pop the head of OB
+          OB[0] <= MAX_VALUE;  // pop the head of OB
         end else if (empty) begin
           OB[0] <= i_data;  // insert the new node at the head of OB
         end else begin
           IB[0] <= i_data;  // replace the head of IB
-          OB[0] <= MaxValue;  // pop the head of OB
+          OB[0] <= MAX_VALUE;  // pop the head of OB
         end
       end
 
@@ -87,11 +89,11 @@ module systolic_array #(
             OB[i]   <= OB[i+1];
           end
 
-          (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MaxValue): begin
+          (i != QUEUE_SIZE - 1) && IB_less_than_OB_next[i] && (IB[i+1] == MAX_VALUE): begin
             // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
             OB[i+1] <= IB[i];
             IB[i+1] <= OB[i+1];
-            IB[i]   <= MaxValue;
+            IB[i]   <= MAX_VALUE;
           end
 
           (i != QUEUE_SIZE - 1) && IB_less_than_IB_next[i]: begin  // IB[i] < IB[i+1]

@@ -1,4 +1,6 @@
-module systolic_array_tb;
+`default_nettype none
+
+module SystolicArray_tb;
   // Parameters matching the module under test
   parameter int QUEUE_SIZE = 8;
   parameter int DATA_WIDTH = 16;
@@ -21,23 +23,22 @@ module systolic_array_tb;
   logic [DATA_WIDTH-1:0] ref_queue        [$:QUEUE_SIZE-1];
 
   // Test variables
-  int                    i;
   logic [DATA_WIDTH-1:0] random_value;
   int                    random_operation;
 
-  typedef enum logic [1:0] {
+  typedef enum int {
     ENQUEUE = 2'b00,
     DEQUEUE = 2'b01,
     REPLACE = 2'b10
-  } operation_t;
+  } t_operation;
 
   // Instantiate the register_tree module
-  systolic_array #(
+  SystolicArray #(
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
-  ) uut (
-      .CLK(CLK),
-      .RSTn(RSTn),
+  ) u_SystolicArray (
+      .i_CLK(CLK),
+      .i_RSTn(RSTn),
       .i_wrt(i_wrt),
       .i_read(i_read),
       .i_data(i_data),
@@ -63,7 +64,7 @@ module systolic_array_tb;
     @(posedge CLK);
 
     // Initialize the queue, fill it up to QUEUE_SIZE with random values
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (int i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       repeat (5) @(posedge CLK);  // to make sure that the queue is correctly initialized
@@ -73,7 +74,7 @@ module systolic_array_tb;
     // Test Case 1: Dequeue nodes
     // Dequeue nodes for QUEUE_SIZE times
     $display("\nTest Case 1: Dequeue Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (int i = 0; i < QUEUE_SIZE; i++) begin
       dequeue();
       if (!o_empty) begin
         assert (o_data == ref_queue[0])
@@ -87,7 +88,7 @@ module systolic_array_tb;
     // Test Case 2: Enqueue nodes
     // Enqueue random values for QUEUE_SIZE times
     $display("\nTest Case 2: Enqueue Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (int i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       enqueue(random_value);
       assert (o_data == ref_queue[0])
@@ -97,7 +98,7 @@ module systolic_array_tb;
     // Test Case 3: Replace nodes
     // Replace root node for QUEUE_SIZE times
     $display("\nTest Case 3: Replace Test");
-    for (i = 0; i < QUEUE_SIZE; i++) begin
+    for (int i = 0; i < QUEUE_SIZE; i++) begin
       random_value = $urandom_range(0, 1024);
       replace(random_value);
       assert (o_data == ref_queue[0])
@@ -107,7 +108,7 @@ module systolic_array_tb;
     // Test Case 4: Stress Test
     // stress test, mix operations
     $display("\nTest Case 4: Stress Test");
-    for (i = 0; i < 100; i++) begin
+    for (int i = 0; i < 100; i++) begin
       random_value = $urandom_range(0, 1024);
       case (random_operation)
         ENQUEUE: begin

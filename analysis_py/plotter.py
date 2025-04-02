@@ -15,7 +15,7 @@ ARCHITECTURE_STYLES = {
         "marker": "o",
         "display_name": "Register Array",
     },
-    "systolic_array": {
+    "SystolicArray": {
         "color": "green",
         "marker": "^",
         "display_name": "Systolic Array",
