@@ -231,7 +231,7 @@ set file_id [open "./RegisterTree/rtl/RegisterTree.sv" r+]
 set file_content [read $file_id]
 
 # Replace the parameter TREE_DEPTH value back to minimum
-set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = 3"]
+set updated_content [regsub {parameter int QUEUE_SIZE = \d+} $file_content "parameter int QUEUE_SIZE = [lindex $queue_sizes 0]"]
 
 # Rewind the file pointer to the beginning
 seek $file_id 0

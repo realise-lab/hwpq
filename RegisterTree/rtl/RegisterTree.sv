@@ -1,6 +1,7 @@
 `default_nettype none
 
 module RegisterTree #(
+    parameter bit ENQ_ENA = 1,    // Define if user would like to enable enqueue
     parameter int QUEUE_SIZE = 3,
     parameter int DATA_WIDTH = 16
 ) (
@@ -62,7 +63,7 @@ module RegisterTree #(
   // Signals assignments
   //----------------------------------------------------------------------
   // Control signal assignment
-  assign enqueue = i_wrt && !i_read;
+  assign enqueue = ENQ_ENA && i_wrt && !i_read; // Only enable enqueue if ENQ_ENA is high
   assign dequeue = !i_wrt && i_read;
   assign replace = i_wrt && i_read;
   // Size counter signals

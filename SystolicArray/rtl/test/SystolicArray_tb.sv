@@ -24,13 +24,13 @@ module SystolicArray_tb;
 
   // Test variables
   logic [DATA_WIDTH-1:0] random_value;
-  int                    random_operation;
 
   typedef enum int {
-    ENQUEUE = 2'b00,
-    DEQUEUE = 2'b01,
-    REPLACE = 2'b10
+    ENQUEUE = 1,
+    DEQUEUE = 2,
+    REPLACE = 3
   } t_operation;
+  t_operation random_operation;
 
   // Instantiate the register_tree module
   SystolicArray #(
@@ -80,8 +80,8 @@ module SystolicArray_tb;
         assert (o_data == ref_queue[0])
         else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
       end else begin
-        assert (o_data == '1)
-        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '1, o_data);
+        assert (o_data == '0)
+        else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
       end
     end
 
@@ -110,6 +110,7 @@ module SystolicArray_tb;
     $display("\nTest Case 4: Stress Test");
     for (int i = 0; i < 100; i++) begin
       random_value = $urandom_range(0, 1024);
+      random_operation = $urandom_range(1,3);
       case (random_operation)
         ENQUEUE: begin
           enqueue(random_value);
@@ -125,8 +126,8 @@ module SystolicArray_tb;
             else
               $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
           end else begin
-            assert (o_data == '1)
-            else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '1, o_data);
+            assert (o_data == '0)
+            else $error("Dequeue: Node f value mismatch -> expected %d, got %d", '0, o_data);
           end
         end
 
@@ -155,7 +156,7 @@ module SystolicArray_tb;
         i_read = 0;
         i_data = value;
         ref_queue.push_back(value);
-        ref_queue.sort();
+        ref_queue.sort() with (item > item);
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
       end
@@ -173,7 +174,7 @@ module SystolicArray_tb;
         i_wrt  = 0;
         i_read = 1;
         ref_queue.pop_front();
-        ref_queue.sort();
+        ref_queue.sort() with (item > item);
       end else begin
         $display("Dequeue: Queue empty, skipping dequeue");
       end
@@ -192,7 +193,7 @@ module SystolicArray_tb;
       i_data = value;
       ref_queue.pop_front();
       ref_queue.push_back(value);
-      ref_queue.sort();
+      ref_queue.sort() with (item > item);
       @(posedge CLK);
       i_wrt  = 0;
       i_read = 0;
