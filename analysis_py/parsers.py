@@ -248,17 +248,42 @@ def process_directory(log_dir):
 
     This function scans the specified directory for log files that match the pattern
     containing "vivado_analysis_on_queue_size" and extracts metrics for each queue size.
+    It also supports nested directory structures with enqueue_0 and enqueue_1 subdirectories.
 
     Args:
         log_dir (str): Path to directory containing Vivado analysis log files.
 
     Returns:
-        dict: Dictionary mapping queue sizes (int) to metrics dictionary as parsed
-             by the parsers.parse_metrics function.
+        dict or tuple: If no subdirectories are found, returns a dictionary mapping 
+                      queue sizes (int) to metrics dictionary. If subdirectories like
+                      enqueue_0/enqueue_1 are found, returns a tuple with two 
+                      dictionaries (enqueue_disabled_data, enqueue_enabled_data).
 
     Note:
         Files must follow the naming convention that includes "vivado_analysis_on_queue_size"
         and end with the queue size (e.g., "vivado_analysis_on_queue_size_64.txt").
+    """
+    # Check if this directory has enqueue_0/enqueue_1 subdirectories
+    contents = os.listdir(log_dir)
+    if "enqueue_0" in contents and "enqueue_1" in contents:
+        # Process both subdirectories
+        enqueue_disabled_data = _process_files(os.path.join(log_dir, "enqueue_0"))
+        enqueue_enabled_data = _process_files(os.path.join(log_dir, "enqueue_1"))
+        return (enqueue_disabled_data, enqueue_enabled_data)
+    else:
+        # Process files in the main directory
+        return _process_files(log_dir)
+
+
+def _process_files(log_dir):
+    """
+    Helper function to process files in a directory.
+    
+    Args:
+        log_dir (str): Path to directory containing log files.
+        
+    Returns:
+        dict: Dictionary mapping queue sizes to metrics.
     """
     data_dict = {}
     for file_name in os.listdir(log_dir):

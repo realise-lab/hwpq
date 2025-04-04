@@ -1,7 +1,7 @@
 `default_nettype none
 
 module RegisterArray #(
-    parameter bit ENQ_ENA = 0,    // if user would like to enable enqueue
+    parameter bit ENQ_ENA = 1,    // if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4, // size of the queue
     parameter int DATA_WIDTH = 16 // width of the data
 ) (
@@ -120,4 +120,3 @@ module RegisterArray #(
   end
 
 endmodule
-

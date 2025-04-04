@@ -1,0 +1,53 @@
+Frequency: 100 MHz -> Synthesis: 2m 1s -> 121s
+Frequency: 100 MHz -> Implementation: 1m 59s -> 119s
+Frequency: 100 MHz -> Power: 0.648 W
+Frequency: 100 MHz -> CLB LUTs Used: 7041
+Frequency: 100 MHz -> CLB LUTs Util%: 4.99 %
+Frequency: 100 MHz -> CLB Registers Used: 2056
+Frequency: 100 MHz -> CLB Registers Util%: 0.73 %
+Frequency: 100 MHz -> BRAM Util: 0
+Frequency: 100 MHz -> BRAM Util%: 0.00 %
+Frequency: 100 MHz -> WNS: 1.745 ns
+Frequency: 100 MHz -> Achieved Frequency: 121.139 MHz
+
+
+Frequency: 150 MHz -> Synthesis: 2m 1s -> 121s
+Frequency: 150 MHz -> Implementation: 2m 47s -> 167s
+Frequency: 150 MHz -> Power: 0.757 W
+Frequency: 150 MHz -> CLB LUTs Used: 7655
+Frequency: 150 MHz -> CLB LUTs Util%: 5.43 %
+Frequency: 150 MHz -> CLB Registers Used: 2056
+Frequency: 150 MHz -> CLB Registers Util%: 0.73 %
+Frequency: 150 MHz -> BRAM Util: 0
+Frequency: 150 MHz -> BRAM Util%: 0.00 %
+Frequency: 150 MHz -> WNS: 0.063 ns
+Frequency: 150 MHz -> Achieved Frequency: 151.431 MHz
+
+
+Frequency: 200 MHz -> Synthesis: 2m 1s -> 121s
+Frequency: 200 MHz -> Implementation: 4m 20s -> 260s
+Frequency: 200 MHz -> Power: 0.869 W
+Frequency: 200 MHz -> CLB LUTs Used: 8008
+Frequency: 200 MHz -> CLB LUTs Util%: 5.68 %
+Frequency: 200 MHz -> CLB Registers Used: 2057
+Frequency: 200 MHz -> CLB Registers Util%: 0.73 %
+Frequency: 200 MHz -> BRAM Util: 0
+Frequency: 200 MHz -> BRAM Util%: 0.00 %
+Frequency: 200 MHz -> WNS: -0.677 ns
+Frequency: 200 MHz -> Achieved Frequency: 176.149 MHz
+
+
+Frequency: 250 MHz -> Synthesis: 2m 1s -> 121s
+Frequency: 250 MHz -> Implementation: 4m 32s -> 272s
+Frequency: 250 MHz -> Power: 0.972 W
+Frequency: 250 MHz -> CLB LUTs Used: 8055
+Frequency: 250 MHz -> CLB LUTs Util%: 5.71 %
+Frequency: 250 MHz -> CLB Registers Used: 2056
+Frequency: 250 MHz -> CLB Registers Util%: 0.73 %
+Frequency: 250 MHz -> BRAM Util: 0
+Frequency: 250 MHz -> BRAM Util%: 0.00 %
+Frequency: 250 MHz -> WNS: -1.679 ns
+Frequency: 250 MHz -> Achieved Frequency: 176.087 MHz
+
+
+WNS exceeded -1 ns, finished

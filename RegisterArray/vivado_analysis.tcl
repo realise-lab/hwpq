@@ -1,15 +1,15 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
 # Use the first list for any array-liked architectures
 # Use the second list for any tree-liked architectures
-set queue_sizes {4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288}
+set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
 # set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
 # NOTE Change according to the module running analysis
-file mkdir ./RegisterArray/vivado_analysis_results_16bit 
+file mkdir ./RegisterArray/vivado_analysis_results_16bit/enqueue_0/
+file mkdir ./RegisterArray/vivado_analysis_results_16bit/enqueue_1/
 
 # Loop through each QUEUE_SIZE
 foreach queue_size $queue_sizes {
-
   # NOTE Change according to the module running analysis
   set file_id [open "./RegisterArray/rtl/RegisterArray.sv" r+]
 
@@ -29,11 +29,11 @@ foreach queue_size $queue_sizes {
   close $file_id
 
   # NOTE - Change according to the module running analysis
-  set log_file "./RegisterArray/vivado_analysis_results_16bit/vivado_analysis_on_queue_size_${queue_size}.txt"
+  set log_file "./RegisterArray/vivado_analysis_results_16bit/enqueue_1/vivado_analysis_on_queue_size_${queue_size}.txt"
 
   # Loop through each frequency
   for {set freq 100} {$freq <= 800} {incr freq 50} {
-      
+
     # NOTE Change according to the module running analysis
     open_project ./RegisterArray/RegisterArray-vivado/RegisterArray-vivado.xpr
 
@@ -50,7 +50,7 @@ foreach queue_size $queue_sizes {
     set synth_start_time [clock seconds]
     launch_runs synth_1
     wait_on_run -timeout 30 synth_1
-    
+
     # Check if synthesis completed successfully
     if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
       set fileId [open $log_file "a+"]
@@ -60,7 +60,7 @@ foreach queue_size $queue_sizes {
       close_project
       break 2
     }
-    
+
     set synth_end_time [clock seconds]
 
     # Calculate the synthesis duration
@@ -68,7 +68,7 @@ foreach queue_size $queue_sizes {
     if {$synth_duration > 60} {
       set minutes [expr int($synth_duration / 60)]
       set seconds [expr $synth_duration % 60]
-      set synth_duration_str "${minutes}m ${seconds}s"
+                               set synth_duration_str "${minutes}m ${seconds}s"
     } else {
       set synth_duration_str "${synth_duration}s"
     }
@@ -86,7 +86,7 @@ foreach queue_size $queue_sizes {
     set impl_start_time [clock seconds]
     launch_runs impl_1
     wait_on_run -timeout 30 impl_1
-    
+
     # Check if implementation completed successfully
     if {[get_property PROGRESS [get_runs impl_1]] != "100%"} {
       set fileId [open $log_file "a+"]
@@ -96,7 +96,7 @@ foreach queue_size $queue_sizes {
       close_project
       break 2
     }
-    
+
     set impl_end_time [clock seconds]
 
     # Calculate the implementation duration
@@ -104,7 +104,7 @@ foreach queue_size $queue_sizes {
     if {$impl_duration > 60} {
       set minutes [expr int($impl_duration / 60)]
       set seconds [expr $impl_duration % 60]
-      set impl_duration_str "${minutes}m ${seconds}s"
+                              set impl_duration_str "${minutes}m ${seconds}s"
     } else {
       set impl_duration_str "${impl_duration}s"
     }
@@ -152,7 +152,7 @@ foreach queue_size $queue_sizes {
         }
       }
     }
-    
+
     # Report power summary and get the total on-chip power
     set power_report [report_power -return_string]
     set match [regexp {\|\s*Total On-Chip Power \(W\)\s*\|\s*([0-9\.]+)\s*\|} $power_report full_match total_on_chip_power]
@@ -167,7 +167,7 @@ foreach queue_size $queue_sizes {
     set achieved_frequency [format "%.3f" [expr {1000.0 / ($period_ns - $wns)}]]
 
     set fileId [open $log_file "a+"]
-    
+
     # Print the results to the log file
     puts $fileId "Frequency: ${freq} MHz -> Synthesis: ${synth_duration_str} -> ${synth_duration}s"
     puts $fileId "Frequency: ${freq} MHz -> Implementation: ${impl_duration_str} -> ${impl_duration}s"

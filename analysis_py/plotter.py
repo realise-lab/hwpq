@@ -10,10 +10,30 @@ from config import OUTPUT_DIR
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
-    "RegisterArray": {
-        "color": "blue",
+    # "RegisterArray": {
+    #     "color": "blue",
+    #     "marker": "o",
+    #     "display_name": "Register Array",
+    # },
+    # "RegisterArray_ENQ_0": {
+    #     "color": "darkblue",
+    #     "marker": "o",
+    #     "display_name": "Register Array (Enqueue Disabled)",
+    # },
+    # "RegisterArray_ENQ_1": {
+    #     "color": "royalblue",
+    #     "marker": "s",
+    #     "display_name": "Register Array (Enqueue Enabled)",
+    # },
+    "register_array_enq_disabled": {
+        "color": "darkblue",
         "marker": "o",
-        "display_name": "Register Array",
+        "display_name": "Register Array (Enqueue Disabled)",
+    },
+    "register_array_enq_enabled": {
+        "color": "royalblue",
+        "marker": "s",
+        "display_name": "Register Array (Enqueue Enabled)",
     },
     "SystolicArray": {
         "color": "green",
@@ -634,14 +654,21 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     operations = ["enqueue", "dequeue", "replace"]
 
     # Performance comparisons for different operations
-    # Create filtered arch_list for enqueue operation (exclude BRAM trees)
+    # Create filtered arch_list for enqueue operation 
+    # Exclude BRAM trees and hybrid trees which don't support enqueue
+    # Also exclude register_array_enq_disabled which has enqueue disabled
     enqueue_arch_list = [
-        arch for arch in arch_list if "bram_tree" and "hybrid_tree" not in arch.lower()
+        arch for arch in arch_list 
+        if "bram_tree" not in arch.lower() 
+        and "hybrid_tree" not in arch.lower()
+        and arch.lower() != "register_array_enq_disabled"
     ]
     enqueue_data_dict = {
         arch: data
         for arch, data in data_dict_dict.items()
-        if "bram_tree" not in arch.lower()
+        if "bram_tree" not in arch.lower() 
+        and "hybrid_tree" not in arch.lower()
+        and arch.lower() != "register_array_enq_disabled"
     }
 
     # Use filtered lists for enqueue operations
@@ -761,43 +788,48 @@ def process_and_plot_all(base_dir, output_dir=None):
             if not os.path.isdir(log_dir):
                 continue
 
-            # Get arch name from directory
-            # arch_name = arch_dir.replace("_", " ").title()
-            # bit_width = results_dir.split("_")[-1]
+            # Process data - this may now return a tuple for RegisterArray with enqueue variants
+            result = parsers.process_directory(log_dir)
 
-            # Process data
-            data_dict = parsers.process_directory(log_dir)
+            # Handle special case for RegisterArray with enqueue variants
+            if isinstance(result, tuple) and len(result) == 2 and arch_dir == "RegisterArray":
+                enq_disabled_data, enq_enabled_data = result
+                
+                # Skip if no data
+                if not enq_disabled_data or not enq_enabled_data:
+                    print(f"No data found in {log_dir}")
+                    continue
+                
+                # Store both variants with different keys
+                all_data["register_array_enq_disabled"] = enq_disabled_data
+                all_data["register_array_enq_enabled"] = enq_enabled_data
+            else:
+                # Regular case for other architectures
+                data_dict = result
 
-            # Skip if no data
-            if not data_dict:
-                print(f"No data found in {log_dir}")
-                continue
+                # Skip if no data
+                if not data_dict:
+                    print(f"No data found in {log_dir}")
+                    continue
 
-            # # Create individual plots
-            # plot_path = os.path.join(output_dir, f"{arch_dir}_{bit_width}.png")
-            # create_summary_plots(data_dict, f"{arch_name} ({bit_width})", plot_path)
-
-            # Store data for comparison
-            all_data[arch_dir] = data_dict
+                # Store data for comparison
+                all_data[arch_dir] = data_dict
 
     # Create comparison plots if we have data for multiple architectures
     if len(all_data) > 1:
         comparison_path = os.path.join(output_dir, "architecture_comparison.png")
         create_comparison_plots(all_data, comparison_path)
-
-        # # Also create individual metric comparison plots
-        # metrics = [
-        #     (plot_frequency_vs_queue_size, "frequency"),
-        #     (plot_lut_usage_vs_queue_size, "lut_usage"),
-        #     (plot_register_usage_vs_queue_size, "register_usage"),
-        #     (plot_bram_usage_vs_queue_size, "bram_usage")
-        # ]
-
-        # for plot_func, metric_name in metrics:
-        #     metric_path = os.path.join(output_dir, f"{metric_name}_comparison.png")
-        #     create_multi_arch_plot(plot_func, all_data,
-        #                           title=f"{metric_name.replace('_', ' ').title()} Comparison",
-        #                           output_path=metric_path)
+        
+        # Create RegisterArray comparison plot if both enqueue variants exist
+        if "register_array_enq_disabled" in all_data and "register_array_enq_enabled" in all_data:
+            register_array_variants = {
+                "register_array_enq_disabled": all_data["register_array_enq_disabled"],
+                "register_array_enq_enabled": all_data["register_array_enq_enabled"]
+            }
+            
+            # Create specialized comparison plot just for RegisterArray variants
+            ra_comparison_path = os.path.join(output_dir, "register_array_enqueue_comparison.png")
+            create_comparison_plots(register_array_variants, ra_comparison_path)
 
 
 if __name__ == "__main__":
