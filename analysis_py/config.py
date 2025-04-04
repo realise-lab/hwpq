@@ -24,8 +24,8 @@ PERFORMANCE_FACTORS = {
     },
     "replace": {
         # "register_array": 1 / 2,
-        "register_array_enq_disabled": 1,  # Same replace performance even when enqueue is disabled
-        "register_array_enq_enabled": 1,  # Same replace performance when enqueue is enabled
+        "register_array_enq_disabled": 1,
+        "register_array_enq_enabled": 1,
         "systolic_array": 1 / 2,
         "register_tree": 1 / 2,
         "bram_tree": 1 / 8,

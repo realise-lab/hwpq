@@ -1,3 +1,5 @@
+`default_nettype none
+
 module RegisterArray_tb;
   // Parameters matching the module under test
   localparam int QUEUE_SIZE = 256;

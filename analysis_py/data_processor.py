@@ -2,10 +2,8 @@
 Data processing functions for Vivado analysis results.
 """
 
-import os
 import numpy as np
 from math import log2
-import parsers
 from config import PERFORMANCE_FACTORS
 
 

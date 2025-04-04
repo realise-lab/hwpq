@@ -10,21 +10,6 @@ from config import OUTPUT_DIR
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
-    # "RegisterArray": {
-    #     "color": "blue",
-    #     "marker": "o",
-    #     "display_name": "Register Array",
-    # },
-    # "RegisterArray_ENQ_0": {
-    #     "color": "darkblue",
-    #     "marker": "o",
-    #     "display_name": "Register Array (Enqueue Disabled)",
-    # },
-    # "RegisterArray_ENQ_1": {
-    #     "color": "royalblue",
-    #     "marker": "s",
-    #     "display_name": "Register Array (Enqueue Enabled)",
-    # },
     "register_array_enq_disabled": {
         "color": "darkblue",
         "marker": "o",
@@ -493,7 +478,7 @@ def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
             )
 
     ax.set_xlabel("Queue Size")
-    ax.set_ylabel(f"Performance / Resource")
+    ax.set_ylabel("Performance / Resource")
     ax.set_title(title or f"{operation.capitalize()} Resource Efficiency")
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
