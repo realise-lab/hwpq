@@ -58,10 +58,10 @@ module RegisterArray #(
 
   always_comb begin : size_counter
     case ({enqueue, dequeue, replace})
-      3'b100 : next_size = size + 1;
-      3'b010 : next_size = size - 1;
-      3'b001 : next_size = (size == '0 && i_data != '0) ? size + 1 :
-                           (size != '0 && i_data == '0) ? size - 1 :
+      3'b100 : next_size = size+1;
+      3'b010 : next_size = size-1;
+      3'b001 : next_size = (size == '0 && i_data != '0) ? size+1 :
+                           (size != '0 && i_data == '0) ? size-1 :
                            size;
       default : next_size = size;
     endcase
@@ -72,14 +72,12 @@ module RegisterArray #(
     empty_found = 0;
     case ({enqueue, dequeue, replace})
       3'b100 : begin // Enqueue operation (will only be active if ENQ_ENA is high)
-        for (int i = 0; i < QUEUE_SIZE; i++) begin
-          if (!empty_found && queue[i] == '0) begin
-            stage1[i] = i_data;
-            empty_found = 1;
-          end else begin
-            stage1[i] = queue[i];
-          end
+        // Shift entire queue to the right by 1, if the last element is not empty
+        // leave it unchanged.
+        for (int i = 1; i < QUEUE_SIZE; i++) begin
+          stage1[i] = (i == QUEUE_SIZE-1 && queue[i] != '0) ? queue[i] : queue[i-1];
         end
+        stage1[0] = i_data;
       end
       3'b010 : begin
         stage1 = queue;

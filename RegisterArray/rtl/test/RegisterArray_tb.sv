@@ -2,7 +2,7 @@
 
 module RegisterArray_tb;
   // Parameters matching the module under test
-  localparam int QUEUE_SIZE = 256;
+  localparam int QUEUE_SIZE = 128;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
@@ -50,9 +50,9 @@ module RegisterArray_tb;
   int                    random_operation;
 
   typedef enum int {
-    ENQUEUE = 0,
-    DEQUEUE = 1,
-    REPLACE = 2
+    ENQUEUE = 1,
+    DEQUEUE = 2,
+    REPLACE = 3
   } operation_t;
 
   // Instantiate RegisterArray with ENQ_ENA enabled
@@ -168,6 +168,32 @@ module RegisterArray_tb;
       replace(random_value);
       assert (o_data == ref_queue_enq_1[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
     end
+    
+    // Test case 4: Random opertaion for 50 times
+    $display("\nTest Case 4: Stress Test (ENQ_ENA enabled)");
+    for (int i = 0; i < 50; i++) begin
+      random_operation = $urandom_range(1, 3);
+      case (random_operation)
+        ENQUEUE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          enqueue(random_value);
+          assert (o_data == ref_queue_enq_1[0]) else $error("Random Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+        end
+        DEQUEUE: begin
+          dequeue();
+          if (!o_empty) begin
+            assert (o_data == ref_queue_enq_1[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+          end else begin
+            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+          end
+        end
+        REPLACE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          replace(random_value);
+          assert (o_data == ref_queue_enq_1[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+        end
+      endcase
+    end
 
     // Now test with ENQ_ENA disabled
     $display("\n=== Testing with ENQ_ENA disabled ===");
@@ -192,8 +218,8 @@ module RegisterArray_tb;
     u_RegisterArray_dis.next_size = QUEUE_SIZE;
     repeat (2) @(posedge CLK);
 
-    // Test Case 4: Dequeue Test with ENQ_ENA disabled
-    $display("\nTest Case 4: Dequeue Test (ENQ_ENA disabled)");
+    // Test Case 5: Dequeue Test with ENQ_ENA disabled
+    $display("\nTest Case 5: Dequeue Test (ENQ_ENA disabled)");
     assert (o_full) else $error("The queue should be filled by the intialization!");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       dequeue();
@@ -204,8 +230,8 @@ module RegisterArray_tb;
       end
     end
     
-    // Test Case 5: Try to Enqueue nodes with ENQ_ENA disabled
-    $display("\nTest Case 5: Enqueue Test (ENQ_ENA disabled)");
+    // Test Case 6: Try to Enqueue nodes with ENQ_ENA disabled
+    $display("\nTest Case 6: Enqueue Test (ENQ_ENA disabled)");
     o_data_prev = o_data;
     ref_queue_prev = ref_queue_enq_0;
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
@@ -217,14 +243,35 @@ module RegisterArray_tb;
     assert (ref_queue_enq_0 == ref_queue_prev) else $error("The queue should not have change!");
     assert (!o_full && !o_empty) else $error("The queue should not do anything!");
 
-    // Test Case 6: Test Replace operation with ENQ_ENA disabled
-    $display("\nTest Case 6: Replace Test (ENQ_ENA disabled)");
+    // Test Case 7: Test Replace operation with ENQ_ENA disabled
+    $display("\nTest Case 7: Replace Test (ENQ_ENA disabled)");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
       replace(random_value);
       assert (o_data == ref_queue_enq_0[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
     end
     
+    // Test case 8: Random opertaion for 50 times
+    $display("\nTest Case 8: Stress Test (ENQ_ENA disabled)");
+    for (int i = 0; i < 50; i++) begin
+      random_operation = $urandom_range(2, 3);
+      case (random_operation)
+        DEQUEUE: begin
+          dequeue();
+          if (!o_empty) begin
+            assert (o_data == ref_queue_enq_0[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+          end else begin
+            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+          end
+        end
+        REPLACE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          replace(random_value);
+          assert (o_data == ref_queue_enq_0[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+        end
+      endcase
+    end
+
     $display("\nTest completed!");
     $finish;
   end
