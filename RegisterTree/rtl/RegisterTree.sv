@@ -2,7 +2,7 @@
 
 module RegisterTree #(
     parameter bit ENQ_ENA = 1,    // Define if user would like to enable enqueue
-    parameter int QUEUE_SIZE = 3,
+    parameter int QUEUE_SIZE = 4095,
     parameter int DATA_WIDTH = 16
 ) (
     // Synchronous Control
@@ -283,4 +283,3 @@ module RegisterTree #(
   end
 
 endmodule
-

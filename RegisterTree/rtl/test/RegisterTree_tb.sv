@@ -169,6 +169,32 @@ module RegisterTree_tb;
       assert (o_data == ref_queue_enq_1[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
     end
 
+    // Test case 4: Random opertaion for 50 times
+    $display("\nTest Case 4: Stress Test (ENQ_ENA enabled)");
+    for (int i = 0; i < 50; i++) begin
+      random_operation = $urandom_range(1, 3);
+      case (random_operation)
+        ENQUEUE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          enqueue(random_value);
+          assert (o_data == ref_queue_enq_1[0]) else $error("Random Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+        end
+        DEQUEUE: begin
+          dequeue();
+          if (!o_empty) begin
+            assert (o_data == ref_queue_enq_1[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+          end else begin
+            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+          end
+        end
+        REPLACE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          replace(random_value);
+          assert (o_data == ref_queue_enq_1[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+        end
+      endcase
+    end
+
     // Now test with ENQ_ENA disabled
     $display("\n=== Testing with ENQ_ENA disabled ===");
     current_mode = DISABLED;
@@ -187,9 +213,15 @@ module RegisterTree_tb;
     ref_queue_enq_0.rsort();
     $display("\nInitializing enqueue disabled module by directly tap into it");
     for (int i = 0; i < QUEUE_SIZE; i++) begin
-      u_RegisterArray_dis.next_queue[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.swap_result[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.enq_result[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.rep_result[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.deq_result[i] = ref_queue_enq_0[i];
     end
-    u_RegisterArray_dis.next_size = QUEUE_SIZE;
+    u_RegisterArray_dis.size_after_swap = QUEUE_SIZE;
+    u_RegisterArray_dis.size_after_enq = QUEUE_SIZE;
+    u_RegisterArray_dis.size_after_deq = QUEUE_SIZE;
+    u_RegisterArray_dis.size_after_rep = QUEUE_SIZE;
     repeat (2) @(posedge CLK);
 
     // Test Case 4: Dequeue Test with ENQ_ENA disabled
@@ -225,6 +257,27 @@ module RegisterTree_tb;
       assert (o_data == ref_queue_enq_0[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
     end
     
+    // Test case 8: Random opertaion for 50 times
+    $display("\nTest Case 8: Stress Test (ENQ_ENA disabled)");
+    for (int i = 0; i < 50; i++) begin
+      random_operation = $urandom_range(2, 3);
+      case (random_operation)
+        DEQUEUE: begin
+          dequeue();
+          if (!o_empty) begin
+            assert (o_data == ref_queue_enq_0[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+          end else begin
+            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+          end
+        end
+        REPLACE: begin
+          random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
+          replace(random_value);
+          assert (o_data == ref_queue_enq_0[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+        end
+      endcase
+    end
+
     $display("\nTest completed!");
     $finish;
   end
@@ -242,7 +295,6 @@ module RegisterTree_tb;
           i_wrt_dis = 1;
           i_read_dis = 0;
           i_data_dis = value;
-          $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
         end
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
@@ -253,7 +305,7 @@ module RegisterTree_tb;
       i_wrt_dis  = 0;
       i_read_dis = 0;
       if (current_mode == ENABLED) repeat ($clog2(QUEUE_SIZE)) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -281,8 +333,8 @@ module RegisterTree_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (5) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -316,8 +368,8 @@ module RegisterTree_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (5) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 

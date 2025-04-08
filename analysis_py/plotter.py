@@ -3,6 +3,7 @@ Plotting functions for hardware queue performance analysis.
 """
 
 import os
+from datetime import datetime
 import matplotlib.pyplot as plt
 import parsers
 import data_processor as dp
@@ -17,26 +18,31 @@ ARCHITECTURE_STYLES = {
     },
     "register_array_enq_enabled": {
         "color": "royalblue",
-        "marker": "s",
+        "marker": ".",
         "display_name": "Register Array (Enqueue Enabled)",
     },
     "SystolicArray": {
-        "color": "green",
+        "color": "lime",
         "marker": "^",
         "display_name": "Systolic Array",
     },
-    "RegisterTree": {
-        "color": "red", 
-        "marker": "x", 
-        "display_name": "Register Tree"
+    "register_tree_enq_disabled": {
+        "color": "lightcoral",
+        "marker": "8", 
+        "display_name": "Register Tree (Enqueue Disabled)",
+    },
+    "register_tree_enq_enabled": {
+        "color": "maroon",
+        "marker": "p", 
+        "display_name": "Register Tree (Enqueue Enabled)",
     },
     "bram_tree": {
-        "color": "purple", 
+        "color": "violet",
         "marker": "s", 
         "display_name": "BRAM Tree"
     },
     "pipelined_bram_tree": {
-        "color": "brown",
+        "color": "slategray",
         "marker": "D",
         "display_name": "Pipelined BRAM Tree",
     },
@@ -343,6 +349,9 @@ def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=Non
         title (str, optional): Custom title for the plot
         arch_name (str, optional): Architecture name to determine plot style
     """
+    # Check if data_dict is a dictionary before calling get_bram_utilization
+    if not isinstance(data_dict, dict):
+        return
     queue_sizes, bram_percentages = dp.get_bram_utilization(data_dict)
 
     # Get architecture-specific style
@@ -388,9 +397,13 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
             # Get architecture-specific style
             style = get_arch_style(arch_name)
 
-            queue_sizes, performance = dp.compute_performance(
-                data_dict[arch_name], arch_name, operation
-            )
+            # Check if data_dict[arch_name] is a dictionary before calling compute_performance
+            if isinstance(data_dict[arch_name], dict):
+                queue_sizes, performance = dp.compute_performance(
+                    data_dict[arch_name], arch_name, operation
+                )
+            else:
+                continue
             ax.plot(
                 queue_sizes,
                 performance,
@@ -426,9 +439,13 @@ def plot_resource_comparison(ax, data_dict, arch_list, title=None):
             # Get architecture-specific style
             style = get_arch_style(arch_name)
 
-            queue_sizes, resource_utilization = dp.compute_resource_utilization(
-                data_dict[arch_name]
-            )
+            # Check if data_dict[arch_name] is a dictionary before calling compute_resource_utilization
+            if isinstance(data_dict[arch_name], dict):
+                queue_sizes, resource_utilization = dp.compute_resource_utilization(
+                    data_dict[arch_name]
+                )
+            else:
+                continue
             ax.plot(
                 queue_sizes,
                 resource_utilization,
@@ -464,9 +481,13 @@ def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
             # Get architecture-specific style
             style = get_arch_style(arch_name)
 
-            queue_sizes, efficiency = dp.compute_resource_utilization_efficiency(
-                data_dict[arch_name], arch_name, operation
-            )
+            # Check if data_dict[arch_name] is a dictionary before calling compute_resource_utilization_efficiency
+            if isinstance(data_dict[arch_name], dict):
+                queue_sizes, efficiency = dp.compute_resource_utilization_efficiency(
+                    data_dict[arch_name], arch_name, operation
+                )
+            else:
+                continue
 
             ax.plot(
                 queue_sizes,
@@ -559,15 +580,17 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Plot 1: Maximum achieved frequency comparison
     for arch_name, data_dict in data_dict_dict.items():
         style = get_arch_style(arch_name)
-        queue_sizes, frequencies = dp.get_max_achieved_frequency(data_dict)
-        axs[0, 0].plot(
-            queue_sizes,
-            frequencies,
-            f"{style['marker']}-",
-            color=style["color"],
-            label=style["display_name"],
-            linewidth=2,
-        )
+        # Check if data_dict is a dictionary before calling get_max_achieved_frequency
+        if isinstance(data_dict, dict):
+            queue_sizes, frequencies = dp.get_max_achieved_frequency(data_dict)
+            axs[0, 0].plot(
+                queue_sizes,
+                frequencies,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
     axs[0, 0].set_xlabel("Queue Size")
     axs[0, 0].set_ylabel("Maximum Frequency (MHz)")
     axs[0, 0].set_title("Maximum Achieved Frequency")
@@ -579,15 +602,17 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Plot 2: LUT utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
         style = get_arch_style(arch_name)
-        queue_sizes, lut_percentages = dp.get_lut_utilization(data_dict)
-        axs[1, 0].plot(
-            queue_sizes,
-            lut_percentages,
-            f"{style['marker']}-",
-            color=style["color"],
-            label=style["display_name"],
-            linewidth=2,
-        )
+        # Check if data_dict is a dictionary before calling get_lut_utilization
+        if isinstance(data_dict, dict):
+            queue_sizes, lut_percentages = dp.get_lut_utilization(data_dict)
+            axs[1, 0].plot(
+                queue_sizes,
+                lut_percentages,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
     axs[1, 0].set_xlabel("Queue Size")
     axs[1, 0].set_ylabel("LUT Utilization (%)")
     axs[1, 0].set_title("LUT Utilization Comparison")
@@ -598,15 +623,17 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Plot 3: Register utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
         style = get_arch_style(arch_name)
-        queue_sizes, reg_percentages = dp.get_register_utilization(data_dict)
-        axs[1, 1].plot(
-            queue_sizes,
-            reg_percentages,
-            f"{style['marker']}-",
-            color=style["color"],
-            label=style["display_name"],
-            linewidth=2,
-        )
+        # Check if data_dict is a dictionary before calling get_register_utilization
+        if isinstance(data_dict, dict):
+            queue_sizes, reg_percentages = dp.get_register_utilization(data_dict)
+            axs[1, 1].plot(
+                queue_sizes,
+                reg_percentages,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
     axs[1, 1].set_xlabel("Queue Size")
     axs[1, 1].set_ylabel("Register Utilization (%)")
     axs[1, 1].set_title("Register Utilization Comparison")
@@ -617,16 +644,18 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Plot 4: BRAM utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
         style = get_arch_style(arch_name)
-        queue_sizes, bram_percentages = dp.get_bram_utilization(data_dict)
-        if any(bram_percentages):  # Only plot if there's actual BRAM usage
-            axs[1, 2].plot(
-                queue_sizes,
-                bram_percentages,
-                f"{style['marker']}-",
-                color=style["color"],
-                label=style["display_name"],
-                linewidth=2,
-            )
+        # Check if data_dict is a dictionary before calling get_bram_utilization
+        if isinstance(data_dict, dict):
+            queue_sizes, bram_percentages = dp.get_bram_utilization(data_dict)
+            if any(bram_percentages):  # Only plot if there's actual BRAM usage
+                axs[1, 2].plot(
+                    queue_sizes,
+                    bram_percentages,
+                    f"{style['marker']}-",
+                    color=style["color"],
+                    label=style["display_name"],
+                    linewidth=2,
+                )
     axs[1, 2].set_xlabel("Queue Size")
     axs[1, 2].set_ylabel("BRAM Utilization (%)")
     axs[1, 2].set_title("BRAM Utilization Comparison")
@@ -641,12 +670,13 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Performance comparisons for different operations
     # Create filtered arch_list for enqueue operation 
     # Exclude BRAM trees and hybrid trees which don't support enqueue
-    # Also exclude register_array_enq_disabled which has enqueue disabled
+    # Also exclude register_array_enq_disabled and register_tree_enq_disabled which have enqueue disabled
     enqueue_arch_list = [
         arch for arch in arch_list 
         if "bram_tree" not in arch.lower() 
         and "hybrid_tree" not in arch.lower()
         and arch.lower() != "register_array_enq_disabled"
+        and arch.lower() != "register_tree_enq_disabled"
     ]
     enqueue_data_dict = {
         arch: data
@@ -654,6 +684,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
         if "bram_tree" not in arch.lower() 
         and "hybrid_tree" not in arch.lower()
         and arch.lower() != "register_array_enq_disabled"
+        and arch.lower() != "register_tree_enq_disabled"
     }
 
     # Use filtered lists for enqueue operations
@@ -776,8 +807,8 @@ def process_and_plot_all(base_dir, output_dir=None):
             # Process data - this may now return a tuple for RegisterArray with enqueue variants
             result = parsers.process_directory(log_dir)
 
-            # Handle special case for RegisterArray with enqueue variants
-            if isinstance(result, tuple) and len(result) == 2 and arch_dir == "RegisterArray":
+            # Handle special case for architectures with enqueue variants
+            if isinstance(result, tuple) and len(result) == 2:
                 enq_disabled_data, enq_enabled_data = result
                 
                 # Skip if no data
@@ -786,8 +817,16 @@ def process_and_plot_all(base_dir, output_dir=None):
                     continue
                 
                 # Store both variants with different keys
-                all_data["register_array_enq_disabled"] = enq_disabled_data
-                all_data["register_array_enq_enabled"] = enq_enabled_data
+                if arch_dir == "RegisterArray":
+                    all_data["register_array_enq_disabled"] = enq_disabled_data
+                    all_data["register_array_enq_enabled"] = enq_enabled_data
+                elif arch_dir == "RegisterTree":
+                    all_data["register_tree_enq_disabled"] = enq_disabled_data
+                    all_data["register_tree_enq_enabled"] = enq_enabled_data
+                else:
+                    # Generic handling for other architectures with enqueue variants
+                    all_data[f"{arch_dir.lower()}_enq_disabled"] = enq_disabled_data
+                    all_data[f"{arch_dir.lower()}_enq_enabled"] = enq_enabled_data
             else:
                 # Regular case for other architectures
                 data_dict = result
@@ -802,19 +841,20 @@ def process_and_plot_all(base_dir, output_dir=None):
 
     # Create comparison plots if we have data for multiple architectures
     if len(all_data) > 1:
-        comparison_path = os.path.join(output_dir, "architecture_comparison.png")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.png")
         create_comparison_plots(all_data, comparison_path)
         
-        # Create RegisterArray comparison plot if both enqueue variants exist
-        if "register_array_enq_disabled" in all_data and "register_array_enq_enabled" in all_data:
-            register_array_variants = {
-                "register_array_enq_disabled": all_data["register_array_enq_disabled"],
-                "register_array_enq_enabled": all_data["register_array_enq_enabled"]
-            }
-            
-            # Create specialized comparison plot just for RegisterArray variants
-            ra_comparison_path = os.path.join(output_dir, "register_array_enqueue_comparison.png")
-            create_comparison_plots(register_array_variants, ra_comparison_path)
+        # # Create RegisterArray comparison plot if both enqueue variants exist
+        # if "register_array_enq_disabled" in all_data and "register_array_enq_enabled" in all_data:
+        #     register_array_variants = {
+        #         "register_array_enq_disabled": all_data["register_array_enq_disabled"],
+        #         "register_array_enq_enabled": all_data["register_array_enq_enabled"]
+        #     }
+        #
+        #     # Create specialized comparison plot just for RegisterArray variants
+        #     ra_comparison_path = os.path.join(output_dir, "register_array_enqueue_comparison.png")
+        #     create_comparison_plots(register_array_variants, ra_comparison_path)
 
 
 if __name__ == "__main__":
