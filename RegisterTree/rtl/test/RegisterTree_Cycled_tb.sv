@@ -212,30 +212,23 @@ module RegisterTree_Cycled_tb;
     end
     ref_queue_enq_0.rsort();
     
-    $display("\nSorted queue contents:");
-    for (int i = 0; i < ref_queue_enq_0.size(); i++) begin
-      $display("ref_queue_enq_0[%0d] = %0d", i, ref_queue_enq_0[i]);
-    end
-    
-    $display("\nInitializing enqueue disabled module by directly tap into it");
+    // $display("\nSorted queue contents:");
+    // for (int i = 0; i < ref_queue_enq_0.size(); i++) begin
+    //   $display("ref_queue_enq_0[%0d] = %0d", i, ref_queue_enq_0[i]);
+    // end
+
+    // $display("\nInitializing enqueue disabled module by directly tap into it");
     for (int i = 0; i < QUEUE_SIZE; i++) begin
-       u_RegisterTree_dis.queue[i] = ref_queue_enq_0[i];
-//      u_RegisterTree_dis.swap_result[i] = ref_queue_enq_0[i];
-//      u_RegisterTree_dis.enq_result[i] = ref_queue_enq_0[i];
-//      u_RegisterTree_dis.rep_result[i] = ref_queue_enq_0[i];
-//      u_RegisterTree_dis.deq_result[i] = ref_queue_enq_0[i];
+      u_RegisterTree_dis.next_queue[i] = ref_queue_enq_0[i];
+      // u_RegisterTree_dis.swap_result[i] = ref_queue_enq_0[i];
     end
-     u_RegisterTree_dis.size = QUEUE_SIZE;
-//    u_RegisterTree_dis.size_after_swap = QUEUE_SIZE;
-//    u_RegisterTree_dis.size_after_enq = QUEUE_SIZE;
-//    u_RegisterTree_dis.size_after_deq = QUEUE_SIZE;
-//    u_RegisterTree_dis.size_after_rep = QUEUE_SIZE;
+    u_RegisterTree_dis.next_size = QUEUE_SIZE;
     repeat (4) @(posedge CLK);
 
-    $display("\nRegisterTree_dis.queue contents after initialization:");
-    for (int i = 0; i < QUEUE_SIZE; i++) begin
-      $display("u_RegisterTree_dis.queue[%0d] = %0d", i, u_RegisterTree_dis.queue[i]);
-    end;
+    // $display("\nRegisterTree_dis.queue contents after initialization:");
+    // for (int i = 0; i < QUEUE_SIZE; i++) begin
+    //   $display("u_RegisterTree_dis.queue[%0d] = %0d", i, u_RegisterTree_dis.queue[i]);
+    // end;
 
     // Test Case 4: Dequeue Test with ENQ_ENA disabled
     $display("\nTest Case 4: Dequeue Test (ENQ_ENA disabled)");
@@ -318,7 +311,7 @@ module RegisterTree_Cycled_tb;
       i_wrt_dis  = 0;
       i_read_dis = 0;
       if (current_mode == ENABLED) repeat ($clog2(QUEUE_SIZE)) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      else if (current_mode == DISABLED) @(posedge CLK);
     end
   endtask
 
@@ -346,8 +339,8 @@ module RegisterTree_Cycled_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (5) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -381,8 +374,8 @@ module RegisterTree_Cycled_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (5) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (5) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 

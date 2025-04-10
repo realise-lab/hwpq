@@ -21,35 +21,26 @@ module RegisterTree_Cycled #(
   //----------------------------------------------------------------------
   // Local Parameters
   //----------------------------------------------------------------------
-  localparam int TREE_DEPTH = $clog2(QUEUE_SIZE);  // depth of the tree
+  localparam int TREE_DEPTH   = $clog2(QUEUE_SIZE);  // depth of the tree
   localparam int NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of nodes needed to initialize
 
   //----------------------------------------------------------------------
   // Internal Registers and Wires
   //----------------------------------------------------------------------
-  // Storage elements - Add public modifier for testbench access
-  logic [DATA_WIDTH-1:0] queue[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] reset_queue[NODES_NEEDED];
+
+  logic [DATA_WIDTH-1:0] queue       [NODES_NEEDED];
+  logic [DATA_WIDTH-1:0] next_queue  [NODES_NEEDED];
+  logic [DATA_WIDTH-1:0] swap_result [NODES_NEEDED];
+  logic [DATA_WIDTH-1:0] reset_queue [NODES_NEEDED];
   
-  // Size counter - Add public modifier for testbench access
   logic [$clog2(NODES_NEEDED)-1:0] size;
-  logic empty, full;
+  logic [$clog2(NODES_NEEDED)-1:0] next_size;
 
-  // Control signals
-  logic enqueue, dequeue, replace, even_cycle_flag, next_even_cycle_flag;
-  
-  // Results of each operation - calculated in parallel - Add public modifier for testbench access
-  logic [DATA_WIDTH-1:0] swap_result[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] enq_result[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] deq_result[NODES_NEEDED];
-  logic [DATA_WIDTH-1:0] rep_result[NODES_NEEDED];
-  
-  // Size after each operation - Add public modifier for testbench access
-  logic [$clog2(NODES_NEEDED)-1:0] size_after_swap;
-  logic [$clog2(NODES_NEEDED)-1:0] size_after_enq;
-  logic [$clog2(NODES_NEEDED)-1:0] size_after_deq;
-  logic [$clog2(NODES_NEEDED)-1:0] size_after_rep;
+  logic empty, full, enqueue, dequeue, replace; 
+  logic even_cycle_flag, next_even_cycle_flag;
 
+  int found_empty_index;
+  
   //----------------------------------------------------------------------
   // Initialize reset_queue to zeros
   //----------------------------------------------------------------------
@@ -62,227 +53,134 @@ module RegisterTree_Cycled #(
   //----------------------------------------------------------------------
   // Signals assignments
   //----------------------------------------------------------------------
-  // Control signal assignment
+
   assign enqueue = (ENQ_ENA && i_wrt && !i_read) ? 1'b1 : 1'b0; // Only enable enqueue if ENQ_ENA is high
   assign dequeue = !i_wrt && i_read ? 1'b1 : 1'b0;
   assign replace = i_wrt && i_read ? 1'b1 : 1'b0;
-  // Size counter signals
-  assign empty = (size <= 0) ? 1'b1 : 1'b0;
-  assign full = (size >= QUEUE_SIZE) ? 1'b1 : 1'b0;
-  assign o_full = full;
+
+  assign empty   = (size <= 0) ? 1'b1 : 1'b0;
+  assign full    = (size >= QUEUE_SIZE) ? 1'b1 : 1'b0;
+  assign o_full  = full;
   assign o_empty = empty;
-  assign o_data = queue[0];
+  assign o_data  = queue[0];
 
   //----------------------------------------------------------------------
   // Compare and Swap operation
   //----------------------------------------------------------------------
-  always_comb begin : prepare_swap_result
+  always_comb begin : calcualte_swap_result
     case (even_cycle_flag)
       1'b1 : begin // Even cycle
         swap_result = queue; // Initialize swap_result with current queue
         for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin // Iterate through levels
           if (lvl % 2 == 0 && lvl < TREE_DEPTH - 1) begin // Process only even levels (0, 2, 4...)
             for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin // Iterate through nodes at this level
-
-              logic [DATA_WIDTH-1:0] new_parent, new_left, new_right;
-              
-              // Default assignments - keep original values
-              new_parent = queue[i];
-              new_left = (2*i+1 < NODES_NEEDED) ? queue[2*i+1] : '0;
-              new_right = (2*i+2 < NODES_NEEDED) ? queue[2*i+2] : '0;
-              
-              if ((2*i+1 < NODES_NEEDED) && (2*i+2 < NODES_NEEDED)) begin // If both children exist
-                if (queue[2*i+1] > queue[2*i+2]) begin // Left child is greater than right child
-                  if (queue[i] < queue[2*i+1]) begin // Parent is less than left child - swap
-                    new_parent = queue[2*i+1];
-                    new_left = queue[i];
-                  end else begin // Parent is greater than or equal to left child
-                    // Do nothing
-                  end
-                end else begin // Right child is greater than or equal to left child
-                  if (queue[i] < queue[2*i+2]) begin // Parent is less than right child - swap
-                    new_parent = queue[2*i+2];
-                    new_right = queue[i];
-                  end else begin // Parent is greater than or equal to right child
-                    // Do nothing
-                  end
+              if (queue[2*i+1] > queue[2*i+2]) begin // compare left and right children, if left > right
+                if (queue[2*i+1] > queue[i]) begin // compare with parent, if left > parent
+                  swap_result[i] = queue[2*i+1];
+                  swap_result[2*i+1] = queue[i];
+                end else begin
+                  swap_result[i] = queue[i];
+                  swap_result[2*i+1] = queue[2*i+1];
                 end
-              end else begin // No children exist
-                // Do nothing
-              end
-              
-              // Update result with new values
-              swap_result[i] = new_parent;
-              if (2*i+1 < NODES_NEEDED) begin 
-                swap_result[2*i+1] = new_left;
-              end else begin
-                // Do nothing
-              end
-              if (2*i+2 < NODES_NEEDED) begin
-                swap_result[2*i+2] = new_right;
-              end else begin
-                // Do nothing
+              end else begin // if right > left
+                if (queue[2*i+2] > queue[i]) begin // compare with parent, if right > parent
+                  swap_result[i] = queue[2*i+2];
+                  swap_result[2*i+2] = queue[i];
+                end else begin
+                  swap_result[i] = queue[i];
+                  swap_result[2*i+2] = queue[2*i+2];
+                end
               end
             end
-          end else begin
-            // Do nothing for odd levels
+          end else begin // Odd level
+            // Do nothing
           end
         end
-        
-        // Set flag for running odd cycle
-        next_even_cycle_flag = 1'b0;
       end
 
       1'b0 : begin // Odd cycle
         swap_result = queue; // Initialize swap_result with current queue
         for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin // Iterate through levels
-          if (lvl % 2 == 1 && lvl < TREE_DEPTH - 2) begin // Process only odd levels (1, 3, 5...)
+          if (lvl % 2 == 1 && lvl < TREE_DEPTH - 1) begin // Process only odd levels (1, 3, 5...)
             for (int i = (1 << lvl) - 1; i < (1 << (lvl + 1)) - 1; i++) begin // Iterate through nodes at this level
-
-              logic [DATA_WIDTH-1:0] new_parent, new_left, new_right;
-              
-              new_parent = queue[i];
-              new_left = (2*i+1 < NODES_NEEDED) ? queue[2*i+1] : '0;
-              new_right = (2*i+2 < NODES_NEEDED) ? queue[2*i+2] : '0;
-              
-              if ((2*i+1 < NODES_NEEDED) && (2*i+2 < NODES_NEEDED)) begin // If both children exist
-                if (queue[2*i+1] > queue[2*i+2]) begin // Left child is greater than right child
-                  if (queue[i] < queue[2*i+1]) begin // Parent is less than left child - swap
-                    new_parent = queue[2*i+1];
-                    new_left = queue[i];
-                  end else begin // Parent is greater than or equal to left child
-                    // Do nothing
-                  end
-                end else begin // Right child is greater than or equal to left child
-                  if (queue[i] < queue[2*i+2]) begin // Parent is less than right child
-                    new_parent = queue[2*i+2];
-                    new_right = queue[i];
-                  end else begin // Parent is greater than or equal to right child - no swap needed
-                    // Do nothing
-                  end
+              if (queue[2*i+1] > queue[2*i+2]) begin // compare left and right children, if left > right
+                if (queue[2*i+1] > queue[i]) begin // compare with parent, if left > parent
+                  swap_result[i] = queue[2*i+1];
+                  swap_result[2*i+1] = queue[i];
+                end else begin
+                  swap_result[i] = queue[i];
+                  swap_result[2*i+1] = queue[2*i+1];
                 end
-              end else begin // No children exist - heap property is maintained
-              end
-              
-              // Update result with new values
-              swap_result[i] = new_parent;
-              if (2*i+1 < NODES_NEEDED) begin
-                swap_result[2*i+1] = new_left;
-              end else begin
-                // Do nothing
-              end
-              if (2*i+2 < NODES_NEEDED) begin
-                swap_result[2*i+2] = new_right;
-              end else begin
-                // Do nothing
+              end else begin // if right > left
+                if (queue[2*i+2] > queue[i]) begin // compare with parent, if right > parent
+                  swap_result[i] = queue[2*i+2];
+                  swap_result[2*i+2] = queue[i];
+                end else begin
+                  swap_result[i] = queue[i];
+                  swap_result[2*i+2] = queue[2*i+2];
+                end
               end
             end
-          end else begin
-            // Do nothing for even levels
+          end else begin // Even level
+            // Do nothing
           end
         end
-        
-        // Set flag for next cycle
-        next_even_cycle_flag = 1'b1;
       end
 
       default : begin 
         swap_result = queue;
-        next_even_cycle_flag = 1'b1;
       end
     endcase
-    
-    size_after_swap = size;
   end
 
-  //----------------------------------------------------------------------
-  // Enqueue operation
-  //----------------------------------------------------------------------
-  always_comb begin : prepare_enq_result
-    // Find first empty slot
-    logic [$clog2(NODES_NEEDED)-1:0] found_empty_idx;
-    found_empty_idx = NODES_NEEDED;
-    
-    for (int i = NODES_NEEDED-1; i >= 0; i--) begin
-      if (queue[i] == 0) begin
-        found_empty_idx = (i < found_empty_idx) ? i : found_empty_idx;
-      end else begin
-        found_empty_idx = found_empty_idx;
-      end
-    end
-    
-    // Create enqueue result
-    enq_result = queue;
-    
-    if (found_empty_idx < NODES_NEEDED) begin
-      enq_result[found_empty_idx] = i_data;
+  always_comb begin : calcualte_next_even_cycle_flag
+    if (enqueue || dequeue || replace) begin
+      next_even_cycle_flag = 1'b1; // Set to 1 if any operation is performed
     end else begin
-      // Do nothing
+      next_even_cycle_flag = !even_cycle_flag;// toggle the flag
     end
-    
-    // Update size after enqueue
-    size_after_enq = (!full) ? size + 1 : size;
   end
 
-  //----------------------------------------------------------------------
-  // Dequeue operation
-  //----------------------------------------------------------------------
-  always_comb begin : prepare_deq_result
-    // Create dequeue result - remove root
-    deq_result = queue;
-    deq_result[0] = '0;
-    
-    // Update size after dequeue
-    size_after_deq = (!empty) ? size - 1 : size;
+  always_comb begin : calcualte_next_queue
+    case ({enqueue, dequeue, replace})
+      3'b100 : begin // Enqueue
+        found_empty_index = NODES_NEEDED - 1; // Start from the last index
+        for (int i = (1 << (TREE_DEPTH-1)) - 1; i < (1 << (TREE_DEPTH)) - 1; i++) begin
+          found_empty_index = (queue[i]=='0) ? i : found_empty_index;
+        end
+        next_queue = queue;
+        next_queue[found_empty_index] = i_data;
+      end
+      3'b010 : begin // Dequeue
+        next_queue = queue;
+        next_queue[0] = '0;
+      end
+      3'b001 : begin // Replace
+        next_queue = queue;
+        next_queue[0] = i_data;
+      end
+      default : next_queue = swap_result;
+    endcase
   end
 
-  //----------------------------------------------------------------------
-  // Replace operation
-  //----------------------------------------------------------------------
-  always_comb begin : prepare_rep_result
-    // Create replace result - replace root
-    rep_result = queue;
-    rep_result[0] = i_data;
-    
-    // Update size after replace
-    size_after_rep = (size == 0 && i_data != '0) ? size + 1 : size;
+  always_comb begin : calculate_next_size
+    case ({enqueue, dequeue, replace})
+      3'b100 : next_size  = size + 1; // Enqueue
+      3'b010 : next_size  = size - 1; // Dequeue
+      3'b001 : next_size  = (size==0 && i_data!='0) ? size + 1 : size; // Replace
+      default : next_size = size; // No change
+    endcase
   end
 
-  //----------------------------------------------------------------------
-  // Sequential logic - update registers
-  //----------------------------------------------------------------------
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : update_registers
     if (!i_RSTn) begin
-      // Reset condition
-      queue <= reset_queue;
-      size <= 0;
+      queue           <= reset_queue;
+      size            <= 0;
       even_cycle_flag <= 1'b1;
     end else begin
-      case ({enqueue, dequeue, replace})
-        3'b100 : begin // Enqueue operation
-          queue <= enq_result;
-          size <= size_after_enq;
-          even_cycle_flag <= 1'b1;
-        end
-        
-        3'b010 : begin // Dequeue operation
-          queue <= deq_result;
-          size <= size_after_deq;
-          even_cycle_flag <= 1'b1;
-        end
-        
-        3'b001 : begin // Replace operation
-          queue <= rep_result;
-          size <= size_after_rep;
-          even_cycle_flag <= 1'b1;
-        end
-        
-        default : begin // Compare and swap for heap maintenance
-          queue <= swap_result;
-          size <= size_after_swap;
-          even_cycle_flag <= next_even_cycle_flag;
-        end
-      endcase
+      queue           <= next_queue;
+      size            <= next_size;
+      even_cycle_flag <= next_even_cycle_flag;
     end
   end
 
