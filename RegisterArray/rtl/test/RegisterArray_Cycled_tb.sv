@@ -1,8 +1,8 @@
 `default_nettype none
 
-module RegisterTree_tb;
+module RegisterArray_Cycled_tb;
   // Parameters matching the module under test
-  localparam int QUEUE_SIZE = 15;
+  localparam int QUEUE_SIZE = 64;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
@@ -50,17 +50,17 @@ module RegisterTree_tb;
   int                    random_operation;
 
   typedef enum int {
-    ENQUEUE = 0,
-    DEQUEUE = 1,
-    REPLACE = 2
+    ENQUEUE = 1,
+    DEQUEUE = 2,
+    REPLACE = 3
   } operation_t;
 
   // Instantiate RegisterArray with ENQ_ENA enabled
-  RegisterTree #(
+  RegisterArray_Cycled #(
       .ENQ_ENA(1'b1),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
-  ) u_RegisterTree_ena (
+  ) u_RegisterArray_ena (
       .i_CLK(CLK),
       .i_RSTn(RSTn),
       .i_wrt(i_wrt_ena),
@@ -72,11 +72,11 @@ module RegisterTree_tb;
   );
   
   // Instantiate RegisterArray with ENQ_ENA disabled
-  RegisterTree #(
+  RegisterArray_Cycled #(
       .ENQ_ENA(1'b0),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
-  ) u_RegisterTree_dis (
+  ) u_RegisterArray_dis (
       .i_CLK(CLK),
       .i_RSTn(RSTn),
       .i_wrt(i_wrt_dis),
@@ -168,7 +168,7 @@ module RegisterTree_tb;
       replace(random_value);
       assert (o_data == ref_queue_enq_1[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
     end
-
+    
     // Test case 4: Random opertaion for 50 times
     $display("\nTest Case 4: Stress Test (ENQ_ENA enabled)");
     for (int i = 0; i < 50; i++) begin
@@ -211,22 +211,26 @@ module RegisterTree_tb;
       ref_queue_enq_0.push_back(random_value);
     end
     ref_queue_enq_0.rsort();
-
-    $display("\nInitializing enqueue disabled module by directly tap into it");
+    
+//    $display("\nSorted queue contents:");
+//    for (int i = 0; i < ref_queue_enq_0.size(); i++) begin
+//      $display("ref_queue_enq_0[%0d] = %0d", i, ref_queue_enq_0[i]);
+//    end
+    
+//    $display("\nInitializing enqueue disabled module by directly tap into it");
     for (int i = 0; i < QUEUE_SIZE; i++) begin
-      u_RegisterTree_dis.swap_result[i] = ref_queue_enq_0[i];
-      u_RegisterTree_dis.enq_result[i] = ref_queue_enq_0[i];
-      u_RegisterTree_dis.rep_result[i] = ref_queue_enq_0[i];
-      u_RegisterTree_dis.deq_result[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.stage1[i] = ref_queue_enq_0[i];
     end
-    u_RegisterTree_dis.size_after_swap = QUEUE_SIZE;
-    u_RegisterTree_dis.size_after_enq = QUEUE_SIZE;
-    u_RegisterTree_dis.size_after_deq = QUEUE_SIZE;
-    u_RegisterTree_dis.size_after_rep = QUEUE_SIZE;
+    u_RegisterArray_dis.next_size = QUEUE_SIZE;
     repeat (2) @(posedge CLK);
+    
+//    $display("\nRegisterArray_dis.queue contents after initialization:");
+//    for (int i = 0; i < QUEUE_SIZE; i++) begin
+//      $display("u_RegisterArray_dis.queue[%0d] = %0d", i, u_RegisterArray_dis.queue[i]);
+//    end;
 
-    // Test Case 4: Dequeue Test with ENQ_ENA disabled
-    $display("\nTest Case 4: Dequeue Test (ENQ_ENA disabled)");
+    // Test Case 5: Dequeue Test with ENQ_ENA disabled
+    $display("\nTest Case 5: Dequeue Test (ENQ_ENA disabled)");
     assert (o_full) else $error("The queue should be filled by the intialization!");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       dequeue();
@@ -237,8 +241,8 @@ module RegisterTree_tb;
       end
     end
     
-    // Test Case 5: Try to Enqueue nodes with ENQ_ENA disabled
-    $display("\nTest Case 5: Enqueue Test (ENQ_ENA disabled)");
+    // Test Case 6: Try to Enqueue nodes with ENQ_ENA disabled
+    $display("\nTest Case 6: Enqueue Test (ENQ_ENA disabled)");
     o_data_prev = o_data;
     ref_queue_prev = ref_queue_enq_0;
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
@@ -250,8 +254,8 @@ module RegisterTree_tb;
     assert (ref_queue_enq_0 == ref_queue_prev) else $error("The queue should not have change!");
     assert (!o_full && !o_empty) else $error("The queue should not do anything!");
 
-    // Test Case 6: Test Replace operation with ENQ_ENA disabled
-    $display("\nTest Case 6: Replace Test (ENQ_ENA disabled)");
+    // Test Case 7: Test Replace operation with ENQ_ENA disabled
+    $display("\nTest Case 7: Replace Test (ENQ_ENA disabled)");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = DATA_WIDTH'(($urandom & ((1 << DATA_WIDTH) - 1)) % 1025);
       replace(random_value);
@@ -296,6 +300,7 @@ module RegisterTree_tb;
           i_wrt_dis = 1;
           i_read_dis = 0;
           i_data_dis = value;
+//          $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
         end
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
@@ -305,8 +310,8 @@ module RegisterTree_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat ($clog2(QUEUE_SIZE)) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (QUEUE_SIZE/2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK); // should have no effects
     end
   endtask
 

@@ -71,7 +71,7 @@ module RegisterTree #(
   assign full = (size >= QUEUE_SIZE);
   assign o_full = full;
   assign o_empty = empty;
-  assign o_data = !empty ? queue[0] : '0;
+  assign o_data = queue[0];
 
   //----------------------------------------------------------------------
   // Compare and Swap operation

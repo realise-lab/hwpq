@@ -21,6 +21,16 @@ ARCHITECTURE_STYLES = {
         "marker": ".",
         "display_name": "Register Array (Enqueue Enabled)",
     },
+    "register_array_cycled_enq_disabled": {
+        "color": "cyan",
+        "marker": "x",
+        "display_name": "Register Array Cycled (Enqueue Disabled)",
+    },
+    "register_array_cycled_enq_enabled": {
+        "color": "teal",
+        "marker": "+",
+        "display_name": "Register Array Cycled (Enqueue Enabled)",
+    },
     "SystolicArray": {
         "color": "lime",
         "marker": "^",
@@ -51,7 +61,6 @@ ARCHITECTURE_STYLES = {
         "marker": "d", 
         "display_name": "Hybrid Tree"
     },
-    # Add more architectures as needed
 }
 
 
@@ -420,18 +429,6 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
     ax.grid(True)
     ax.legend(fontsize=12)
 
-    # Add "Better" annotation with arrow pointing up (higher is better)
-    ax.annotate(
-        "Better",
-        xy=(0.9, 0.9),
-        xycoords="axes fraction",
-        xytext=(0.9, 0.7),
-        textcoords="axes fraction",
-        arrowprops=dict(facecolor="black", width=1, headwidth=7),
-        ha="center",
-        va="center",
-    )
-
 
 def plot_resource_comparison(ax, data_dict, arch_list, title=None):
     for arch_name in arch_list:
@@ -507,7 +504,7 @@ def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
     ax.legend(fontsize=12)
 
 
-def create_summary_plots(data_dict, architecture, output_path=None):
+def create_summary_plots(data_dict, architecture, output_path=None, enqueue_option=None):
     """
     Create a summary of plots for a specific architecture.
 
@@ -515,16 +512,26 @@ def create_summary_plots(data_dict, architecture, output_path=None):
         data_dict (dict): Data from parsers.process_directory
         architecture (str): Name of the architecture being analyzed
         output_path (str, optional): Path to save the figure to
+        enqueue_option (str, optional): "enabled", "disabled", or None for architectures without enqueue variants
 
     Returns:
         matplotlib.figure.Figure: The figure containing all subplots
     """
     # Create a 3x3 grid of subplots
     fig, axs = plt.subplots(3, 3, figsize=(18, 16))
-    fig.suptitle(f"Performance Analysis for {architecture} Architecture", fontsize=32)
+    
+    # Add enqueue state to the title if provided
+    title = f"Performance Analysis for {architecture} Architecture"
+    if enqueue_option:
+        title += f" (Enqueue {enqueue_option.capitalize()})"
+    fig.suptitle(title, fontsize=32)
 
     # Convert display name to architecture key for style lookup
     arch_key = architecture.lower().replace(" ", "_").split("(")[0].strip()
+    
+    # Append enqueue option to architecture key if provided
+    if enqueue_option:
+        arch_key += f"_enq_{enqueue_option}"
 
     # Row 1: Basic metrics
     plot_frequency_vs_queue_size(axs[0, 0], data_dict, arch_name=arch_key)
@@ -539,6 +546,11 @@ def create_summary_plots(data_dict, architecture, output_path=None):
     # Row 3: Performance for different operations
     operations = ["enqueue", "dequeue", "replace"]
     for idx, operation in enumerate(operations):
+        # Skip enqueue plot if enqueue is disabled
+        if operation == "enqueue" and enqueue_option == "disabled":
+            axs[2, idx].set_visible(False)
+            continue
+            
         # Create dummy comparison with just this architecture
         arch_list = [arch_key]
         dummy_dict = {arch_key: data_dict}
@@ -553,6 +565,226 @@ def create_summary_plots(data_dict, architecture, output_path=None):
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         print(f"Saved summary plots to {output_path}")
 
+    return fig
+
+
+def create_architecture_variant_comparison(variant_data_dict, base_architecture, output_path=None):
+    """
+    Create a comparison plot for different variants of the same architecture (e.g., RegisterArray with
+    different options like cycled, enqueue enabled/disabled).
+
+    Args:
+        variant_data_dict (dict): Dictionary mapping variant names to their data dictionaries
+        base_architecture (str): Base name of the architecture (e.g., "RegisterArray")
+        output_path (str, optional): Path to save the figure to
+
+    Returns:
+        matplotlib.figure.Figure: The figure containing the comparison plots
+    """
+    # Create a 5x3 grid to match the style of create_comparison_plots
+    fig, axs = plt.subplots(5, 3, figsize=(32, 40))
+    # fig.suptitle(f"{base_architecture} Variants Comparison", fontsize=32, y=0.97)
+    
+    # Row 1: Maximum achieved frequency comparison
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, frequencies = dp.get_max_achieved_frequency(data)
+        axs[0, 0].plot(
+            queue_sizes,
+            frequencies,
+            f"{style['marker']}-",
+            color=style["color"],
+            label=style["display_name"],
+            linewidth=2,
+        )
+    axs[0, 0].set_xlabel("Queue Size")
+    axs[0, 0].set_ylabel("Maximum Frequency (MHz)")
+    axs[0, 0].set_title("Maximum Achieved Frequency")
+    axs[0, 0].set_xscale("log", base=2)
+    axs[0, 0].grid(True)
+    axs[0, 0].legend(fontsize=12)
+    
+    # Hide the other plots in first row
+    axs[0, 1].set_visible(False)
+    axs[0, 2].set_visible(False)
+    
+    # Row 2: Resource utilization comparisons
+    # Plot LUT utilization comparison
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, lut_percentages = dp.get_lut_utilization(data)
+        axs[1, 0].plot(
+            queue_sizes,
+            lut_percentages,
+            f"{style['marker']}-",
+            color=style["color"],
+            label=style["display_name"],
+            linewidth=2,
+        )
+    axs[1, 0].set_xlabel("Queue Size")
+    axs[1, 0].set_ylabel("LUT Utilization (%)")
+    axs[1, 0].set_title("LUT Utilization Comparison")
+    axs[1, 0].set_xscale("log", base=2)
+    axs[1, 0].set_yscale("log")
+    axs[1, 0].grid(True)
+    axs[1, 0].legend(fontsize=12)
+    
+    # Plot Register utilization comparison
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, reg_percentages = dp.get_register_utilization(data)
+        axs[1, 1].plot(
+            queue_sizes,
+            reg_percentages,
+            f"{style['marker']}-",
+            color=style["color"],
+            label=style["display_name"],
+            linewidth=2,
+        )
+    axs[1, 1].set_xlabel("Queue Size")
+    axs[1, 1].set_ylabel("Register Utilization (%)")
+    axs[1, 1].set_title("Register Utilization Comparison")
+    axs[1, 1].set_xscale("log", base=2)
+    axs[1, 1].set_yscale("log")
+    axs[1, 1].grid(True)
+    axs[1, 1].legend(fontsize=12)
+    
+    # Plot BRAM utilization comparison
+    any_bram_usage = False
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, bram_percentages = dp.get_bram_utilization(data)
+        if any(bram_percentages):  # Only plot if there's actual BRAM usage
+            any_bram_usage = True
+            axs[1, 2].plot(
+                queue_sizes,
+                bram_percentages,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
+    
+    if any_bram_usage:
+        axs[1, 2].set_xlabel("Queue Size")
+        axs[1, 2].set_ylabel("BRAM Utilization (%)")
+        axs[1, 2].set_title("BRAM Utilization Comparison")
+        axs[1, 2].set_xscale("log", base=2)
+        axs[1, 2].set_yscale("log")
+        axs[1, 2].grid(True)
+        axs[1, 2].legend(fontsize=12)
+    else:
+        axs[1, 2].set_visible(False)
+    
+    # Row 3: Performance Comparisons
+    # Plot Enqueue Performance
+    enqueue_variants = {k: v for k, v in variant_data_dict.items() if "enq_enabled" in k or "enq_disabled" not in k}
+    if enqueue_variants:
+        for variant, data in enqueue_variants.items():
+            style = get_arch_style(variant)
+            queue_sizes, performance = dp.compute_performance(data, variant, "enqueue")
+            axs[2, 0].plot(
+                queue_sizes,
+                performance,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
+        axs[2, 0].set_xlabel("Queue Size")
+        axs[2, 0].set_ylabel("Performance (MHz * ops/cycle)")
+        axs[2, 0].set_title("Enqueue Performance")
+        axs[2, 0].set_xscale("log", base=2)
+        axs[2, 0].grid(True)
+        axs[2, 0].legend(fontsize=12)
+    else:
+        axs[2, 0].set_visible(False)
+    
+    # Plot Dequeue and Replace Performance in one plot
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, performance = dp.compute_performance(data, variant, "dequeue")
+        axs[2, 1].plot(
+            queue_sizes,
+            performance,
+            f"{style['marker']}-",
+            color=style["color"],
+            label=style["display_name"],
+            linewidth=2,
+        )
+    axs[2, 1].set_xlabel("Queue Size")
+    axs[2, 1].set_ylabel("Performance (MHz * ops/cycle)")
+    axs[2, 1].set_title("Dequeue and Replace Performance")
+    axs[2, 1].set_xscale("log", base=2)
+    axs[2, 1].grid(True)
+    axs[2, 1].legend(fontsize=12)
+    
+    # Hide the third plot in third row
+    axs[2, 2].set_visible(False)
+    
+    # Row 4: Resource Efficiency Comparisons
+    # Plot Enqueue Efficiency
+    if enqueue_variants:
+        for variant, data in enqueue_variants.items():
+            style = get_arch_style(variant)
+            queue_sizes, efficiency = dp.compute_resource_utilization_efficiency(data, variant, "enqueue")
+            axs[3, 0].plot(
+                queue_sizes,
+                efficiency,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=2,
+            )
+        axs[3, 0].set_xlabel("Queue Size")
+        axs[3, 0].set_ylabel("Performance / Resource")
+        axs[3, 0].set_title("Enqueue Resource Efficiency")
+        axs[3, 0].set_xscale("log", base=2)
+        axs[3, 0].set_yscale("log")
+        axs[3, 0].grid(True)
+        axs[3, 0].legend(fontsize=12)
+    else:
+        axs[3, 0].set_visible(False)
+    
+    # Plot Dequeue and Replace Efficiency
+    for variant, data in variant_data_dict.items():
+        style = get_arch_style(variant)
+        queue_sizes, efficiency = dp.compute_resource_utilization_efficiency(data, variant, "dequeue")
+        axs[3, 1].plot(
+            queue_sizes,
+            efficiency,
+            f"{style['marker']}-",
+            color=style["color"],
+            label=style["display_name"],
+            linewidth=2,
+        )
+    axs[3, 1].set_xlabel("Queue Size")
+    axs[3, 1].set_ylabel("Performance / Resource")
+    axs[3, 1].set_title("Dequeue and Replace Efficiency")
+    axs[3, 1].set_xscale("log", base=2)
+    axs[3, 1].set_yscale("log")
+    axs[3, 1].grid(True)
+    axs[3, 1].legend(fontsize=12)
+    
+    # Hide the third plot in fourth row
+    axs[3, 2].set_visible(False)
+    
+    # Row 5: Resource Utilization Comparison
+    plot_resource_comparison(axs[4, 0], variant_data_dict, list(variant_data_dict.keys()))
+    
+    # Hide the other plots in fifth row
+    axs[4, 1].set_visible(False)
+    axs[4, 2].set_visible(False)
+    
+    # Adjust layout
+    plt.tight_layout(rect=(0, 0, 1, 0.97))  # Leave space for suptitle
+    
+    # Save if output path provided
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        print(f"Saved {base_architecture} variant comparison to {output_path}")
+    
     return fig
 
 
@@ -598,6 +830,9 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[0, 0].grid(True)
     axs[0, 0].legend(fontsize=12)
 
+    axs[0, 1].set_visible(False)  # Empty plot for layout balance
+    axs[0, 2].set_visible(False)  # Empty plot for layout balance
+
     # Row 2: Resource utilization comparisons
     # Plot 2: LUT utilization comparison
     for arch_name, data_dict in data_dict_dict.items():
@@ -617,6 +852,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[1, 0].set_ylabel("LUT Utilization (%)")
     axs[1, 0].set_title("LUT Utilization Comparison")
     axs[1, 0].set_xscale("log", base=2)
+    axs[1, 0].set_yscale("log")
     axs[1, 0].grid(True)
     axs[1, 0].legend(fontsize=12)
 
@@ -638,6 +874,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     axs[1, 1].set_ylabel("Register Utilization (%)")
     axs[1, 1].set_title("Register Utilization Comparison")
     axs[1, 1].set_xscale("log", base=2)
+    axs[1, 1].set_yscale("log")
     axs[1, 1].grid(True)
     axs[1, 1].legend(fontsize=12)
 
@@ -670,47 +907,52 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     # Performance comparisons for different operations
     # Create filtered arch_list for enqueue operation 
     # Exclude BRAM trees and hybrid trees which don't support enqueue
-    # Also exclude register_array_enq_disabled and register_tree_enq_disabled which have enqueue disabled
+    # Also exclude architectures with enqueue disabled
     enqueue_arch_list = [
         arch for arch in arch_list 
         if "bram_tree" not in arch.lower() 
         and "hybrid_tree" not in arch.lower()
-        and arch.lower() != "register_array_enq_disabled"
-        and arch.lower() != "register_tree_enq_disabled"
+        and "enq_disabled" not in arch.lower()
     ]
     enqueue_data_dict = {
         arch: data
         for arch, data in data_dict_dict.items()
         if "bram_tree" not in arch.lower() 
         and "hybrid_tree" not in arch.lower()
-        and arch.lower() != "register_array_enq_disabled"
-        and arch.lower() != "register_tree_enq_disabled"
+        and "enq_disabled" not in arch.lower() 
     }
 
     # Use filtered lists for enqueue operations
     plot_performance_comparison(
         axs[2, 0], enqueue_data_dict, enqueue_arch_list, operations[0]
     )  # Enqueue performance
+    
+    # Combined Dequeue and Replace Performance plot
     plot_performance_comparison(
-        axs[2, 1], data_dict_dict, arch_list, operations[1]
-    )  # Dequeue performance
-    plot_performance_comparison(
-        axs[2, 2], data_dict_dict, arch_list, operations[2]
-    )  # Replace performance
+        axs[2, 1], data_dict_dict, arch_list, operations[2], title="Dequeue and Replace Performance"
+    )  # Combined Dequeue and Replace performance
+    
+    # Empty plot for layout balance
+    axs[2, 2].set_visible(False)
 
     # Resource efficiency comparisons for different operations
     plot_efficiency_comparison(
         axs[3, 0], enqueue_data_dict, enqueue_arch_list, operations[0]
     )  # Enqueue efficiency
+    
+    # Combined Dequeue and Replace Efficiency plot
     plot_efficiency_comparison(
-        axs[3, 1], data_dict_dict, arch_list, operations[1]
-    )  # Dequeue efficiency
-    plot_efficiency_comparison(
-        axs[3, 2], data_dict_dict, arch_list, operations[2]
-    )  # Replace efficiency
+        axs[3, 1], data_dict_dict, arch_list, operations[2], title="Dequeue and Replace Efficiency"
+    )  # Combined Dequeue and Replace efficiency
+    
+    # Empty plot for layout balance
+    axs[3, 2].set_visible(False)
 
     # Row 4: Resource utilization comparisons
     plot_resource_comparison(axs[4, 0], data_dict_dict, arch_list)
+
+    axs[4, 1].set_visible(False)  # Empty plot for layout balance
+    axs[4, 2].set_visible(False)  # Empty plot for layout balance
 
     # Adjust layout
     plt.tight_layout(rect=(0, 0, 1, 0.97))  # Modified to a more moderate top margin
@@ -804,7 +1046,7 @@ def process_and_plot_all(base_dir, output_dir=None):
             if not os.path.isdir(log_dir):
                 continue
 
-            # Process data - this may now return a tuple for RegisterArray with enqueue variants
+            # Process data
             result = parsers.process_directory(log_dir)
 
             # Handle special case for architectures with enqueue variants
@@ -818,8 +1060,12 @@ def process_and_plot_all(base_dir, output_dir=None):
                 
                 # Store both variants with different keys
                 if arch_dir == "RegisterArray":
-                    all_data["register_array_enq_disabled"] = enq_disabled_data
-                    all_data["register_array_enq_enabled"] = enq_enabled_data
+                    if "cycled" in results_dir.lower():
+                        all_data["register_array_cycled_enq_disabled"] = enq_disabled_data
+                        all_data["register_array_cycled_enq_enabled"] = enq_enabled_data
+                    else:
+                        all_data["register_array_enq_disabled"] = enq_disabled_data
+                        all_data["register_array_enq_enabled"] = enq_enabled_data
                 elif arch_dir == "RegisterTree":
                     all_data["register_tree_enq_disabled"] = enq_disabled_data
                     all_data["register_tree_enq_enabled"] = enq_enabled_data
@@ -845,16 +1091,18 @@ def process_and_plot_all(base_dir, output_dir=None):
         comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.png")
         create_comparison_plots(all_data, comparison_path)
         
-        # # Create RegisterArray comparison plot if both enqueue variants exist
-        # if "register_array_enq_disabled" in all_data and "register_array_enq_enabled" in all_data:
-        #     register_array_variants = {
-        #         "register_array_enq_disabled": all_data["register_array_enq_disabled"],
-        #         "register_array_enq_enabled": all_data["register_array_enq_enabled"]
-        #     }
-        #
-        #     # Create specialized comparison plot just for RegisterArray variants
-        #     ra_comparison_path = os.path.join(output_dir, "register_array_enqueue_comparison.png")
-        #     create_comparison_plots(register_array_variants, ra_comparison_path)
+        # Create variant comparisons for architectures with multiple variants
+        # Handle RegisterArray variants
+        reg_array_variants = {k: v for k, v in all_data.items() if "register_array" in k.lower()}
+        if len(reg_array_variants) > 1:
+            reg_array_path = os.path.join(output_dir, f"register_array_comparison_{timestamp}.png")
+            create_architecture_variant_comparison(reg_array_variants, "RegisterArray", reg_array_path)
+        
+        # Handle RegisterTree variants
+        reg_tree_variants = {k: v for k, v in all_data.items() if "register_tree" in k.lower()}
+        if len(reg_tree_variants) > 1:
+            reg_tree_path = os.path.join(output_dir, f"register_tree_comparison_{timestamp}.png")
+            create_architecture_variant_comparison(reg_tree_variants, "RegisterTree", reg_tree_path)
 
 
 if __name__ == "__main__":

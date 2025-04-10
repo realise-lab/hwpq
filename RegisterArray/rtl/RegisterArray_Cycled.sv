@@ -1,7 +1,7 @@
 `default_nettype none
 
-module RegisterArray #(
-    parameter bit ENQ_ENA = 0,    // if user would like to enable enqueue
+module RegisterArray_Cycled #(
+    parameter bit ENQ_ENA = 1,    // if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4, // size of the queue
     parameter int DATA_WIDTH = 16 // width of the data
 ) (
@@ -22,14 +22,14 @@ module RegisterArray #(
   logic [DATA_WIDTH-1:0] queue[QUEUE_SIZE];
   logic [DATA_WIDTH-1:0] next_queue[QUEUE_SIZE];
   logic [DATA_WIDTH-1:0] reset_queue[QUEUE_SIZE];
-  logic [DATA_WIDTH-1:0] max[PAIR_COUNT];
-  logic [DATA_WIDTH-1:0] min[PAIR_COUNT];
+  // logic [DATA_WIDTH-1:0] max[PAIR_COUNT];
+  // logic [DATA_WIDTH-1:0] min[PAIR_COUNT];
   logic [DATA_WIDTH-1:0] stage1[QUEUE_SIZE];
-  logic [DATA_WIDTH-1:0] stage2[QUEUE_SIZE];
+  // logic [DATA_WIDTH-1:0] stage2[QUEUE_SIZE];
 
   logic [$clog2(QUEUE_SIZE):0] size, next_size;
 
-  logic full, empty, enqueue, dequeue, replace;
+  logic full, empty, enqueue, dequeue, replace, even_cycle_flag, next_even_cycle_flag;
 
   generate
     for (genvar i = 0; i < QUEUE_SIZE; i++) begin : l_gen_reset_queue
@@ -49,9 +49,11 @@ module RegisterArray #(
   always_ff @(posedge i_CLK or negedge i_RSTn) begin
     if (!i_RSTn) begin
       queue <= reset_queue;
+      even_cycle_flag <= 1'b1;
       size <= '0;
     end else begin
       queue <= next_queue;
+      even_cycle_flag <= next_even_cycle_flag;
       size  <= next_size;
     end
   end
@@ -68,8 +70,6 @@ module RegisterArray #(
   end
 
   always_comb begin : queue_operation
-    automatic logic empty_found;
-    empty_found = 0;
     case ({enqueue, dequeue, replace})
       3'b100 : begin // Enqueue operation (will only be active if ENQ_ENA is high)
         // Shift entire queue to the right by 1, if the last element is not empty
@@ -92,29 +92,42 @@ module RegisterArray #(
   end
 
   always_comb begin : next_queue_calc
-    stage2 = queue;
-    next_queue = queue;
-
-    for (int i = 0; i < PAIR_COUNT; i++) begin
-      if (stage1[2*i] > stage1[2*i+1]) begin
-        max[i] = stage1[2*i];
-        min[i] = stage1[2*i+1];
-      end else begin
-        max[i] = stage1[2*i+1];
-        min[i] = stage1[2*i];
+    case (even_cycle_flag)
+      1'b1 : begin // Even cycle
+        next_queue = stage1;
+        for (int i = 0; i < PAIR_COUNT; i++) begin
+          if (stage1[2*i+1] > stage1[2*i]) begin
+            // Swap if element at odd index is greater than element at even index
+            next_queue[2*i] = stage1[2*i+1];
+            next_queue[2*i+1] = stage1[2*i];
+          end else begin
+            next_queue[2*i] = stage1[2*i];
+            next_queue[2*i+1] = stage1[2*i+1];
+          end
+        end
+        next_even_cycle_flag = 1'b0;
       end
-    end
 
-    for (int i = 0; i < PAIR_COUNT - 1; i++) begin
-      stage2[2*i+1] = (min[i] > max[i+1]) ? min[i] : max[i+1];
-      stage2[2*i+2] = (min[i] < max[i+1]) ? min[i] : max[i+1];
-    end
+      1'b0 : begin // Odd cycle
+        next_queue = stage1;
+        for (int i = 0; i < PAIR_COUNT-1; i++) begin
+          if (stage1[2*i+2] > stage1[2*i+1]) begin
+            // Swap if element at even index is greater than previous odd index
+            next_queue[2*i+1] = stage1[2*i+2];
+            next_queue[2*i+2] = stage1[2*i+1];
+          end else begin
+            next_queue[2*i+1] = stage1[2*i+1];
+            next_queue[2*i+2] = stage1[2*i+2];
+          end
+        end
+        next_even_cycle_flag = 1'b1;
+      end
 
-    next_queue[0] = max[0];
-    for (int i = 1; i < QUEUE_SIZE - 1; i++) begin
-      next_queue[i] = stage2[i];
-    end
-    next_queue[QUEUE_SIZE-1] = min[PAIR_COUNT-1];
+      default : begin 
+        next_queue = stage1;
+        next_even_cycle_flag = 1'b1;
+      end
+    endcase
   end
 
 endmodule

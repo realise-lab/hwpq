@@ -2,7 +2,7 @@
 
 module RegisterArray_tb;
   // Parameters matching the module under test
-  localparam int QUEUE_SIZE = 128;
+  localparam int QUEUE_SIZE = 8;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
@@ -211,12 +211,23 @@ module RegisterArray_tb;
       ref_queue_enq_0.push_back(random_value);
     end
     ref_queue_enq_0.rsort();
-    $display("\nInitializing enqueue disabled module by directly tap into it");
+    
+//    $display("\nSorted queue contents:");
+//    for (int i = 0; i < ref_queue_enq_0.size(); i++) begin
+//      $display("ref_queue_enq_0[%0d] = %0d", i, ref_queue_enq_0[i]);
+//    end
+    
+//    $display("\nInitializing enqueue disabled module by directly tap into it");
     for (int i = 0; i < QUEUE_SIZE; i++) begin
       u_RegisterArray_dis.next_queue[i] = ref_queue_enq_0[i];
     end
     u_RegisterArray_dis.next_size = QUEUE_SIZE;
     repeat (2) @(posedge CLK);
+    
+//    $display("\nRegisterArray_dis.queue contents after initialization:");
+//    for (int i = 0; i < QUEUE_SIZE; i++) begin
+//      $display("u_RegisterArray_dis.queue[%0d] = %0d", i, u_RegisterArray_dis.queue[i]);
+//    end;
 
     // Test Case 5: Dequeue Test with ENQ_ENA disabled
     $display("\nTest Case 5: Dequeue Test (ENQ_ENA disabled)");
@@ -289,7 +300,7 @@ module RegisterArray_tb;
           i_wrt_dis = 1;
           i_read_dis = 0;
           i_data_dis = value;
-          $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
+//          $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
         end
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
@@ -300,7 +311,7 @@ module RegisterArray_tb;
       i_wrt_dis  = 0;
       i_read_dis = 0;
       if (current_mode == ENABLED) repeat (QUEUE_SIZE/2) @(posedge CLK);
-      else if (current_mode == DISABLED) @(posedge CLK);
+      else if (current_mode == DISABLED) @(posedge CLK); // should have no effects
     end
   endtask
 

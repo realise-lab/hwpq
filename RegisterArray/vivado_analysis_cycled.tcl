@@ -1,10 +1,10 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
 # Use the first list for any array-liked architectures
 # Use the second list for any tree-liked architectures
-set queue_sizes {4 8 16 32 64 128 256 512 1024 2048}
+set queue_sizes {4 8 16 32 64 128 256 512}
 # set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
 
-set enq_flags {0 1}
+set enq_flags 1
 
 # NOTE Change according to the module running analysis
 file mkdir ./RegisterArray/vivado_analysis_results_16bit_cycled/enqueue_0/
@@ -12,7 +12,7 @@ file mkdir ./RegisterArray/vivado_analysis_results_16bit_cycled/enqueue_1/
 
 foreach enq_flag $enq_flags {
   # NOTE Change according to the module running analysis
-  set file_id [open "./RegisterArray/rtl/RegisterArray.sv" r+]
+  set file_id [open "./RegisterArray/rtl/RegisterArray_Cycled.sv" r+]
 
   # Read the file content and ensure it's cleaned
   set file_content [string trim [read $file_id]]
@@ -39,7 +39,7 @@ foreach enq_flag $enq_flags {
   # Loop through each QUEUE_SIZE
   foreach queue_size $queue_sizes {
     # NOTE Change according to the module running analysis
-    set file_id [open "./RegisterArray/rtl/RegisterArray.sv" r+]
+    set file_id [open "./RegisterArray/rtl/RegisterArray_Cycled.sv" r+]
 
     # Read the file content and ensure it's cleaned
     set file_content [string trim [read $file_id]]
@@ -238,7 +238,7 @@ foreach enq_flag $enq_flags {
 
 
 # NOTE Change according to the module running analysis
-set file_id [open "./RegisterArray/rtl/RegisterArray.sv" r+]
+set file_id [open "./RegisterArray/rtl/RegisterArray_Cycled.sv" r+]
 
 # Read the file content and ensure it's cleaned
 set file_content [string trim [read $file_id]]
