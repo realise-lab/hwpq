@@ -1,4 +1,4 @@
-module tb_hybrid_tree;
+module hybrid_tree_tb;
   // Parameters matching the module under test
   localparam integer QueueSize = 16;
   localparam integer DataWidth = 16;

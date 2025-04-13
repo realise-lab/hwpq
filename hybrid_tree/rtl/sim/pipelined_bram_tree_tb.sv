@@ -1,4 +1,4 @@
-module tb_pipelined_bram_tree;
+module pipelined_bram_tree_tb;
   // Parameters matching the module under test
   localparam integer QueueSize = 3;
   localparam integer DataWidth = 16;
