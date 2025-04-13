@@ -1,8 +1,8 @@
 `default_nettype none
 
-module RegisterArray_tb;
+module register_array_cycled_tb;
   // Parameters matching the module under test
-  localparam int QUEUE_SIZE = 8;
+  localparam int QUEUE_SIZE = 64;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
@@ -56,7 +56,7 @@ module RegisterArray_tb;
   } operation_t;
 
   // Instantiate RegisterArray with ENQ_ENA enabled
-  RegisterArray #(
+  register_array_cycled #(
       .ENQ_ENA(1'b1),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
@@ -72,7 +72,7 @@ module RegisterArray_tb;
   );
   
   // Instantiate RegisterArray with ENQ_ENA disabled
-  RegisterArray #(
+  register_array_cycled #(
       .ENQ_ENA(1'b0),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
@@ -219,7 +219,7 @@ module RegisterArray_tb;
     
 //    $display("\nInitializing enqueue disabled module by directly tap into it");
     for (int i = 0; i < QUEUE_SIZE; i++) begin
-      u_RegisterArray_dis.next_queue[i] = ref_queue_enq_0[i];
+      u_RegisterArray_dis.stage1[i] = ref_queue_enq_0[i];
     end
     u_RegisterArray_dis.next_size = QUEUE_SIZE;
     repeat (2) @(posedge CLK);
@@ -311,7 +311,7 @@ module RegisterArray_tb;
       i_wrt_dis  = 0;
       i_read_dis = 0;
       if (current_mode == ENABLED) repeat (QUEUE_SIZE/2) @(posedge CLK);
-      else if (current_mode == DISABLED) @(posedge CLK); // should have no effects
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK); // should have no effects
     end
   endtask
 
@@ -339,8 +339,8 @@ module RegisterArray_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) @(posedge CLK);
-      else if (current_mode == DISABLED) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 
@@ -374,8 +374,8 @@ module RegisterArray_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) @(posedge CLK);
-      else if (current_mode == DISABLED) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
+      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
     end
   endtask
 

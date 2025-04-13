@@ -1,6 +1,6 @@
 `default_nettype none
 
-module RegisterArray #(
+module register_array #(
     parameter bit ENQ_ENA = 0,    // if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4, // size of the queue
     parameter int DATA_WIDTH = 16 // width of the data
