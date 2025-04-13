@@ -1,6 +1,6 @@
 `default_nettype none
 
-module SystolicArray_tb;
+module systolic_array_tb;
   // Parameters matching the module under test
   parameter int QUEUE_SIZE = 8;
   parameter int DATA_WIDTH = 16;
@@ -33,7 +33,7 @@ module SystolicArray_tb;
   t_operation random_operation;
 
   // Instantiate the register_tree module
-  SystolicArray #(
+  systolic_array #(
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
   ) u_SystolicArray (
