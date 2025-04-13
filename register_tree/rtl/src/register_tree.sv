@@ -1,6 +1,6 @@
 `default_nettype none
 
-module RegisterTree #(
+module register_tree #(
     parameter bit ENQ_ENA = 1,    // Define if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4095,
     parameter int DATA_WIDTH = 16

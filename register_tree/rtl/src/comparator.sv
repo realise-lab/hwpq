@@ -1,6 +1,6 @@
 `default_nettype none
 
-module Comparator #(
+module comparator #(
     parameter int DATA_WIDTH = 32
 ) (
     // Inputs

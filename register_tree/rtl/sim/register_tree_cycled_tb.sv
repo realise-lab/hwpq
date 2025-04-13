@@ -1,6 +1,6 @@
 `default_nettype none
 
-module RegisterTree_Cycled_tb;
+module register_tree_cycled_tb;
   // Parameters matching the module under test
   localparam int QUEUE_SIZE = 15;
   localparam int DATA_WIDTH = 16;
@@ -56,7 +56,7 @@ module RegisterTree_Cycled_tb;
   } operation_t;
 
   // Instantiate RegisterArray with ENQ_ENA enabled
-  RegisterTree_Cycled #(
+  register_tree_cycled #(
       .ENQ_ENA(1'b1),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
@@ -72,7 +72,7 @@ module RegisterTree_Cycled_tb;
   );
   
   // Instantiate RegisterArray with ENQ_ENA disabled
-  RegisterTree_Cycled #(
+  register_tree_cycled #(
       .ENQ_ENA(1'b0),
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)

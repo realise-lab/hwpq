@@ -1,8 +1,8 @@
 # Define the range of TREE_DEPTH and clock frequencies to test
 # Use the first list for any array-liked architectures
 # Use the second list for any tree-liked architectures
-set queue_sizes {4 8 16 32 64 128 256 512 1024 2048 4096}
-# set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287}
+# set queue_sizes {4 8 16 32 64 128 356 512 1024 2048 4096}
+set queue_sizes {3 7 15 31 63 127 255 511 1023 2047 4095}
 
 set enq_flags {0 1}
 

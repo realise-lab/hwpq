@@ -1,7 +1,7 @@
 `default_nettype none
 
-module RegisterTree_Cycled #(
-    parameter bit ENQ_ENA = 1,    // Define if user would like to enable enqueue
+module register_tree_cycled #(
+    parameter bit ENQ_ENA = 1,
     parameter int QUEUE_SIZE = 15,
     parameter int DATA_WIDTH = 16
 ) (

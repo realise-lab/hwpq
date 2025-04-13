@@ -1,4 +1,4 @@
-module Comparator_tb;
+module comparator_tb;
 
   // Parameters
   localparam int DATA_WIDTH = 32;
@@ -12,7 +12,7 @@ module Comparator_tb;
   logic [DataWidth-1:0] new_right_child;
 
   // Instantiate the comparator module
-  Comparator #(
+  comparator #(
       .DATA_WIDTH(DataWidth)
   ) u_Comparator (
       .parent(parent),

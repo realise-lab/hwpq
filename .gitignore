@@ -2,6 +2,14 @@
 .Xil/
 *.str
 
+# Vivado project files
+SystolicArray-vivado/
+RegisterArray-vivado/
+RegisterTree-vivado/
+vivado_bram_tree/
+vivado_pipelined_bram_tree/
+vivado_hybrid_tree/
+
 # editor specific folders
 .nvim/
 .vscode/
@@ -11,19 +19,9 @@
 .python-version
 __pycache__/
 
-# Vivado project files
-SystolicArray-vivado/
-RegisterArray-vivado/
-RegisterTree-vivado/
-vivado_bram_tree/
-vivado_pipelined_bram_tree/
-vivado_hybrid_tree/
-
-work/
-.svlint.toml
-.svls.toml
+# Claude project environment files
 CLAUDE.md
+work/
 
-animation_py/animation/images/
-animation_py/animation/texts/
-animation_py/animation/videos/
+# Animation generation files
+animation_py/
