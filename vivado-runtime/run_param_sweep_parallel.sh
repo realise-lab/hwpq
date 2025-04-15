@@ -6,14 +6,14 @@ mkdir -p parallel_logs
 # NOTE - Define parameter sets - change accordingly
 # NOTE - tips - try the upper bound in Vivado first to see if it's even possible
 ENQ_ENA_VALUES=(0 1)
-QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191)
+QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095)
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)
 echo "Using temporary directory for job tracking: $JOB_TRACK_DIR"
 
 # NOTE - Define output directories and create them - change accordingly
-RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled"
+RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled_xcau25p"
 for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
   mkdir -p "${RESULTS_DIR}/enqueue_${enq_ena}"
 done
@@ -166,8 +166,8 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     
     echo "Starting Vivado job for ${job_name}..."
     
-    # Run Vivado as a background process
-    vivado -mode batch -nolog -nojournal -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs $enq_ena $queue_size > "$log_file" 2>&1 &
+    # NOTE - Run Vivado as a background process - change accordingly
+    vivado -mode batch -nolog -nojournal -source /home/qw2246/Workspace/hwpq_qw2246/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs $enq_ena $queue_size > "$log_file" 2>&1 &
     
     # Mark job as running
     start_job "$job_name"
@@ -177,7 +177,7 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     print_job_status
     
     # Small delay to prevent overwhelming the system
-    sleep 5
+    sleep 2
   done
 done
 

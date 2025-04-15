@@ -4,21 +4,22 @@
 
 # Get parameters from command line arguments
 if {$argc < 2} {
-    puts "Error: This script requires two arguments: ENQ_ENA and QUEUE_SIZE"
-    puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ENQ_ENA> <QUEUE_SIZE>"
-    exit 1
+  puts "Error: This script requires two arguments: ENQ_ENA and QUEUE_SIZE"
+  puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ENQ_ENA> <QUEUE_SIZE>"
+  exit 1
 }
 
 set enq_ena [lindex $argv 0]
 set queue_size [lindex $argv 1]
 
 # NOTE - Device and thread settings - change accordingly
-set running_device xcvu19p-fsva3824-1-e
+# set running_device xcvu19p-fsva3824-1-e
+set running_device xcau25p-ffvb676-1-e
 set_param general.maxThreads 16
 
 # NOTE File paths - change accordingly for design under test - use absolute path
 set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/rtl/src/register_tree_cycled.sv
-set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled
+set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled_xcau25p
 
 # Clock frequency values
 set clock_freq_values {100 150 200 250 300 350 400 450 500 550 600 650 700 750 800}
@@ -54,23 +55,23 @@ close $fileId
 foreach clock_freq $clock_freq_values {
   # Calculate the clock period in ns
   set clock_period [expr {1000.0 / $clock_freq}]
-  
+
   puts "\n=========================================================="
   puts "Running synthesis with parameters:"
   puts "  ENQ_ENA = $enq_ena"
   puts "  QUEUE_SIZE = $queue_size"
   puts "  Clock Frequency = ${clock_freq} MHz (period = ${clock_period} ns)"
   puts "==========================================================\n"
-  
+
   # Record start time for synthesis
   set synth_start_time [clock seconds]
-  
+
   # NOTE - Run synthesis - Adjust the top module name accordingly
   synth_design -top register_tree_cycled -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
-  
+
   # Record end time for synthesis
   set synth_end_time [clock seconds]
-  
+
   # Calculate the synthesis duration
   set synth_duration [expr $synth_end_time - $synth_start_time]
   if {$synth_duration > 60} {
@@ -80,22 +81,22 @@ foreach clock_freq $clock_freq_values {
   } else {
     set synth_duration_str "${synth_duration}s"
   }
-  
+
   # Create a system clock with the specified frequency
   create_clock -period $clock_period [get_ports i_CLK] -name sys_clk
-  
+
   # Record start time for implementation
   set impl_start_time [clock seconds]
-  
+
   # Run implementation with explicit directives to improve stability
   opt_design
   place_design
   phys_opt_design
   route_design
-  
+
   # Record end time for implementation
   set impl_end_time [clock seconds]
-  
+
   # Calculate the implementation duration
   set impl_duration [expr $impl_end_time - $impl_start_time]
   if {$impl_duration > 60} {
@@ -105,10 +106,10 @@ foreach clock_freq $clock_freq_values {
   } else {
     set impl_duration_str "${impl_duration}s"
   }
-  
+
   # Extract utilization data
   set utilization_report [report_utilization -return_string]
-  
+
   # Extract CLB LUTs and Registers usage
   set in_section_1 0
   foreach line [split $utilization_report "\n"] {
@@ -117,7 +118,7 @@ foreach clock_freq $clock_freq_values {
     } elseif {[regexp {^\d+\.} $line]} {
       set in_section_1 0
     }
-    
+
     if {$in_section_1} {
       if {[regexp {\|\s*CLB LUTs\s*\|\s*([0-9]+)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([<0-9\.]+)\s*\|} $line match luts_used luts_util]} {
         set clb_luts_used $luts_used
@@ -129,7 +130,7 @@ foreach clock_freq $clock_freq_values {
       }
     }
   }
-  
+
   # Extract BRAM usage
   set in_section_3 0
   foreach line [split $utilization_report "\n"] {
@@ -138,7 +139,7 @@ foreach clock_freq $clock_freq_values {
     } elseif {[regexp {^\d+\.} $line]} {
       set in_section_3 0
     }
-    
+
     if {$in_section_3} {
       if {[regexp {\|\s*Block RAM Tile\s*\|\s*([0-9]+\.?[0-9]*)\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*[0-9]+\s*\|\s*([<0-9\.]+)\s*\|} $line match bram_used bram_util_percent]} {
         set bram_used $bram_used
@@ -146,20 +147,20 @@ foreach clock_freq $clock_freq_values {
       }
     }
   }
-  
+
   # Extract power data
   set power_report [report_power -return_string]
   set match [regexp {\|\s*Total On-Chip Power \(W\)\s*\|\s*([0-9\.]+)\s*\|} $power_report full_match total_on_chip_power]
-  
+
   # Get timing information
   set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
-  
+
   # Calculate achieved frequency
   set achieved_frequency [format "%.3f" [expr {1000.0 / ($clock_period - $wns)}]]
-  
+
   # Append results to the log file
   set fileId [open $log_file "a+"]
-  
+
   # Print the results in the same format as vivado_analysis_cycled.tcl
   puts $fileId "Frequency: ${clock_freq} MHz -> Synthesis: ${synth_duration_str} -> ${synth_duration}s"
   puts $fileId "Frequency: ${clock_freq} MHz -> Implementation: ${impl_duration_str} -> ${impl_duration}s"
@@ -182,14 +183,14 @@ foreach clock_freq $clock_freq_values {
   puts $fileId "Frequency: ${clock_freq} MHz -> WNS: ${wns} ns"
   puts $fileId "Frequency: ${clock_freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
   puts $fileId "\n"
-  
+
   # Break the frequency loop if WNS is less than -1 ns
   if {$wns < -1.0} {
     puts $fileId "WNS exceeded -1 ns, finished\n"
     close $fileId
     break
   }
-  
+
   close $fileId
   close_design -quiet
 }
@@ -197,4 +198,4 @@ foreach clock_freq $clock_freq_values {
 # Close the project to clean up
 close_project -delete -quiet
 
-puts "\nAnalysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}" 
+puts "\nAnalysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}"
