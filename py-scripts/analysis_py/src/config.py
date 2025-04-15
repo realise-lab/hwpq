@@ -1,6 +1,5 @@
 # Output settings
-OUTPUT_DIR = "vivado_analysis_results_plots"
-OUTPUT_FILENAME = "analysis_plots.pdf"
+OUTPUT_DIR = "../vivado-analysis_plots"
 
 # Performance factors for operations across architectures
 PERFORMANCE_FACTORS = {
@@ -17,6 +16,8 @@ PERFORMANCE_FACTORS = {
         "register_array_cycled_enq_enabled": 1/2,
         "register_tree_enq_disabled": 1,
         "register_tree_enq_enabled": 1,
+        "register_tree_cycled_enq_disabled": 1/2,
+        "register_tree_cycled_enq_enabled": 1/2,
         "systolic_array": 1/2,
         "bram_tree": 1/8,
         "pipelined_bram_tree": 1/4,
@@ -29,6 +30,8 @@ PERFORMANCE_FACTORS = {
         "register_array_cycled_enq_enabled": 1/2,
         "register_tree_enq_disabled": 1,
         "register_tree_enq_enabled": 1,
+        "register_tree_cycled_enq_disabled": 1/2,
+        "register_tree_cycled_enq_enabled": 1/2,
         "systolic_array": 1/2,
         "bram_tree": 1/8,
         "pipelined_bram_tree": 1/4,

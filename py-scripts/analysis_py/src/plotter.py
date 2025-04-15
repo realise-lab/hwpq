@@ -46,6 +46,16 @@ ARCHITECTURE_STYLES = {
         "marker": "p", 
         "display_name": "Register Tree (Enqueue Enabled)",
     },
+    "register_tree_cycled_enq_disabled": {
+        "color": "yellow",
+        "marker": "h", 
+        "display_name": "Register Tree Cycled (Enqueue Disabled)",
+    },
+    "register_tree_cycled_enq_enabled": {
+        "color": "gold",
+        "marker": "v", 
+        "display_name": "Register Tree Cycled (Enqueue Enabled)",
+    },
     "bram_tree": {
         "color": "violet",
         "marker": "s", 
@@ -1059,16 +1069,20 @@ def process_and_plot_all(base_dir, output_dir=None):
                     continue
                 
                 # Store both variants with different keys
-                if arch_dir == "RegisterArray":
+                if arch_dir == "register_array":
                     if "cycled" in results_dir.lower():
                         all_data["register_array_cycled_enq_disabled"] = enq_disabled_data
                         all_data["register_array_cycled_enq_enabled"] = enq_enabled_data
                     else:
                         all_data["register_array_enq_disabled"] = enq_disabled_data
                         all_data["register_array_enq_enabled"] = enq_enabled_data
-                elif arch_dir == "RegisterTree":
-                    all_data["register_tree_enq_disabled"] = enq_disabled_data
-                    all_data["register_tree_enq_enabled"] = enq_enabled_data
+                elif arch_dir == "register_tree":
+                    if "cycled" in results_dir.lower():
+                        all_data["register_tree_cycled_enq_disabled"] = enq_disabled_data
+                        all_data["register_tree_cycled_enq_enabled"] = enq_enabled_data
+                    else:
+                        all_data["register_tree_enq_disabled"] = enq_disabled_data
+                        all_data["register_tree_enq_enabled"] = enq_enabled_data
                 else:
                     # Generic handling for other architectures with enqueue variants
                     all_data[f"{arch_dir.lower()}_enq_disabled"] = enq_disabled_data
@@ -1096,17 +1110,17 @@ def process_and_plot_all(base_dir, output_dir=None):
         reg_array_variants = {k: v for k, v in all_data.items() if "register_array" in k.lower()}
         if len(reg_array_variants) > 1:
             reg_array_path = os.path.join(output_dir, f"register_array_comparison_{timestamp}.png")
-            create_architecture_variant_comparison(reg_array_variants, "RegisterArray", reg_array_path)
+            create_architecture_variant_comparison(reg_array_variants, "register_array", reg_array_path)
         
         # Handle RegisterTree variants
         reg_tree_variants = {k: v for k, v in all_data.items() if "register_tree" in k.lower()}
         if len(reg_tree_variants) > 1:
             reg_tree_path = os.path.join(output_dir, f"register_tree_comparison_{timestamp}.png")
-            create_architecture_variant_comparison(reg_tree_variants, "RegisterTree", reg_tree_path)
+            create_architecture_variant_comparison(reg_tree_variants, "register_tree", reg_tree_path)
 
 
 if __name__ == "__main__":
     # NOTE - Input base_dir as an absolute path or run this script under hwpq_qw2246 directory
-    base_dir = "./"
+    base_dir = "/home/charlie-wu/Workspace/hwpq_qw2246/hwpq/"
     output_dir = os.path.join(base_dir, OUTPUT_DIR)
     process_and_plot_all(base_dir, output_dir)

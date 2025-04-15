@@ -148,7 +148,13 @@ def parse_metrics(file_path):
 
                     # Extract LUTs utilization
                     parts = line.split("CLB LUTs Util%:")
-                    luts_util = float(parts[1].split("%")[0].strip())
+                    luts_util_str = parts[1].split("%")[0].strip()
+                    
+                    # Handle "<0.01%" case
+                    if luts_util_str == "<0.01":
+                        luts_util = 0.01
+                    else:
+                        luts_util = float(luts_util_str)
 
                     # If this frequency is equal to the max frequency, add to metrics
                     if (
@@ -188,7 +194,13 @@ def parse_metrics(file_path):
 
                     # Extract Registers utilization
                     parts = line.split("CLB Registers Util%:")
-                    regs_util = float(parts[1].split("%")[0].strip())
+                    regs_util_str = parts[1].split("%")[0].strip()
+                    
+                    # Handle "<0.01%" case
+                    if regs_util_str == "<0.01":
+                        regs_util = 0.01
+                    else:
+                        regs_util = float(regs_util_str)
 
                     # If this frequency is equal to the max frequency, add to metrics
                     if (
@@ -228,7 +240,13 @@ def parse_metrics(file_path):
 
                     # Extract BRAM utilization
                     parts = line.split("BRAM Util%:")
-                    bram_util = float(parts[1].split("%")[0].strip())
+                    bram_util_str = parts[1].split("%")[0].strip()
+                    
+                    # Handle "<0.01%" case
+                    if bram_util_str == "<0.01":
+                        bram_util = 0.01
+                    else:
+                        bram_util = float(bram_util_str)
 
                     # If this frequency is equal to the max frequency, add to metrics
                     if (
