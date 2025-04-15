@@ -1,7 +1,7 @@
 Analysis for QUEUE_SIZE = 31, ENQ_ENA = 0
 
-Frequency: 100 MHz -> Synthesis: 16s -> 16s
-Frequency: 100 MHz -> Implementation: 2m 30s -> 150s
+Frequency: 100 MHz -> Synthesis: 15s -> 15s
+Frequency: 100 MHz -> Implementation: 2m 50s -> 170s
 Frequency: 100 MHz -> Power: 5.835 W
 Frequency: 100 MHz -> CLB LUTs Used: 641
 Frequency: 100 MHz -> CLB LUTs Util%: 0.02 %
@@ -13,8 +13,8 @@ Frequency: 100 MHz -> WNS: 7.223 ns
 Frequency: 100 MHz -> Achieved Frequency: 360.101 MHz
 
 
-Frequency: 150 MHz -> Synthesis: 14s -> 14s
-Frequency: 150 MHz -> Implementation: 2m 31s -> 151s
+Frequency: 150 MHz -> Synthesis: 10s -> 10s
+Frequency: 150 MHz -> Implementation: 2m 19s -> 139s
 Frequency: 150 MHz -> Power: 5.843 W
 Frequency: 150 MHz -> CLB LUTs Used: 641
 Frequency: 150 MHz -> CLB LUTs Util%: 0.02 %
@@ -26,8 +26,8 @@ Frequency: 150 MHz -> WNS: 4.116 ns
 Frequency: 150 MHz -> Achieved Frequency: 392.054 MHz
 
 
-Frequency: 200 MHz -> Synthesis: 14s -> 14s
-Frequency: 200 MHz -> Implementation: 2m 30s -> 150s
+Frequency: 200 MHz -> Synthesis: 10s -> 10s
+Frequency: 200 MHz -> Implementation: 2m 21s -> 141s
 Frequency: 200 MHz -> Power: 5.851 W
 Frequency: 200 MHz -> CLB LUTs Used: 641
 Frequency: 200 MHz -> CLB LUTs Util%: 0.02 %
@@ -39,8 +39,8 @@ Frequency: 200 MHz -> WNS: 2.507 ns
 Frequency: 200 MHz -> Achieved Frequency: 401.123 MHz
 
 
-Frequency: 250 MHz -> Synthesis: 14s -> 14s
-Frequency: 250 MHz -> Implementation: 2m 30s -> 150s
+Frequency: 250 MHz -> Synthesis: 11s -> 11s
+Frequency: 250 MHz -> Implementation: 2m 19s -> 139s
 Frequency: 250 MHz -> Power: 5.859 W
 Frequency: 250 MHz -> CLB LUTs Used: 641
 Frequency: 250 MHz -> CLB LUTs Util%: 0.02 %
@@ -52,8 +52,8 @@ Frequency: 250 MHz -> WNS: 1.709 ns
 Frequency: 250 MHz -> Achieved Frequency: 436.491 MHz
 
 
-Frequency: 300 MHz -> Synthesis: 15s -> 15s
-Frequency: 300 MHz -> Implementation: 2m 30s -> 150s
+Frequency: 300 MHz -> Synthesis: 11s -> 11s
+Frequency: 300 MHz -> Implementation: 2m 22s -> 142s
 Frequency: 300 MHz -> Power: 5.867 W
 Frequency: 300 MHz -> CLB LUTs Used: 641
 Frequency: 300 MHz -> CLB LUTs Util%: 0.02 %
@@ -65,8 +65,8 @@ Frequency: 300 MHz -> WNS: 0.989 ns
 Frequency: 300 MHz -> Achieved Frequency: 426.561 MHz
 
 
-Frequency: 350 MHz -> Synthesis: 15s -> 15s
-Frequency: 350 MHz -> Implementation: 2m 32s -> 152s
+Frequency: 350 MHz -> Synthesis: 11s -> 11s
+Frequency: 350 MHz -> Implementation: 2m 23s -> 143s
 Frequency: 350 MHz -> Power: 5.875 W
 Frequency: 350 MHz -> CLB LUTs Used: 641
 Frequency: 350 MHz -> CLB LUTs Util%: 0.02 %
@@ -78,8 +78,8 @@ Frequency: 350 MHz -> WNS: 0.687 ns
 Frequency: 350 MHz -> Achieved Frequency: 460.799 MHz
 
 
-Frequency: 400 MHz -> Synthesis: 14s -> 14s
-Frequency: 400 MHz -> Implementation: 2m 36s -> 156s
+Frequency: 400 MHz -> Synthesis: 10s -> 10s
+Frequency: 400 MHz -> Implementation: 2m 27s -> 147s
 Frequency: 400 MHz -> Power: 5.884 W
 Frequency: 400 MHz -> CLB LUTs Used: 641
 Frequency: 400 MHz -> CLB LUTs Util%: 0.02 %
@@ -91,8 +91,8 @@ Frequency: 400 MHz -> WNS: 0.326 ns
 Frequency: 400 MHz -> Achieved Frequency: 459.982 MHz
 
 
-Frequency: 450 MHz -> Synthesis: 15s -> 15s
-Frequency: 450 MHz -> Implementation: 2m 55s -> 175s
+Frequency: 450 MHz -> Synthesis: 11s -> 11s
+Frequency: 450 MHz -> Implementation: 2m 42s -> 162s
 Frequency: 450 MHz -> Power: 5.895 W
 Frequency: 450 MHz -> CLB LUTs Used: 642
 Frequency: 450 MHz -> CLB LUTs Util%: 0.02 %
@@ -104,8 +104,8 @@ Frequency: 450 MHz -> WNS: 0.257 ns
 Frequency: 450 MHz -> Achieved Frequency: 508.848 MHz
 
 
-Frequency: 500 MHz -> Synthesis: 14s -> 14s
-Frequency: 500 MHz -> Implementation: 3m 1s -> 181s
+Frequency: 500 MHz -> Synthesis: 11s -> 11s
+Frequency: 500 MHz -> Implementation: 2m 47s -> 167s
 Frequency: 500 MHz -> Power: 5.900 W
 Frequency: 500 MHz -> CLB LUTs Used: 648
 Frequency: 500 MHz -> CLB LUTs Util%: 0.02 %
@@ -117,8 +117,8 @@ Frequency: 500 MHz -> WNS: 0.182 ns
 Frequency: 500 MHz -> Achieved Frequency: 550.055 MHz
 
 
-Frequency: 550 MHz -> Synthesis: 15s -> 15s
-Frequency: 550 MHz -> Implementation: 3m 24s -> 204s
+Frequency: 550 MHz -> Synthesis: 12s -> 12s
+Frequency: 550 MHz -> Implementation: 3m 2s -> 182s
 Frequency: 550 MHz -> Power: 5.909 W
 Frequency: 550 MHz -> CLB LUTs Used: 656
 Frequency: 550 MHz -> CLB LUTs Util%: 0.02 %
@@ -130,8 +130,8 @@ Frequency: 550 MHz -> WNS: 0.051 ns
 Frequency: 550 MHz -> Achieved Frequency: 565.873 MHz
 
 
-Frequency: 600 MHz -> Synthesis: 14s -> 14s
-Frequency: 600 MHz -> Implementation: 4m 21s -> 261s
+Frequency: 600 MHz -> Synthesis: 11s -> 11s
+Frequency: 600 MHz -> Implementation: 4m 6s -> 246s
 Frequency: 600 MHz -> Power: 5.922 W
 Frequency: 600 MHz -> CLB LUTs Used: 656
 Frequency: 600 MHz -> CLB LUTs Util%: 0.02 %
@@ -143,8 +143,8 @@ Frequency: 600 MHz -> WNS: -0.113 ns
 Frequency: 600 MHz -> Achieved Frequency: 561.903 MHz
 
 
-Frequency: 650 MHz -> Synthesis: 16s -> 16s
-Frequency: 650 MHz -> Implementation: 4m 31s -> 271s
+Frequency: 650 MHz -> Synthesis: 11s -> 11s
+Frequency: 650 MHz -> Implementation: 4m 5s -> 245s
 Frequency: 650 MHz -> Power: 5.932 W
 Frequency: 650 MHz -> CLB LUTs Used: 656
 Frequency: 650 MHz -> CLB LUTs Util%: 0.02 %
@@ -156,8 +156,8 @@ Frequency: 650 MHz -> WNS: -0.235 ns
 Frequency: 650 MHz -> Achieved Frequency: 563.869 MHz
 
 
-Frequency: 700 MHz -> Synthesis: 17s -> 17s
-Frequency: 700 MHz -> Implementation: 4m 49s -> 289s
+Frequency: 700 MHz -> Synthesis: 12s -> 12s
+Frequency: 700 MHz -> Implementation: 4m 18s -> 258s
 Frequency: 700 MHz -> Power: 5.939 W
 Frequency: 700 MHz -> CLB LUTs Used: 656
 Frequency: 700 MHz -> CLB LUTs Util%: 0.02 %
@@ -169,8 +169,8 @@ Frequency: 700 MHz -> WNS: -0.298 ns
 Frequency: 700 MHz -> Achieved Frequency: 579.183 MHz
 
 
-Frequency: 750 MHz -> Synthesis: 17s -> 17s
-Frequency: 750 MHz -> Implementation: 4m 24s -> 264s
+Frequency: 750 MHz -> Synthesis: 12s -> 12s
+Frequency: 750 MHz -> Implementation: 3m 59s -> 239s
 Frequency: 750 MHz -> Power: 5.947 W
 Frequency: 750 MHz -> CLB LUTs Used: 656
 Frequency: 750 MHz -> CLB LUTs Util%: 0.02 %
@@ -182,8 +182,8 @@ Frequency: 750 MHz -> WNS: -0.446 ns
 Frequency: 750 MHz -> Achieved Frequency: 562.008 MHz
 
 
-Frequency: 800 MHz -> Synthesis: 16s -> 16s
-Frequency: 800 MHz -> Implementation: 4m 26s -> 266s
+Frequency: 800 MHz -> Synthesis: 11s -> 11s
+Frequency: 800 MHz -> Implementation: 4m 7s -> 247s
 Frequency: 800 MHz -> Power: 5.956 W
 Frequency: 800 MHz -> CLB LUTs Used: 656
 Frequency: 800 MHz -> CLB LUTs Util%: 0.02 %

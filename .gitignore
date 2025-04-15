@@ -1,14 +1,7 @@
 # Vivado specific files
 .Xil/
+vivado-runtime/tmp/
 *.str
-
-# Vivado project files
-SystolicArray-vivado/
-RegisterArray-vivado/
-RegisterTree-vivado/
-vivado_bram_tree/
-vivado_pipelined_bram_tree/
-vivado_hybrid_tree/
 
 # editor specific folders
 .nvim/

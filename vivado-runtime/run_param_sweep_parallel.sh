@@ -5,17 +5,15 @@ mkdir -p parallel_logs
 
 # NOTE - Define parameter sets - change accordingly
 # NOTE - tips - try the upper bound in Vivado first to see if it's even possible
-# ENQ_ENA_VALUES=(0 1)
-# QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071)
-ENQ_ENA_VALUES=(0)
-QUEUE_SIZE_VALUES=(16383 32767 65535 131071)
+ENQ_ENA_VALUES=(0 1)
+QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191)
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)
 echo "Using temporary directory for job tracking: $JOB_TRACK_DIR"
 
 # NOTE - Define output directories and create them - change accordingly
-RESULTS_DIR="../register_tree/vivado_analysis_results_16bit_parallel_test"
+RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled"
 for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
   mkdir -p "${RESULTS_DIR}/enqueue_${enq_ena}"
 done
