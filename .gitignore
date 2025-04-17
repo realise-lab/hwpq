@@ -1,6 +1,7 @@
 # Vivado specific files
 .Xil/
 vivado-runtime/tmp/
+vivado-runtime/rtl-elaborate/
 *.str
 
 # editor specific folders
