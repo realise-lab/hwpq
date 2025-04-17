@@ -2,17 +2,17 @@
 
 ## Abstract
 
-This project presents a comprehensive analysis of various hardware priority queue architectures proposed in the past decfor FPGA implementation. Priority queues are fundamental data structures used in many applications such as task scheduling, graph algorithms, and hardware accelerators. This study evaluates and compares the performance, resource utilization, and scalability characteristics of different hardware priority queue implementations.
+This project presents a comprehensive analysis of various hardware priority queue architectures proposed in recent years. The architectures are implemented in SystemVerilog, verified through testbench assertions against a reference queue, and synthesized, optimized, and implemented on Xilinx FPGAs. Priority queues are fundamental data structures used in many applications, including task scheduling, graph algorithms, and hardware accelerators. 
 
-The architectures are analyzed across various queue sizes and data widths to provide insights into their scalability properties. Performance metrics include maximum clock frequency, throughput, latency, and resource usage (LUTs, registers, BRAMs). The analysis helps in selecting the most appropriate priority queue architecture based on specific application requirements.
+The architectures are analyzed across various queue sizes and settings to provide insights into their scalability properties. Performance metrics include maximum clock frequency, throughput, latency, and resource usage (LUTs, registers, BRAMs). The analysis helps in selecting the most appropriate priority queue architecture based on specific application requirements. 
 
 ## How to Use
 
 ### Project Structure
-- `hwpq/` - Contains RTL implementations of different priority queue architectures
+- `hwpq/` - Contains RTL implementations of different priority queue architectures along with key metrics logs. 
 - `py-scripts/` - Python scripts for data analysis and visualization
 - `vivado-analysis_plots/` - Generated plots comparing different architectures
-- `vivado-runtime/` - Vivado runtime files
+- `vivado-runtime/` - Shell script that runs Vivado in TCL mode to sweep through parameters of each architecture
 - `vivado-synthesis_tcl/` - TCL scripts for Vivado synthesis
 
 ### Running Synthesis and Analysis
