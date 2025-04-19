@@ -1044,6 +1044,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         # NOTE - Only process xcau25p architectures - you can change "xcau25p" to different FPGA device
         results_dirs = [
             d for d in os.listdir(arch_path) if "vivado_analysis_results" in d and "xcau25p" in d
+            # d for d in os.listdir(arch_path) if "vivado_analysis_results" in d and "xcvu19p" in d
         ]
 
         if not results_dirs:

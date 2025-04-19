@@ -1,16 +1,16 @@
 `default_nettype none
 
 module register_array_cycled #(
-    parameter bit ENQ_ENA = 1,    // if user would like to enable enqueue
-    parameter int QUEUE_SIZE = 4, // size of the queue
-    parameter int DATA_WIDTH = 16 // width of the data
+    parameter bit ENQ_ENA = 1,  // if user would like to enable enqueue
+    parameter int QUEUE_SIZE = 4,  // size of the queue
+    parameter int DATA_WIDTH = 16  // width of the data
 ) (
     // Inputs
-    input  var logic                  i_CLK,    // clock
-    input  var logic                  i_RSTn,   // reset
-    input  var logic                  i_wrt,    // push
-    input  var logic                  i_read,   // pop
-    input  var logic [DATA_WIDTH-1:0] i_data,   // input data
+    input var  logic                  i_CLK,    // clock
+    input var  logic                  i_RSTn,   // reset
+    input var  logic                  i_wrt,    // push
+    input var  logic                  i_read,   // pop
+    input var  logic [DATA_WIDTH-1:0] i_data,   // input data
     // Outputs
     output var logic                  o_full,   // queue full
     output var logic                  o_empty,  // queue empty
@@ -54,63 +54,68 @@ module register_array_cycled #(
     end else begin
       queue <= next_queue;
       even_cycle_flag <= next_even_cycle_flag;
-      size  <= next_size;
+      size <= next_size;
     end
   end
 
   always_comb begin : size_counter
-    case ({enqueue, dequeue, replace})
-      3'b100 : next_size = size+1;
-      3'b010 : next_size = size-1;
-      3'b001 : next_size = (size == '0 && i_data != '0) ? size+1 :
+    case ({
+      enqueue, dequeue, replace
+    })
+      3'b100: next_size = size + 1;
+      3'b010: next_size = size - 1;
+      3'b001:
+      next_size = (size == '0 && i_data != '0) ? size+1 :
                            (size != '0 && i_data == '0) ? size-1 :
                            size;
-      default : next_size = size;
+      default: next_size = size;
     endcase
   end
 
   always_comb begin : queue_operation
-    case ({enqueue, dequeue, replace})
-      3'b100 : begin // Enqueue operation (will only be active if ENQ_ENA is high)
+    case ({
+      enqueue, dequeue, replace
+    })
+      3'b100: begin  // Enqueue operation (will only be active if ENQ_ENA is high)
         // Shift entire queue to the right by 1, if the last element is not empty
         // leave it unchanged.
         for (int i = 1; i < QUEUE_SIZE; i++) begin
-          stage1[i] = (i == QUEUE_SIZE-1 && queue[i] != '0) ? queue[i] : queue[i-1];
+          stage1[i] = (i == QUEUE_SIZE - 1 && queue[i] != '0) ? queue[i] : queue[i-1];
         end
         stage1[0] = i_data;
       end
-      3'b010 : begin
+      3'b010: begin
         stage1 = queue;
         stage1[0] = '0;
       end
-      3'b001 : begin
+      3'b001: begin
         stage1 = queue;
         stage1[0] = i_data;
       end
-      default : stage1 = queue;
+      default: stage1 = queue;
     endcase
   end
 
   always_comb begin : next_queue_calc
     case (even_cycle_flag)
-      1'b1 : begin // Even cycle
+      1'b1: begin  // Even cycle
         next_queue = stage1;
         for (int i = 0; i < PAIR_COUNT; i++) begin
           if (stage1[2*i+1] > stage1[2*i]) begin
             // Swap if element at odd index is greater than element at even index
-            next_queue[2*i] = stage1[2*i+1];
+            next_queue[2*i]   = stage1[2*i+1];
             next_queue[2*i+1] = stage1[2*i];
           end else begin
-            next_queue[2*i] = stage1[2*i];
+            next_queue[2*i]   = stage1[2*i];
             next_queue[2*i+1] = stage1[2*i+1];
           end
         end
         next_even_cycle_flag = 1'b0;
       end
 
-      1'b0 : begin // Odd cycle
+      1'b0: begin  // Odd cycle
         next_queue = stage1;
-        for (int i = 0; i < PAIR_COUNT-1; i++) begin
+        for (int i = 0; i < PAIR_COUNT - 1; i++) begin
           if (stage1[2*i+2] > stage1[2*i+1]) begin
             // Swap if element at even index is greater than previous odd index
             next_queue[2*i+1] = stage1[2*i+2];
@@ -123,7 +128,7 @@ module register_array_cycled #(
         next_even_cycle_flag = 1'b1;
       end
 
-      default : begin 
+      default: begin
         next_queue = stage1;
         next_even_cycle_flag = 1'b1;
       end

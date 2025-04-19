@@ -1,16 +1,16 @@
 `default_nettype none
 
 module register_array #(
-    parameter bit ENQ_ENA = 0,    // if user would like to enable enqueue
-    parameter int QUEUE_SIZE = 4, // size of the queue
-    parameter int DATA_WIDTH = 16 // width of the data
+    parameter bit ENQ_ENA = 0,  // if user would like to enable enqueue
+    parameter int QUEUE_SIZE = 4,  // size of the queue
+    parameter int DATA_WIDTH = 16  // width of the data
 ) (
     // Inputs
-    input  var logic                  i_CLK,    // clock
-    input  var logic                  i_RSTn,   // reset
-    input  var logic                  i_wrt,    // push
-    input  var logic                  i_read,   // pop
-    input  var logic [DATA_WIDTH-1:0] i_data,   // input data
+    input var  logic                  i_CLK,    // clock
+    input var  logic                  i_RSTn,   // reset
+    input var  logic                  i_wrt,    // push
+    input var  logic                  i_read,   // pop
+    input var  logic [DATA_WIDTH-1:0] i_data,   // input data
     // Outputs
     output var logic                  o_full,   // queue full
     output var logic                  o_empty,  // queue empty
@@ -49,7 +49,7 @@ module register_array #(
   always_ff @(posedge i_CLK or negedge i_RSTn) begin
     if (!i_RSTn) begin
       queue <= reset_queue;
-      size <= '0;
+      size  <= '0;
     end else begin
       queue <= next_queue;
       size  <= next_size;
@@ -57,37 +57,42 @@ module register_array #(
   end
 
   always_comb begin : size_counter
-    case ({enqueue, dequeue, replace})
-      3'b100 : next_size = size+1;
-      3'b010 : next_size = size-1;
-      3'b001 : next_size = (size == '0 && i_data != '0) ? size+1 :
+    case ({
+      enqueue, dequeue, replace
+    })
+      3'b100: next_size = size + 1;
+      3'b010: next_size = size - 1;
+      3'b001:
+      next_size = (size == '0 && i_data != '0) ? size+1 :
                            (size != '0 && i_data == '0) ? size-1 :
                            size;
-      default : next_size = size;
+      default: next_size = size;
     endcase
   end
 
   always_comb begin : queue_operation
     automatic logic empty_found;
     empty_found = 0;
-    case ({enqueue, dequeue, replace})
-      3'b100 : begin // Enqueue operation (will only be active if ENQ_ENA is high)
+    case ({
+      enqueue, dequeue, replace
+    })
+      3'b100: begin  // Enqueue operation (will only be active if ENQ_ENA is high)
         // Shift entire queue to the right by 1, if the last element is not empty
         // leave it unchanged.
         for (int i = 1; i < QUEUE_SIZE; i++) begin
-          stage1[i] = (i == QUEUE_SIZE-1 && queue[i] != '0) ? queue[i] : queue[i-1];
+          stage1[i] = (i == QUEUE_SIZE - 1 && queue[i] != '0) ? queue[i] : queue[i-1];
         end
         stage1[0] = i_data;
       end
-      3'b010 : begin
+      3'b010: begin
         stage1 = queue;
         stage1[0] = '0;
       end
-      3'b001 : begin
+      3'b001: begin
         stage1 = queue;
         stage1[0] = i_data;
       end
-      default : stage1 = queue;
+      default: stage1 = queue;
     endcase
   end
 
