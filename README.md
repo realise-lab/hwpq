@@ -2,20 +2,20 @@
 
 ## Abstract
 
-This project presents a comprehensive analysis of various hardware priority queue architectures proposed in recent years. The architectures are implemented in SystemVerilog, verified through testbench assertions against a reference queue, and synthesized, optimized, and implemented on Xilinx FPGAs. Priority queues are fundamental data structures used in many applications, including task scheduling, graph algorithms, and hardware accelerators. 
-
-The architectures are analyzed across various queue sizes and settings to provide insights into their scalability properties. Performance metrics include maximum clock frequency, throughput, latency, and resource usage (LUTs, registers, BRAMs). The analysis helps in selecting the most appropriate priority queue architecture based on specific application requirements. 
+This project presents a comprehensive evaluation of various hardware priority queue architectures proposed in recent years, with a focus on their performance, resource utilization, and scalability in the context of modern hardware technologies. The selected architectures are analyzed under different queue sizes and configurations to provide insights that aid researchers and engineers in choosing the most suitable design for their specific application requirements. To support reproducibility and further research, we also composed an open-source library that includes parameterized RTL implementations of each architecture, along with scripts for synthesis and analysis using Xilinx Vivado.
 
 ## How to Use
 
 ### Project Structure
-- `hwpq/` - Contains RTL implementations of different priority queue architectures along with key metrics logs. 
+
+- `hwpq/` - Contains RTL implementations of different priority queue architectures along with key metrics logs.
 - `py-scripts/` - Python scripts for data analysis and visualization
 - `vivado-analysis_plots/` - Generated plots comparing different architectures
 - `vivado-runtime/` - Shell script that runs Vivado in TCL mode to sweep through parameters of each architecture
 - `vivado-synthesis_tcl/` - TCL scripts for Vivado synthesis
 
 ### Running Synthesis and Analysis
+
 1. Clone the repository
 2. Run Vivado synthesis using the provided TCL scripts:
    ```
@@ -28,58 +28,40 @@ The architectures are analyzed across various queue sizes and settings to provid
    python -m src.plotter
    ```
 
-## Architectures 
+## Architectures
 
 ### Register Array
-A simple array-based priority queue implementation where elements are stored in registers and sorted in each cycle. This architecture provides fast access to the highest priority element but suffers from scalability issues as queue size increases due to quadratic growth in comparison logic.
+
+[Description]
 
 Features:
-- Good for small queue sizes (up to 16-32 elements)
-- Low latency for dequeue operations
-- Simple design and easy to implement
-- Versions with and without enqueue capability
 
 ### Register Tree
-A binary tree-based implementation using registers. Elements are organized in a heap structure, which provides better scalability than the register array approach while maintaining reasonable access time to the highest priority element.
+
+[Description]
 
 Features:
-- Better scalability than register array (efficient for queue sizes up to 64-128 elements)
-- Logarithmic time complexity for operations
-- Balanced resource utilization
-- Available in standard and cycled variants with configurable enqueue capabilities
 
 ### Systolic Array
-A pipelined architecture using systolic processing elements that operate in a synchronized manner. The systolic array distributes computation across multiple processing units, improving throughput at the cost of increased latency.
+
+[Description]
 
 Features:
-- High throughput for streaming applications
-- Regular structure well-suited for FPGA implementation
-- Good scalability for medium-sized queues
-- Efficient for applications with continuous streaming data
 
 ### BRAM Tree
-A binary heap implementation that uses Block RAMs (BRAMs) for storage instead of registers. This architecture significantly reduces LUT and register usage while increasing the maximum possible queue size.
+
+[Description]
 
 Features:
-- Excellent for large queue sizes (1000+ elements)
-- Efficient use of FPGA BRAM resources
-- Reduced logic utilization
-- Higher latency compared to register-based implementations
 
 ### Pipelined BRAM Tree
-An extension of the BRAM Tree architecture with pipelining to improve throughput. This implementation trades increased latency for higher clock frequencies, making it suitable for high-performance applications requiring large queue sizes.
+
+[Description]
 
 Features:
-- Improved clock frequency compared to basic BRAM tree
-- Better throughput through pipelining
-- Efficient for large queues with high-performance requirements
-- Higher resource usage than basic BRAM tree
 
 ### Hybrid Tree
-A composite architecture that combines register-based and BRAM-based approaches. It uses registers for the first few levels of the tree (frequently accessed) and BRAMs for deeper levels, balancing performance and resource utilization.
+
+[Description]
 
 Features:
-- Combines advantages of register tree and BRAM tree
-- Better performance than pure BRAM implementation
-- More scalable than pure register implementation
-- Good compromise for medium to large queue sizes
