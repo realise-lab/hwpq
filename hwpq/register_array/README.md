@@ -1,1 +1,1 @@
-# Register Tree Architecture Detail Explaination
+# Register Array Architecture Detail Explaination
