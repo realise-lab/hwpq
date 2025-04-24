@@ -233,12 +233,9 @@ def compute_performance(data_dict, arch, operation):
             max_freq = metrics["max_achieved_frequency"]
 
             # Calculate performance based on architecture and operation
-            if arch_lower == "register_tree_enq_enabled" or arch_lower == "register_tree_cycled_enq_enabled":
+            if operation == "enqueue" and (arch_lower == "register_tree_enq_enabled" or arch_lower == "register_tree_cycled_enq_enabled"):
                 # Special case for register tree enqueue where performance scales with log2(queue_size)
                 perf_factor = 1 / log2(queue_size)
-            elif arch_lower == "register_array_enq_enabled" or arch_lower == "register_array_cycled_enq_enabled":
-                # Special case for register array enqueue where performance scales with N/2
-                perf_factor = 1 / (queue_size / 2)
             else:
                 # For other architectures/operations, use predefined performance factors
                 perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)
@@ -303,12 +300,9 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
             resource = np.max([lut_utilization, reg_utilization, bram_utilization])
 
             # Calculate performance factor based on architecture and operation
-            if arch_lower == "register_tree" and operation == "enqueue":
+            if arch_lower == "register_tree_enq_enabled" or arch_lower == "register_tree_cycled_enq_enabled":
                 # Special case for register tree enqueue where performance scales with log2(queue_size)
                 perf_factor = 1 / log2(queue_size) if queue_size > 1 else 1
-            elif arch_lower == "register_array" and operation == "enqueue":
-                # Special case for register array enqueue where performance scales with N/2
-                perf_factor = 1 / (queue_size / 2) if queue_size > 1 else 1
             else:
                 # For other architectures/operations, use predefined performance factors
                 perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)

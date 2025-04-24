@@ -837,28 +837,34 @@ def create_focused_comparison(data_dict_dict, output_path=None):
     focused_archs = {
         k: v for k, v in data_dict_dict.items() 
         # if k in ["register_tree_enq_enabled", "register_tree_cycled_enq_enabled", "register_tree_enq_disabled", "register_tree_cycled_enq_disabled"]
-        if k in ["register_array_enq_enabled", "register_array_cycled_enq_enabled", "register_array_enq_disabled", "register_array_cycled_enq_disabled"]
+        # if k in ["register_array_enq_enabled", "register_array_cycled_enq_enabled", "register_array_enq_disabled", "register_array_cycled_enq_disabled"]
+        # if k in ["bram_tree", "bram_tree_pipelined"]
+        # if k in ["systolic_array", "register_array_enq_enabled", "register_tree_enq_enabled"]
+        if k in ["systolic_array", "hybrid_tree", "bram_tree_pipelined"]
     }
     
     if len(focused_archs) < 2:
-        print("Not enough architectures found for comparison. Need at least 2 of: systolic_array, register_array_enq_enabled, register_tree_enq_enabled")
+        print("Not enough architectures found for comparison. Need at least 2 of: systolic_array, hybrid_tree, bram_tree_pipelined")
         return None
     
     # Create a figure with 1 row, 2 columns for enqueue and dequeue/replace plots
-    fig, axs = plt.subplots(1, 2, figsize=(24, 8))
-    # fig.suptitle("Architecture Performance Comparison", fontsize=32)
+    # fig, axs = plt.subplots(1, 2, figsize=(24, 8))
+    fig, axs = plt.subplots(1, 1, figsize=(12, 8))
     
     # Plot enqueue performance
-    enqueue_archs = [k for k in focused_archs.keys() if "enq_enabled" in k]
-    if enqueue_archs:
-        enqueue_data = {k: v for k, v in focused_archs.items() if k in enqueue_archs}
-        plot_performance_comparison(axs[0], enqueue_data, enqueue_archs, "enqueue")
-    else:
-        axs[0].set_visible(False)
+    # enqueue_archs = [k for k in focused_archs.keys() if "enq_enabled" in k or k == "systolic_array"]
+    # if enqueue_archs:
+    #     enqueue_data = {k: v for k, v in focused_archs.items() if k in enqueue_archs}
+    #     # plot_performance_comparison(axs[0], enqueue_data, enqueue_archs, "enqueue")
+    #     plot_performance_comparison(axs, enqueue_data, enqueue_archs, "enqueue")
+    # else:
+    #     # axs[0].set_visible(False)
+    #     axs.set_visible(False)
     
     # Plot dequeue performance (all architectures)
     plot_performance_comparison(
-        axs[1], 
+        # axs[1], 
+        axs, 
         focused_archs, 
         list(focused_archs.keys()), 
         "dequeue", 
@@ -969,7 +975,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Create focused comparison for systolic_array, register_array_enq_enabled, and register_tree_enq_enabled
-        focused_path = os.path.join(output_dir, f"register_array_comparison_{timestamp}.pdf")
+        focused_path = os.path.join(output_dir, f"focused_arch_comparison_{timestamp}.pdf")
         create_focused_comparison(all_data, focused_path)
         
         # Comment out or remove other comparison plots if you only want the focused comparison
