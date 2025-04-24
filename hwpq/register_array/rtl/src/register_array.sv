@@ -71,20 +71,17 @@ module register_array #(
   end
 
   always_comb begin : queue_operation
-    automatic int empty_found;
-    empty_found = 0;
-    case ({
-      enqueue, dequeue, replace
-    })
+    automatic int empty_checked;
+    empty_checked = QUEUE_SIZE-1;
+    case ({enqueue, dequeue, replace})
       3'b100: begin  // Enqueue operation (will only be active if ENQ_ENA is high)
-        // Shift entire queue to the right by 1, if the last element is not empty
-        // leave it unchanged.
+        // Shift entire queue to the right by 1
         stage1 = queue;
         for (int i = QUEUE_SIZE-1; i >= 0; i--) begin
-          empty_found = (queue[i] == '0) ? i : (QUEUE_SIZE-1);
+          empty_checked = (queue[i] == '0) ? i : empty_checked;
         end
-        for (int i = 1; i <= empty_found; i++) begin
-          stage1[i] = queue[i-1];
+        for (int i = 1; i < QUEUE_SIZE; i++) begin
+          stage1[i] = (i <= empty_checked) ? queue[i-1] : queue[i];
         end
         stage1[0] = i_data;
       end
