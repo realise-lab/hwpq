@@ -16,7 +16,7 @@ JOB_TRACK_DIR=$(mktemp -d)
 echo "Using temporary directory for job tracking: $JOB_TRACK_DIR"
 
 # NOTE - Define output directories and create them - change accordingly
-RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_xcau25p"
+RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_cycled_xcau25p"
 for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
   mkdir -p "${RESULTS_DIR}/enqueue_${enq_ena}"
 done
@@ -170,7 +170,7 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     echo "Starting Vivado job for ${job_name}..."
     
     # NOTE - Run Vivado as a background process - change accordingly
-    vivado -mode batch -nolog -nojournal -source /home/qw2246/Workspace/hwpq_qw2246/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs $enq_ena $queue_size > "$log_file" 2>&1 &
+    vivado -mode batch -nolog -nojournal -source /home/qw2246/Workspace/hwpq_qw2246/vivado-synthesis_tcl/synth_design_param_sweep_parallel_cycled.tcl -tclargs $enq_ena $queue_size > "$log_file" 2>&1 &
     
     # Mark job as running
     start_job "$job_name"

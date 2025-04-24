@@ -18,8 +18,8 @@ set running_device xcau25p-ffvb676-1-e
 set_param general.maxThreads 16
 
 # NOTE File paths - change accordingly for design under test - use absolute path
-set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/rtl/src/register_array.sv
-set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_xcau25p
+set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/rtl/src/register_array_cycled.sv
+set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_cycled_xcau25p
 
 # Clock frequency values
 set clock_freq_values {100 150 200 250 300 350 400 450 500 550 600 650 700 750 800}
@@ -67,7 +67,7 @@ foreach clock_freq $clock_freq_values {
   set synth_start_time [clock seconds]
 
   # NOTE - Run synthesis - Adjust the top module name accordingly
-  synth_design -top register_array -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+  synth_design -top register_array_cycled -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
 
   # Record end time for synthesis
   set synth_end_time [clock seconds]
