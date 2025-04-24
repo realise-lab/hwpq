@@ -64,14 +64,14 @@ module register_array #(
       3'b010: next_size = size - 1;
       3'b001:
       next_size = (size == '0 && i_data != '0) ? size+1 :
-                           (size != '0 && i_data == '0) ? size-1 :
-                           size;
+                  (size != '0 && i_data == '0) ? size-1 :
+                   size;
       default: next_size = size;
     endcase
   end
 
   always_comb begin : queue_operation
-    automatic logic empty_found;
+    automatic int empty_found;
     empty_found = 0;
     case ({
       enqueue, dequeue, replace
@@ -79,8 +79,12 @@ module register_array #(
       3'b100: begin  // Enqueue operation (will only be active if ENQ_ENA is high)
         // Shift entire queue to the right by 1, if the last element is not empty
         // leave it unchanged.
-        for (int i = 1; i < QUEUE_SIZE; i++) begin
-          stage1[i] = (i == QUEUE_SIZE - 1 && queue[i] != '0) ? queue[i] : queue[i-1];
+        stage1 = queue;
+        for (int i = QUEUE_SIZE-1; i >= 0; i--) begin
+          empty_found = (queue[i] == '0) ? i : (QUEUE_SIZE-1);
+        end
+        for (int i = 1; i <= empty_found; i++) begin
+          stage1[i] = queue[i-1];
         end
         stage1[0] = i_data;
       end

@@ -171,7 +171,7 @@ module register_array_cycled_tb;
     
     // Test case 4: Random opertaion for 50 times
     $display("\nTest Case 4: Stress Test (ENQ_ENA enabled)");
-    for (int i = 0; i < 50; i++) begin
+    for (int i = 0; i < 100; i++) begin
       random_operation = $urandom_range(1, 3);
       case (random_operation)
         ENQUEUE: begin
@@ -264,7 +264,7 @@ module register_array_cycled_tb;
     
     // Test case 8: Random opertaion for 50 times
     $display("\nTest Case 8: Stress Test (ENQ_ENA disabled)");
-    for (int i = 0; i < 50; i++) begin
+    for (int i = 0; i < 100; i++) begin
       random_operation = $urandom_range(2, 3);
       case (random_operation)
         DEQUEUE: begin
@@ -310,7 +310,7 @@ module register_array_cycled_tb;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (QUEUE_SIZE/2) @(posedge CLK);
+      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
       else if (current_mode == DISABLED) repeat (2) @(posedge CLK); // should have no effects
     end
   endtask
