@@ -1,2 +1,0 @@
-Analysis for QUEUE_SIZE = 4096, ENQ_ENA = 1
-

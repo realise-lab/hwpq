@@ -12,7 +12,7 @@ from config import OUTPUT_DIR
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
     "register_array_enq_disabled": {
-        "color": "navy",
+        "color": "royalblue",
         "marker": "o",
         "display_name": "Register Array (Enqueue Disabled)",
     },
@@ -24,12 +24,12 @@ ARCHITECTURE_STYLES = {
     "register_array_cycled_enq_disabled": {
         "color": "violet",
         "marker": "X",
-        "display_name": "Register Array Pipelined (Enqueue Disabled)",
+        "display_name": "Register Array 2 Cycle (Enqueue Disabled)",
     },
     "register_array_cycled_enq_enabled": {
-        "color": "darkviolet",
+        "color": "violet",
         "marker": "P",
-        "display_name": "Register Array Pipelined (Enqueue Enabled)",
+        "display_name": "Register Array 2 Cycle (Enqueue Enabled)",
     },
     "systolic_array": {
         "color": "lime",
@@ -37,24 +37,24 @@ ARCHITECTURE_STYLES = {
         "display_name": "Systolic Array",
     },
     "register_tree_enq_disabled": {
-        "color": "lightcoral",
+        "color": "maroon",
         "marker": "8", 
         "display_name": "Register Tree (Enqueue Disabled)",
     },
     "register_tree_enq_enabled": {
         "color": "maroon",
-        "marker": "p", 
+        "marker": "^", 
         "display_name": "Register Tree (Enqueue Enabled)",
     },
     "register_tree_cycled_enq_disabled": {
         "color": "darkorange",
         "marker": "h", 
-        "display_name": "Register Tree Pipelined (Enqueue Disabled)",
+        "display_name": "Register Tree 2 Cycle (Enqueue Disabled)",
     },
     "register_tree_cycled_enq_enabled": {
-        "color": "olive",
+        "color": "darkorange",
         "marker": "v", 
-        "display_name": "Register Tree Pipelined (Enqueue Enabled)",
+        "display_name": "Register Tree 2 Cycle (Enqueue Enabled)",
     },
     "bram_tree": {
         "color": "violet",
@@ -148,19 +148,21 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
         frequencies,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=12,
     )
 
     ax.set_xlabel("Queue Size")
     ax.set_ylabel("Maximum Achieved Frequency (MHz)")
-    ax.set_title(title or "Maximum Achieved Frequency vs Queue Size")
+    # ax.set_title(title or "Maximum Achieved Frequency vs Queue Size")
+    ax.set_title(title)
     ax.set_xscale("log", base=2)
     ax.grid(True)
 
     # Add legend if plotting multiple architectures
-    if arch_name:
-        ax.legend(fontsize=12)
+    # if arch_name:
+        # ax.legend(fontsize=12)
 
 
 def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -387,21 +389,29 @@ def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=Non
         bram_percentages,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        # linewidth=2,
         label=style["display_name"],
+        linewidth=4,
+        markersize=16,
     )
 
-    ax.set_xlabel("Queue Size")
-    ax.set_ylabel("BRAM Utilization (%)")
-    ax.set_title(title or "BRAM Utilization Percentage vs Queue Size")
+    # ax.set_xlabel("Queue Size")
+    # ax.set_ylabel("BRAM Utilization (%)")
+    ax.set_xlabel("Queue Size", fontsize=32)
+    ax.set_ylabel("BRAM Utilization (%)", fontsize=32)
+    # ax.set_title(title or "BRAM Utilization Percentage vs Queue Size")
+    ax.set_title(title)
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.grid(True)
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=16)
 
+    # Make axis scales larger
+    ax.tick_params(axis='both', which='major', labelsize=24)
+    ax.tick_params(axis='both', which='minor', labelsize=24)
 
 def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None):
     """
@@ -426,6 +436,8 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
                 )
             else:
                 continue
+            
+            # Plot line with markers
             ax.plot(
                 queue_sizes,
                 performance,
@@ -433,19 +445,123 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
                 color=style["color"],
                 label=style["display_name"],
                 linewidth=4,
+                # linewidth=2,
+                markersize=12,
+            )
+
+            # if len(queue_sizes) > 0 and (arch_name.startswith("hybrid")):
+
+            #     ax.annotate(
+            #         f"{queue_sizes[0]}",
+            #         (queue_sizes[0], performance[0]),
+            #         textcoords="offset points",
+            #         xytext=(10, 10),
+            #         ha='center',
+            #         fontsize=18
+            #     )
+
+            #     ax.annotate(
+            #         f"{queue_sizes[1]}",
+            #         (queue_sizes[1], performance[1]),
+            #         textcoords="offset points",
+            #         xytext=(10, 10),
+            #         ha='center',
+            #         fontsize=18
+            #     )
+
+            #     ax.annotate(
+            #         f"{queue_sizes[2]}",
+            #         (queue_sizes[2], performance[2]),
+            #         textcoords="offset points",
+            #         xytext=(10, 10),
+            #         ha='center',
+            #         fontsize=18
+            #     )
+
+            #     ax.annotate(
+            #         f"{queue_sizes[3]}",
+            #         (queue_sizes[3], performance[3]),
+            #         textcoords="offset points",
+            #         xytext=(10, 10),
+            #         ha='center',
+            #         fontsize=18
+            #     )
+
+    # ax.set_xlabel("Queue Size", fontsize=32)
+    # ax.set_ylabel("Performance (MHz * ops/cycle)", fontsize=32)
+    # ax.set_title(title or f"{operation.capitalize()} Performance", fontsize=32)
+    ax.set_xlabel("Queue Size")
+    ax.set_ylabel("Performance (MOPS/s)")
+    # ax.set_title(title or f"{operation.capitalize()} Performance")
+    ax.set_title(title)
+    # ax.set_title(title, fontsize=32)
+    ax.set_xscale("log", base=2)
+    ax.grid(True)
+    # ax.legend()
+    ax.legend(fontsize=14)
+    # Make axis scales larger
+    # ax.tick_params(axis='both', which='major', labelsize=24)
+    # ax.tick_params(axis='both', which='minor', labelsize=24)
+
+def plot_performance_comparison_nolegend(ax, data_dict, arch_list, operation, title=None):
+    """
+    Plot performance comparison across different architectures for a specific operation.
+
+    Args:
+        ax (matplotlib.axes.Axes): The axes to plot on
+        data_dict (dict): Dictionary of data dictionaries for each architecture
+        arch_list (list): List of architecture names
+        operation (str): Operation type ('enqueue', 'dequeue', 'replace')
+        title (str, optional): Custom title for the plot
+    """
+    for arch_name in arch_list:
+        if arch_name in data_dict:
+            # Get architecture-specific style
+            style = get_arch_style(arch_name)
+
+            # Check if data_dict[arch_name] is a dictionary before calling compute_performance
+            if isinstance(data_dict[arch_name], dict):
+                queue_sizes, performance = dp.compute_performance(
+                    data_dict[arch_name], arch_name, operation
+                )
+            else:
+                continue
+            
+            # Plot line with markers
+            ax.plot(
+                queue_sizes,
+                performance,
+                f"{style['marker']}-",
+                color=style["color"],
+                label=style["display_name"],
+                linewidth=4,
+                # linewidth=2,
                 markersize=16,
             )
 
+            # Add queue size labels at each marker
+            # for i, (x, y) in enumerate(zip(queue_sizes, performance)):
+            #     ax.annotate(
+            #         f"{x}",
+            #         (x, y),
+            #         textcoords="offset points",
+            #         xytext=(10, 10),
+            #         ha='center',
+            #         fontsize=18
+            #     )
+
     ax.set_xlabel("Queue Size", fontsize=32)
     ax.set_ylabel("Performance (MHz * ops/cycle)", fontsize=32)
-    ax.set_title(title or f"{operation.capitalize()} Performance", fontsize=32)
+    # ax.set_title(title or f"{operation.capitalize()} Performance", fontsize=32)
+    # ax.set_xlabel("Queue Size")
+    # ax.set_ylabel("Performance (MHz * ops/cycle)")
+    # ax.set_title(title or f"{operation.capitalize()} Performance")
+    ax.set_title(title, fontsize=32)
     ax.set_xscale("log", base=2)
     ax.grid(True)
-    ax.legend(fontsize=18)
     # Make axis scales larger
     ax.tick_params(axis='both', which='major', labelsize=24)
     ax.tick_params(axis='both', which='minor', labelsize=24)
-
 
 def plot_resource_comparison(ax, data_dict, arch_list, title=None):
     for arch_name in arch_list:
@@ -466,12 +582,13 @@ def plot_resource_comparison(ax, data_dict, arch_list, title=None):
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                linewidth=2,
+                linewidth=4,
+                markersize=12,
             )
 
     ax.set_xlabel("Queue Size")
-    ax.set_ylabel("Resource Utilization (%)")
-    ax.set_title(title or "Resource Utilization Comparison")
+    ax.set_ylabel("FPGA Resource Utilization (%)")
+    ax.set_title(title)
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.grid(True)
@@ -836,40 +953,45 @@ def create_focused_comparison(data_dict_dict, output_path=None):
     # Filter to only include the specified architectures
     focused_archs = {
         k: v for k, v in data_dict_dict.items() 
-        # if k in ["register_tree_enq_enabled", "register_tree_cycled_enq_enabled", "register_tree_enq_disabled", "register_tree_cycled_enq_disabled"]
-        # if k in ["register_array_enq_enabled", "register_array_cycled_enq_enabled", "register_array_enq_disabled", "register_array_cycled_enq_disabled"]
-        # if k in ["bram_tree", "bram_tree_pipelined"]
-        # if k in ["systolic_array", "register_array_enq_enabled", "register_tree_enq_enabled"]
-        if k in ["systolic_array", "hybrid_tree", "bram_tree_pipelined"]
+        # if k in ["register_tree_enq_enabled", "register_tree_cycled_enq_enabled", "register_tree_enq_disabled", "register_tree_cycled_enq_disabled", "register_array_enq_enabled", "register_array_cycled_enq_enabled", "register_array_enq_disabled", "register_array_cycled_enq_disabled"]
+        # if k in ["hybrid_tree", "bram_tree", "bram_tree_pipelined"]
+        # if k in ["systolic_array", "register_array_enq_enabled", "register_tree_enq_enabled"] # register-based architectures
+        # if k in ["systolic_array", "hybrid_tree"]
+        if k in ["register_tree_enq_disabled", "register_array_enq_disabled", "systolic_array", "hybrid_tree", "bram_tree", "bram_tree_pipelined"]
     }
     
-    if len(focused_archs) < 2:
-        print("Not enough architectures found for comparison. Need at least 2 of: systolic_array, hybrid_tree, bram_tree_pipelined")
-        return None
+    # if len(focused_archs) < 2:
+    #     print("Not enough architectures found for comparison. Need at least 2 of: systolic_array, hybrid_tree, bram_tree_pipelined")
+    #     return None
     
     # Create a figure with 1 row, 2 columns for enqueue and dequeue/replace plots
-    # fig, axs = plt.subplots(1, 2, figsize=(24, 8))
-    fig, axs = plt.subplots(1, 1, figsize=(12, 8))
+    fig, axs = plt.subplots(1, 2, figsize=(24, 8))
+    # fig, axs = plt.subplots(1, 1, figsize=(12, 8))
     
     # Plot enqueue performance
-    # enqueue_archs = [k for k in focused_archs.keys() if "enq_enabled" in k or k == "systolic_array"]
+    # enqueue_archs = [k for k in focused_archs.keys() if "enq_enabled" in k]
     # if enqueue_archs:
     #     enqueue_data = {k: v for k, v in focused_archs.items() if k in enqueue_archs}
-    #     # plot_performance_comparison(axs[0], enqueue_data, enqueue_archs, "enqueue")
-    #     plot_performance_comparison(axs, enqueue_data, enqueue_archs, "enqueue")
+    #     plot_performance_comparison_nolegend(axs[0], enqueue_data, enqueue_archs, "enqueue", title="Enqueue Performance")
+    #     # plot_performance_comparison(axs, enqueue_data, enqueue_archs, "enqueue")
     # else:
-    #     # axs[0].set_visible(False)
-    #     axs.set_visible(False)
+    #     axs[0].set_visible(False)
+    #     # axs.set_visible(False)
+
+    axs[0].set_visible(False)
     
     # Plot dequeue performance (all architectures)
-    plot_performance_comparison(
-        # axs[1], 
-        axs, 
-        focused_archs, 
-        list(focused_archs.keys()), 
-        "dequeue", 
-        title="Dequeue and Replace Performance"
-    )
+    # plot_performance_comparison(axs[1], focused_archs, list(focused_archs.keys()), "dequeue")
+    
+    # Plot achieved frequency
+    # for arch_name, data_dict in focused_archs.items():
+        # plot_frequency_vs_queue_size(axs[1], data_dict, arch_name=arch_name)
+    
+    plot_resource_comparison(axs[1], data_dict=focused_archs, arch_list=list(focused_archs.keys()))
+
+    # Plot bram utilization
+    # for arch_name, data_dict in focused_archs.items():
+    #     plot_bram_utilization_vs_queue_size(axs, data_dict, arch_name=arch_name)
     
     # Adjust layout
     # plt.tight_layout(rect=(0, 0, 1, 0.95))  # Leave space for suptitle
@@ -975,11 +1097,11 @@ def process_and_plot_all(base_dir, output_dir=None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Create focused comparison for systolic_array, register_array_enq_enabled, and register_tree_enq_enabled
-        focused_path = os.path.join(output_dir, f"focused_arch_comparison_{timestamp}.pdf")
+        focused_path = os.path.join(output_dir, f"resource_util_comp_{timestamp}.pdf")
         create_focused_comparison(all_data, focused_path)
         
         # Comment out or remove other comparison plots if you only want the focused comparison
-        # comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.png")
+        # comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.pdf")
         # create_comparison_plots(all_data, comparison_path)
         
         # # Handle RegisterArray variants

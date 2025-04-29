@@ -19,3 +19,5 @@ work/
 
 # Animation generation files
 animation_py/
+
+vivado-analysis_plots/

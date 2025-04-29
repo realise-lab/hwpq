@@ -233,9 +233,12 @@ def compute_performance(data_dict, arch, operation):
             max_freq = metrics["max_achieved_frequency"]
 
             # Calculate performance based on architecture and operation
-            if operation == "enqueue" and (arch_lower == "register_tree_enq_enabled" or arch_lower == "register_tree_cycled_enq_enabled"):
+            if operation == "enqueue" and arch_lower == "register_tree_enq_enabled":
                 # Special case for register tree enqueue where performance scales with log2(queue_size)
                 perf_factor = 1 / log2(queue_size)
+            elif operation == "enqueue" and arch_lower == "register_tree_cycled_enq_enabled":
+                # Special case for register tree cycled enqueue where performance scales with log2(queue_size)
+                perf_factor = 1 / (log2(queue_size) + 1)
             else:
                 # For other architectures/operations, use predefined performance factors
                 perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)
