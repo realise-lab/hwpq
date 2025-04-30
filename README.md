@@ -85,7 +85,7 @@ Before running the synthesis and analysis, ensure you have the following install
 3.  Process and visualize results using the Python scripts:
 
     ```bash
-    python ../py-scripts/src/plotter
+    python ../py-scripts/analysis_py/src/plotter
     ```
 
 ## Priority Queue Architectures (Updating)
