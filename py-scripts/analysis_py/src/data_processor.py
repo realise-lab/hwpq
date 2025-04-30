@@ -236,7 +236,7 @@ def compute_performance(data_dict, arch, operation):
             if operation == "enqueue" and arch_lower == "register_tree_enq_enabled":
                 # Special case for register tree enqueue where performance scales with log2(queue_size)
                 perf_factor = 1 / log2(queue_size)
-            elif operation == "enqueue" and arch_lower == "register_tree_cycled_enq_enabled":
+            elif operation == "enqueue" and arch_lower == "register_tree_pipelined_enq_enabled":
                 # Special case for register tree cycled enqueue where performance scales with log2(queue_size)
                 perf_factor = 1 / (log2(queue_size) + 1)
             else:
@@ -300,12 +300,13 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
             reg_utilization = metrics["registers_util_percent"]
             bram_utilization = metrics["bram_util_percent"]
 
-            resource = np.max([lut_utilization, reg_utilization, bram_utilization])
+            total_util = np.max([lut_utilization, reg_utilization, bram_utilization])
 
-            # Calculate performance factor based on architecture and operation
-            if arch_lower == "register_tree_enq_enabled" or arch_lower == "register_tree_cycled_enq_enabled":
-                # Special case for register tree enqueue where performance scales with log2(queue_size)
-                perf_factor = 1 / log2(queue_size) if queue_size > 1 else 1
+            # Get performance factor
+            if operation == "enqueue" and arch_lower == "register_tree_enq_enabled":
+                perf_factor = 1 / log2(queue_size)
+            elif operation == "enqueue" and arch_lower == "register_tree_pipelined_enq_enabled":
+                perf_factor = 1 / (log2(queue_size) + 1)  # Assuming pipelined adds one cycle
             else:
                 # For other architectures/operations, use predefined performance factors
                 perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)
@@ -315,7 +316,7 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
 
             # Calculate resource utilization efficiency (performance/resource)
             # Higher is better: more performance achieved with less resource
-            efficiency = performance / resource if performance > 0 else float("inf")
+            efficiency = performance / total_util if performance > 0 else float("inf")
 
             # Add to our lists
             queue_sizes.append(queue_size)

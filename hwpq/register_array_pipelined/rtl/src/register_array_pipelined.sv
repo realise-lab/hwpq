@@ -1,6 +1,6 @@
 `default_nettype none
 
-module register_array_cycled #(
+module register_array_pipelined #(
     parameter bit ENQ_ENA = 1,  // if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4,  // size of the queue
     parameter int DATA_WIDTH = 16  // width of the data
@@ -64,7 +64,8 @@ module register_array_cycled #(
     })
       3'b100: next_size = size + 1;
       3'b010: next_size = size - 1;
-      3'b001:next_size = (size == '0 && i_data != '0) ? size+1 :
+      3'b001:
+      next_size = (size == '0 && i_data != '0) ? size+1 :
                          (size != '0 && i_data == '0) ? size-1 :
                           size;
       default: next_size = size;
@@ -73,12 +74,14 @@ module register_array_cycled #(
 
   always_comb begin : queue_operation
     automatic int empty_checked;
-    empty_checked = QUEUE_SIZE-1;
-    case ({enqueue, dequeue, replace})
+    empty_checked = QUEUE_SIZE - 1;
+    case ({
+      enqueue, dequeue, replace
+    })
       3'b100: begin  // Enqueue operation (will only be active if ENQ_ENA is high)
         // Shift entire queue to the right by 1
         stage1 = queue;
-        for (int i = QUEUE_SIZE-1; i >= 0; i--) begin
+        for (int i = QUEUE_SIZE - 1; i >= 0; i--) begin
           empty_checked = (queue[i] == '0) ? i : empty_checked;
         end
         for (int i = 1; i < QUEUE_SIZE; i++) begin

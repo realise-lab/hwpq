@@ -37,11 +37,12 @@ RESULTS_DIR="$PROJECT_ROOT/hwpq/${ARCHITECTURE_NAME}/vivado_analysis_results_16b
 SYNTH_SCRIPT="$PROJECT_ROOT/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl"
 
 # NOTE - Set the maximum number of parallel jobs - change accordingly
-MAX_PARALLEL=10
+MAX_PARALLEL=2
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)
-echo "Using temporary directory for job tracking: $JOB_TRACK_DIR\n"
+echo "Using temporary directory for job tracking: $JOB_TRACK_DIR"
+echo " "
 
 # Create a directory for each enq_ena value
 for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
@@ -51,6 +52,7 @@ done
 # Cleanup function to remove temporary files on exit
 cleanup() {
   echo "Cleaning up temporary files..."
+  echo " "
   rm -rf "$JOB_TRACK_DIR"
 }
 trap cleanup EXIT
@@ -110,7 +112,8 @@ job_is_completed() {
 print_job_status() {
   local job_count=$(get_running_jobs_count)
   
-  echo "\n=== Current Job Status ==="
+  echo " "
+  echo "=== Current Job Status ==="
   echo "Running jobs: $job_count of $MAX_PARALLEL"
   
   if [ "$job_count" -gt 0 ]; then
@@ -121,7 +124,8 @@ print_job_status() {
   else
     echo "No jobs currently running."
   fi
-  echo "=========================\n"
+  echo "========================="
+  echo " "
 }
 
 # Function to check if we can start another job
@@ -131,7 +135,8 @@ can_start_job() {
     if [ -f "$job_file" ]; then
       local job_name=$(basename "$job_file")
       if job_is_completed "$job_name"; then
-        echo "Job $job_name has completed\n"
+        echo "Job $job_name has completed"
+        echo " "
         complete_job "$job_name"
       fi
     fi
@@ -156,7 +161,8 @@ wait_for_job() {
       if [ -f "$job_file" ]; then
         local job_name=$(basename "$job_file")
         if job_is_completed "$job_name"; then
-          echo "Job $job_name has completed\n"
+          echo "Job $job_name has completed"
+          echo " "
           complete_job "$job_name"
           return
         fi
@@ -175,31 +181,34 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     
     # Check if job is already running
     if is_job_running "$job_name"; then
-      echo "WARNING: Job $job_name is already running. Skipping duplicate.\n"
+      echo "WARNING: Job $job_name is already running. Skipping duplicate."
+      echo " "
       continue
     fi
     
     # Check if the result file already exists and contains results
     if [ -f "$result_file" ] && grep -q "Analysis completed for ENQ" "$result_file"; then
-      echo "Job $job_name already completed (result file exists). Skipping.\n"
+      echo "Job $job_name already completed (result file exists). Skipping."
+      echo " "
       continue
     fi
     
     # Wait until we can start a new job
     while ! can_start_job; do
-      echo "Maximum parallel jobs ($MAX_PARALLEL) running. Waiting for a job slot...\n"
+      echo "Maximum parallel jobs ($MAX_PARALLEL) running. Waiting for a job slot..."
+      echo " "
       wait_for_job
     done
     
-    echo "Starting Vivado job for ${job_name}...\n"
-    
+    echo "Starting Vivado job for ${job_name}..."
     vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $ARCHITECTURE_NAME $enq_ena 16 $queue_size > "$log_file" 2>&1 &
     
     # Mark job as running
     start_job "$job_name"
     
     echo "Started job for ${job_name}"
-    echo "Currently running jobs: $(get_running_jobs_count) of $MAX_PARALLEL\n"
+    echo "Currently running jobs: $(get_running_jobs_count) of $MAX_PARALLEL"
+    echo " "
     print_job_status
     
     # Small delay to prevent overwhelming the system
@@ -208,13 +217,14 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
 done
 
 # Wait for all remaining jobs to complete
-echo "Waiting for all remaining jobs to complete...\n"
+echo "Waiting for all remaining jobs to complete..."
 while [ "$(get_running_jobs_count)" -gt 0 ]; do
   for job_file in "$JOB_TRACK_DIR"/*; do
     if [ -f "$job_file" ]; then
       job_name=$(basename "$job_file")
       if job_is_completed "$job_name"; then
-        echo "Job $job_name has completed\n"
+        echo "Job $job_name has completed"
+        echo " "
         complete_job "$job_name"
       fi
     fi
@@ -228,7 +238,7 @@ while [ "$(get_running_jobs_count)" -gt 0 ]; do
   # fi
 done
 
-echo "All parameter sweep jobs have completed successfully!\n"
+echo "All parameter sweep jobs have completed successfully!"
 
 # Optional: Generate a summary of results
 # echo "Generating summary of results..."

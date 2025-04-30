@@ -6,10 +6,10 @@ set running_device xcau25p-ffvb676-1-e
 set_param general.maxThreads 16
 
 # NOTE - Specify the sv file path accordingly, this is the file that will be modified
-set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/rtl/src/register_tree_cycled.sv
+set sv_file_path <path_to_your_workspace>/hwpq_qw2246/hwpq/register_tree_pipelined/rtl/src/register_tree_pipelined.sv
 
 # NOTE Set the base log file path accordingly, this is the directory that will store the results
-set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled
+set base_log_path <path_to_your_workspace>/hwpq_qw2246/hwpq/register_tree_pipelined/vivado_analysis_results_16bit_cycled
 
 # Define the parameter sweep values
 set enq_ena_values {0 1}
@@ -68,7 +68,7 @@ foreach enq_ena $enq_ena_values {
       set synth_start_time [clock seconds]
       
       # Run synthesis
-      synth_design -top register_tree_cycled -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+      synth_design -top register_tree_pipelined -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
       
       # Record end time for synthesis
       set synth_end_time [clock seconds]

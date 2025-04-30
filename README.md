@@ -60,23 +60,57 @@ Before running the synthesis and analysis, ensure you have the following install
     - `synth_design_param_sweep.tcl`
 
       - This script is a good starting point for analyzing a specific module. It sweeps through the **enqueue on/off switch**, **queue sizes**, and **various frequencies**.
+      - You will need to manually change two variables inside this Tcl script if you would like to run it
+        - `sv_file_path`
+        - `base_log_path`
+      - Change the `<path_to_your_workspace>` to where you cloned this repository.
+
+      - You will also need to change the `<top_module_name>` to the architecture module you are testing.
+
+      ```
+      synth_design -top <top_module_name> -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+      ```
 
     - `synth_design_param_sweep_parallel.tcl`
-      - This script differs from `synth_design_param_sweep.tcl` by only sweeping frequencies within the script itself. Other parameters (enqueue switch, data width, queue size) must be provided via command-line arguments or handled by a controlling Bash script. This script is designed to find the **maximum achievable frequency** for a given parameter set.
-      - To find the maximum achievable frequency and other metrics for a module with specific parameters, run:
-        ```bash
-        vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <enqueue_on/off> <data_width> <queue_size>
-        ```
-        - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
-        - **`<data_width>`**: e.g., `8`, `16`, `32`, `64` (integer)
-        - **`<queue_size>`**: architecture and application-dependent (integer)
+
+      - This script differs from `synth_design_param_sweep.tcl` by only sweeping frequencies within the script itself. Other parameters (enqueue switch, data width, queue size) must be provided via command-line arguments or handled by a controlling Bash script. This script is designed to **find the maximum achievable frequency** of a specific architecture for a given parameter set.
+
+      ```bash
+      vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <enqueue_on/off> <data_width> <queue_size>
+      ```
+
+      - **`<architecture_name>`**:
+        - register_tree
+        - register_tree_pipelined
+        - register_array
+        - register_array_pipelined
+        - systolic_array
+        - bram_tree
+        - bram_tree_pipelined
+        - hybrid_tree
+      - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
+      - **`<data_width>`**: e.g., `8`, `16`, `32`, `64` (integer)
+      - **`<queue_size>`**: architecture and application-dependent (integer)
 
 #### Analysis
 
 1.  Execute the parameter sweep Bash script (ensure you are in the `vivado-runtime` directory):
+
     ```bash
-    ./run_param_sweep_parallel.sh
+    ./run_param_sweep_parallel.sh <architecture>
     ```
+
+    Aviable architectures:
+
+    - register_tree
+    - register_tree_pipelined
+    - register_array
+    - register_array_pipelined
+    - systolic_array
+    - bram_tree
+    - bram_tree_pipelined
+    - hybrid_tree
+
 2.  Install the required Python packages:
     ```bash
     pip install -r ../py-scripts/requirements.txt

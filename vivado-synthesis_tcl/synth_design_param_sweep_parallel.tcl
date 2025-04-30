@@ -25,7 +25,7 @@ set_param general.maxThreads 16
 # Get the current script directory and navigate to project root
 set script_dir [file dirname [file normalize [info script]]]
 set project_root [file normalize [file join $script_dir ".."]]
-set sv_file_path [file join $project_root "hwpq" $architecture_name "rtl" "src" "${architecture_name}.sv"]
+set sv_file_path [file join $project_root "hwpq" $architecture_name "rtl" "src"]
 set base_log_path [file join $project_root "hwpq" $architecture_name "vivado_analysis_results_16bit_xcau25p"]
 
 # Clock frequency values
@@ -44,11 +44,12 @@ if {![file exists $log_dir]} {
 # Close any open projects that may be caused by the previous run
 close_project -quiet -delete
 
-# Read the sv file
-read_verilog -sv $sv_file_path
-
-# Set the log directory
-set log_dir "${base_log_path}/enqueue_${enq_ena}"
+# Recursively read all Verilog files under the src directory
+set sv_files [glob -nocomplain -directory $sv_file_path -types f *.sv *.v]
+foreach file $sv_files {
+    puts "\nReading Verilog file: $file\n"
+    read_verilog -sv $file
+}
 
 # Create log file for this queue size
 set log_file "${log_dir}/vivado_analysis_on_queue_size_${queue_size}.txt"

@@ -21,15 +21,15 @@ ARCHITECTURE_STYLES = {
         "marker": "D",
         "display_name": "Register Array (Enqueue Enabled)",
     },
-    "register_array_cycled_enq_disabled": {
+    "register_array_pipelined_enq_disabled": {
         "color": "violet",
         "marker": "X",
-        "display_name": "Register Array 2 Cycle (Enqueue Disabled)",
+        "display_name": "Register Array Pipelined (Enqueue Disabled)",
     },
-    "register_array_cycled_enq_enabled": {
+    "register_array_pipelined_enq_enabled": {
         "color": "violet",
         "marker": "P",
-        "display_name": "Register Array 2 Cycle (Enqueue Enabled)",
+        "display_name": "Register Array Pipelined (Enqueue Enabled)",
     },
     "systolic_array": {
         "color": "lime",
@@ -46,15 +46,15 @@ ARCHITECTURE_STYLES = {
         "marker": "^", 
         "display_name": "Register Tree (Enqueue Enabled)",
     },
-    "register_tree_cycled_enq_disabled": {
+    "register_tree_pipelined_enq_disabled": {
         "color": "darkorange",
         "marker": "h", 
-        "display_name": "Register Tree 2 Cycle (Enqueue Disabled)",
+        "display_name": "Register Tree Pipelined (Enqueue Disabled)",
     },
-    "register_tree_cycled_enq_enabled": {
+    "register_tree_pipelined_enq_enabled": {
         "color": "darkorange",
         "marker": "v", 
-        "display_name": "Register Tree 2 Cycle (Enqueue Enabled)",
+        "display_name": "Register Tree Pipelined (Enqueue Enabled)",
     },
     "bram_tree": {
         "color": "violet",
@@ -161,8 +161,8 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
     ax.grid(True)
 
     # Add legend if plotting multiple architectures
-    # if arch_name:
-        # ax.legend()
+    if arch_name:
+        ax.legend()
 
 
 def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -808,7 +808,7 @@ def create_comparison_plots(data_dict_dict, output_path=None):
     arch_list = list(data_dict_dict.keys())
 
     # Create a 3x3 grid for comparison plots
-    fig, axs = plt.subplots(5, 3, figsize=(32, 40))
+    fig, axs = plt.subplots(5, 3, figsize=(52, 64))
     fig.suptitle(
         "Hardware Queue Architecture Comparison", fontsize=32, y=0.97
     )  # Adjusted y position
@@ -1063,25 +1063,25 @@ def process_and_plot_all(base_dir, output_dir=None):
                 
                 # Store both variants with different keys
                 if arch_dir == "register_array":
-                    if "cycled" in results_dir.lower():
-                        all_data["register_array_cycled_enq_disabled"] = enq_disabled_data
-                        all_data["register_array_cycled_enq_enabled"] = enq_enabled_data
-                    else:
-                        all_data["register_array_enq_disabled"] = enq_disabled_data
-                        all_data["register_array_enq_enabled"] = enq_enabled_data
+                    all_data["register_array_enq_disabled"] = enq_disabled_data
+                    all_data["register_array_enq_enabled"] = enq_enabled_data
+                elif arch_dir == "register_array_pipelined":
+                    all_data["register_array_pipelined_enq_disabled"] = enq_disabled_data
+                    all_data["register_array_pipelined_enq_enabled"] = enq_enabled_data
                 elif arch_dir == "register_tree":
-                    if "cycled" in results_dir.lower():
-                        all_data["register_tree_cycled_enq_disabled"] = enq_disabled_data
-                        all_data["register_tree_cycled_enq_enabled"] = enq_enabled_data
-                    else:
-                        all_data["register_tree_enq_disabled"] = enq_disabled_data
-                        all_data["register_tree_enq_enabled"] = enq_enabled_data
+                    all_data["register_tree_enq_disabled"] = enq_disabled_data
+                    all_data["register_tree_enq_enabled"] = enq_enabled_data
+                elif arch_dir == "register_tree_pipelined":
+                    all_data["register_tree_pipelined_enq_disabled"] = enq_disabled_data
+                    all_data["register_tree_pipelined_enq_enabled"] = enq_enabled_data
+                elif arch_dir == "systolic_array":
+                    # Systolic array doesn't have enqueue variants in the same way
+                    all_data["systolic_array"] = enq_enabled_data  # Systolic array always enables enqueue
                 else:
                     # Generic handling for other architectures with enqueue variants
                     all_data[f"{arch_dir.lower()}_enq_disabled"] = enq_disabled_data
                     all_data[f"{arch_dir.lower()}_enq_enabled"] = enq_enabled_data
-            else:
-                # Regular case for other architectures
+            else: # Regular case for other architectures
                 data_dict = result
 
                 # Skip if no data
