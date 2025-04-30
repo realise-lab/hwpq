@@ -155,8 +155,8 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
 
     ax.set_xlabel("Queue Size")
     ax.set_ylabel("Maximum Achieved Frequency (MHz)")
-    # ax.set_title(title or "Maximum Achieved Frequency vs Queue Size")
-    ax.set_title(title)
+    ax.set_title(title or "Maximum Achieved Frequency vs Queue Size")
+    # ax.set_title(title)
     ax.set_xscale("log", base=2)
     ax.grid(True)
 
@@ -1117,6 +1117,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         #     # create_architecture_variant_comparison(reg_tree_variants, "register_tree", reg_tree_path)
 
 if __name__ == "__main__":
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "hwpq")
     output_dir = os.path.join(base_dir, OUTPUT_DIR)
+    os.makedirs(output_dir, exist_ok=True)
     process_and_plot_all(base_dir, output_dir)
