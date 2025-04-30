@@ -162,7 +162,7 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
 
     # Add legend if plotting multiple architectures
     # if arch_name:
-        # ax.legend(fontsize=12)
+        # ax.legend()
 
 
 def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -201,7 +201,7 @@ def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend()
 
 
 def plot_lut_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -241,7 +241,7 @@ def plot_lut_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend()
 
 
 def plot_register_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -280,7 +280,7 @@ def plot_register_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None)
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend()
 
 
 def plot_register_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -320,7 +320,7 @@ def plot_register_utilization_vs_queue_size(ax, data_dict, title=None, arch_name
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend()
 
 
 def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -359,7 +359,7 @@ def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=12)
+        ax.legend()
 
 
 def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None):
@@ -378,40 +378,37 @@ def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=Non
     queue_sizes, bram_percentages = dp.get_bram_utilization(data_dict)
 
     # Get architecture-specific style
-    style = (
-        get_arch_style(arch_name)
-        if arch_name
-        else {"color": "magenta", "marker": "X", "display_name": "Architecture"}
-    )
+    style = get_arch_style(arch_name)
 
     ax.plot(
         queue_sizes,
         bram_percentages,
         f"{style['marker']}-",
         color=style["color"],
-        # linewidth=2,
+        linewidth=2,
         label=style["display_name"],
-        linewidth=4,
-        markersize=16,
+        # linewidth=4,
+        # markersize=16,
     )
 
-    # ax.set_xlabel("Queue Size")
-    # ax.set_ylabel("BRAM Utilization (%)")
-    ax.set_xlabel("Queue Size", fontsize=32)
-    ax.set_ylabel("BRAM Utilization (%)", fontsize=32)
-    # ax.set_title(title or "BRAM Utilization Percentage vs Queue Size")
-    ax.set_title(title)
+    ax.set_xlabel("Queue Size")
+    ax.set_ylabel("BRAM Utilization (%)")
+    # ax.set_xlabel("Queue Size", fontsize=32)
+    # ax.set_ylabel("BRAM Utilization (%)", fontsize=32)
+    ax.set_title(title or "BRAM Utilization Percentage vs Queue Size")
+    # ax.set_title(title)
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.grid(True)
 
     # Add legend if plotting multiple architectures
     if arch_name:
-        ax.legend(fontsize=16)
+        ax.legend()
 
     # Make axis scales larger
-    ax.tick_params(axis='both', which='major', labelsize=24)
-    ax.tick_params(axis='both', which='minor', labelsize=24)
+    # ax.tick_params(axis='both', which='major', labelsize=24)
+    # ax.tick_params(axis='both', which='minor', labelsize=24)
+
 
 def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None):
     """
@@ -444,9 +441,9 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                linewidth=4,
-                # linewidth=2,
-                markersize=12,
+                # linewidth=4,
+                linewidth=2,
+                # markersize=12,
             )
 
             # if len(queue_sizes) > 0 and (arch_name.startswith("hybrid")):
@@ -492,16 +489,17 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
     # ax.set_title(title or f"{operation.capitalize()} Performance", fontsize=32)
     ax.set_xlabel("Queue Size")
     ax.set_ylabel("Performance (MOPS/s)")
-    # ax.set_title(title or f"{operation.capitalize()} Performance")
-    ax.set_title(title)
+    ax.set_title(title or f"{operation.capitalize()} Performance")
+    # ax.set_title(title)
     # ax.set_title(title, fontsize=32)
     ax.set_xscale("log", base=2)
     ax.grid(True)
-    # ax.legend()
-    ax.legend(fontsize=14)
+    ax.legend()
+    # ax.legend(fontsize=14)
     # Make axis scales larger
     # ax.tick_params(axis='both', which='major', labelsize=24)
     # ax.tick_params(axis='both', which='minor', labelsize=24)
+
 
 def plot_performance_comparison_nolegend(ax, data_dict, arch_list, operation, title=None):
     """
@@ -563,6 +561,7 @@ def plot_performance_comparison_nolegend(ax, data_dict, arch_list, operation, ti
     ax.tick_params(axis='both', which='major', labelsize=24)
     ax.tick_params(axis='both', which='minor', labelsize=24)
 
+
 def plot_resource_comparison(ax, data_dict, arch_list, title=None):
     for arch_name in arch_list:
         if arch_name in data_dict:
@@ -582,17 +581,18 @@ def plot_resource_comparison(ax, data_dict, arch_list, title=None):
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                linewidth=4,
-                markersize=12,
+                # linewidth=4,
+                linewidth=2,
+                # markersize=12,
             )
 
     ax.set_xlabel("Queue Size")
     ax.set_ylabel("FPGA Resource Utilization (%)")
-    ax.set_title(title)
+    ax.set_title(title or "FPGA Resource Utilization vs Queue Size")
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.grid(True)
-    ax.legend(fontsize=12)
+    ax.legend()
 
 
 def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
@@ -1097,12 +1097,12 @@ def process_and_plot_all(base_dir, output_dir=None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Create focused comparison for systolic_array, register_array_enq_enabled, and register_tree_enq_enabled
-        focused_path = os.path.join(output_dir, f"resource_util_comp_{timestamp}.pdf")
-        create_focused_comparison(all_data, focused_path)
+        # focused_path = os.path.join(output_dir, f"resource_util_comp_{timestamp}.pdf")
+        # create_focused_comparison(all_data, focused_path)
         
         # Comment out or remove other comparison plots if you only want the focused comparison
-        # comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.pdf")
-        # create_comparison_plots(all_data, comparison_path)
+        comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.pdf")
+        create_comparison_plots(all_data, comparison_path)
         
         # # Handle RegisterArray variants
         # reg_array_variants = {k: v for k, v in all_data.items() if "register_array" in k.lower()}
@@ -1117,7 +1117,6 @@ def process_and_plot_all(base_dir, output_dir=None):
         #     # create_architecture_variant_comparison(reg_tree_variants, "register_tree", reg_tree_path)
 
 if __name__ == "__main__":
-    # NOTE - Input base_dir as an absolute path or run this script under hwpq_qw2246 directory
-    base_dir = "/home/charlie-wu/Workspace/hwpq_qw2246/hwpq/"
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     output_dir = os.path.join(base_dir, OUTPUT_DIR)
     process_and_plot_all(base_dir, output_dir)
