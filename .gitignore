@@ -1,7 +1,8 @@
 # Vivado specific files
 .Xil/
-vivado-runtime/tmp/
+vivado-runtime/*.txt
 vivado-runtime/rtl-elaborate/
+vivado-runtime/parallel_logs/
 *.str
 
 # editor specific folders
@@ -27,6 +28,9 @@ vivado-analysis_plots/
 vivado-synthesis_tcl/vivado_analysis_cycled.tcl
 vivado-synthesis_tcl/synth_design_test.tcl
 vivado-synthesis_tcl/synth_design_test_nonproject.tcl
+vivado-synthesis_tcl/synth_design_param_sweep_parallel_cycled.tcl
+
+vivado-runtime/run_param_sweep_parallel_cycled.sh
 
 # Linter
 .svlint.toml

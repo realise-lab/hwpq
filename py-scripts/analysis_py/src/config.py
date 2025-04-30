@@ -4,7 +4,6 @@ OUTPUT_DIR = "../vivado-analysis_plots"
 # Performance factors for operations across architectures
 PERFORMANCE_FACTORS = {
     "enqueue": {
-        # register_array with enqueue option enabled handled specifally during data processing with N/2
         "register_array_enq_enabled": 1,
         "register_array_cycled_enq_enabled": 1/2,
         # register_tree handled specially with log2 formula
