@@ -56,20 +56,16 @@ Before running the synthesis and analysis, ensure you have the following install
 
       - This might be a good starting point for user who would like to run analysis on one specific module. The Tcl script would sweep throgh **enqueue on/off switch**, **queue sizes**, and **various frequencies**.
 
-    - `synth_design_param_sweep_parallel_cycled.tcl`
     - `synth_design_param_sweep_parallel.tcl`
 
-      - This two scripts are identical behavioral-wise, and behave similar with `synth_design_param_sweep.tcl`.
-        - The major difference between these two scripts and `synth_design_param_sweep.tcl` is that these scripts only sweep through frequencies in script itself, the other parameters are handled by the bash script.
-        - One should just use `synth_design_param_sweep_parallel.tcl`
-        - The purpose of them is so that user can synthesis on a module pipelined and non-pipelined at the same time when running bash scripts.
+        - The major difference between this script with `synth_design_param_sweep.tcl` is that this script only sweep through frequencies in script itself, the other parameters are handled by the bash script, or user will need to pass those parameters in by themselves. 
         - If you would like to just find the max achieveable freqenucu along with other metrics for a module that under a set parameter setting run this command:
           - enqueue_one/off: 1 or 0
           - data_width: 8, 16, 32, 64, etc. (int)
-          - queue_sizes: architecture and application determined (int)
+          - queue_size: architecture and application determined (int)
 
     ```bash
-    vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <enqueue_on/off> <data_width> <queue_sizes>
+    vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <enqueue_on/off> <data_width> <queue_size>
     ```
 
 #### Analysis
