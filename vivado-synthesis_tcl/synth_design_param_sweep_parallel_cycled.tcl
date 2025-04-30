@@ -1,23 +1,26 @@
 # Script for running a single parameter configuration in parallel
 # This script accepts command line arguments: enq_ena queue_size
-# Example: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs 0 1023
+# Example: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs 0 16 1023
 
 # Get parameters from command line arguments
-if {$argc < 2} {
-  puts "Error: This script requires two arguments: ENQ_ENA and QUEUE_SIZE"
-  puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ENQ_ENA> <QUEUE_SIZE>"
+if {$argc < 3} {
+  puts "Error: This script requires three arguments: ENQ_ENA, DATA_WIDTH, and QUEUE_SIZE"
+  puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ENQ_ENA> <DATA_WIDTH> <QUEUE_SIZE>"
   exit 1
 }
 
 set enq_ena [lindex $argv 0]
-set queue_size [lindex $argv 1]
+set data_width [lindex $argv 1]
+set queue_size [lindex $argv 2]
 
-# NOTE - Device and thread settings - change accordingly
+# NOTE - Set the device to use
 # set running_device xcvu19p-fsva3824-1-e
 set running_device xcau25p-ffvb676-1-e
+
+# NOTE - Set the number of threads to use
 set_param general.maxThreads 16
 
-# NOTE File paths - change accordingly for design under test - use absolute path
+# NOTE - File paths - change accordingly for design under test - use absolute path
 set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/rtl/src/register_array_cycled.sv
 set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_cycled_xcau25p
 
@@ -67,7 +70,7 @@ foreach clock_freq $clock_freq_values {
   set synth_start_time [clock seconds]
 
   # NOTE - Run synthesis - Adjust the top module name accordingly
-  synth_design -top register_array_cycled -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+  synth_design -top register_array_cycled -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
 
   # Record end time for synthesis
   set synth_end_time [clock seconds]

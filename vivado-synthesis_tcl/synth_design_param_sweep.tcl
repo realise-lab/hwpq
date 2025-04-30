@@ -1,16 +1,23 @@
-set running_device xcvu19p-fsva3824-1-e
-set_param general.maxThreads 32
+# NOTE - Set the device to use
+# set running_device xcvu19p-fsva3824-1-e
+set running_device xcau25p-ffvb676-1-e
 
-# NOTE Specify the sv file path accordingly, this is the file that will be modified
-set sv_file_path ./register_tree/rtl/src/register_tree_cycled.sv
+# NOTE - Set the number of threads to use
+set_param general.maxThreads 16
+
+# NOTE - Specify the sv file path accordingly, this is the file that will be modified
+set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/rtl/src/register_tree_cycled.sv
 
 # NOTE Set the base log file path accordingly, this is the directory that will store the results
-set base_log_path ./register_tree/vivado_analysis_results_16bit_cycled
+set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_tree/vivado_analysis_results_16bit_cycled
 
 # Define the parameter sweep values
 set enq_ena_values {0 1}
-# set queue_size_values {3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535}
-set queue_size_values {1023 2047 4095 8191 16383 32767 65535}
+
+# NOTE - Set the queue size values to sweep, odd numbers for tree, even numbers for array
+set queue_size_values {3 7 15 31 63 127 255 511 1023 2047}
+# set queue_size_values {4 8 16 32 64 128 256 512 1024 2048}
+
 set clock_freq_values {100 150 200 250 300 350 400 450 500 550 600 650 700 750 800}
 
 # Create log directories for each ENQ_ENA value
@@ -211,7 +218,7 @@ foreach enq_ena $enq_ena_values {
 }
 
 # Close the project
-close_project -delete
+close_project -quiet -delete
 
 # Some indication that we have reached the end
 puts "\nParameter sweep completed. Results saved to $base_log_path" 

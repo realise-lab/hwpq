@@ -20,4 +20,14 @@ work/
 # Animation generation files
 animation_py/
 
+# Do not track plots
 vivado-analysis_plots/
+
+# Some local testing Tcl scripts
+vivado-synthesis_tcl/vivado_analysis_cycled.tcl
+vivado-synthesis_tcl/synth_design_test.tcl
+vivado-synthesis_tcl/synth_design_test_nonproject.tcl
+
+# Linter
+.svlint.toml
+.svls.toml
