@@ -1,28 +1,36 @@
 #!/bin/bash
 
+# Get the current directory where the script is running
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Go up one level to the project root
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # Create directories for logs
 mkdir -p parallel_logs
 
-# NOTE - Define parameter sets - change accordingly
-# NOTE - tips - try the upper bound in Vivado first to see if it's even possible
 ENQ_ENA_VALUES=(0 1)
-# ENQ_ENA_VALUES=(0)
-# QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095)
-QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048 4096)
-# QUEUE_SIZE_VALUES=(2048 4096)
+
+# NOTE - Define sweep range of queue size
+# tips - if you want to increase the upper bound, try it in Vivado first to see if it's even possible
+# the odd numbers' set is for tree, the even numbers' set is for array
+# QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047)
+QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048)
+
+# Set results and tcl scipts directory
+RESULTS_DIR="$PROJECT_ROOT/hwpq/register_array/vivado_analysis_results_16bit_xcau25p"
+SYNTH_SCRIPT="$PROJECT_ROOT/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl"
+
+# NOTE - Set the maximum number of parallel jobs - change accordingly
+MAX_PARALLEL=10
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)
 echo "Using temporary directory for job tracking: $JOB_TRACK_DIR"
 
-# NOTE - Define output directories and create them - change accordingly
-RESULTS_DIR="/home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_xcau25p"
+# Create a directory for each enq_ena value
 for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
   mkdir -p "${RESULTS_DIR}/enqueue_${enq_ena}"
 done
-
-# NOTE - Set the maximum number of parallel jobs - change accordingly
-MAX_PARALLEL=10
 
 # Cleanup function to remove temporary files on exit
 cleanup() {
@@ -169,8 +177,7 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     
     echo "Starting Vivado job for ${job_name}..."
     
-    # NOTE - Run Vivado as a background process - change accordingly
-    vivado -mode batch -nolog -nojournal -source /home/qw2246/Workspace/hwpq_qw2246/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs $enq_ena $queue_size > "$log_file" 2>&1 &
+    vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $enq_ena 16 $queue_size > "$log_file" 2>&1 &
     
     # Mark job as running
     start_job "$job_name"
