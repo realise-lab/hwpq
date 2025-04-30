@@ -3,15 +3,16 @@
 # Example: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs 0 16 1023
 
 # Get parameters from command line arguments
-if {$argc < 3} {
-  puts "Error: This script requires three arguments: ENQ_ENA, QUEUE_SIZE, and DATA_WIDTH"
-  puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ENQ_ENA> <DATA_WIDTH> <QUEUE_SIZE>"
+if {$argc < 4} {
+  puts "Error: This script requires four arguments: Architecture name, ENQ_ENA, DATA_WIDTH, and QUEUE_SIZE"
+  puts "Usage: vivado -mode batch -source synth_design_param_sweep_parallel.tcl -tclargs <ARCHITECTURE_NAME> <ENQ_ENA> <DATA_WIDTH> <QUEUE_SIZE>"
   exit 1
 }
 
-set enq_ena [lindex $argv 0]
-set data_width [lindex $argv 1]
-set queue_size [lindex $argv 2]
+set architecture_name [lindex $argv 0]
+set enq_ena [lindex $argv 1]
+set data_width [lindex $argv 2]
+set queue_size [lindex $argv 3]
 
 # NOTE - Set the device to use
 # set running_device xcvu19p-fsva3824-1-e
@@ -21,8 +22,11 @@ set running_device xcau25p-ffvb676-1-e
 set_param general.maxThreads 16
 
 # NOTE - File paths - change accordingly for design under test - use absolute path
-set sv_file_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/rtl/src/register_array.sv
-set base_log_path /home/qw2246/Workspace/hwpq_qw2246/hwpq/register_array/vivado_analysis_results_16bit_xcau25p
+# Get the current script directory and navigate to project root
+set script_dir [file dirname [file normalize [info script]]]
+set project_root [file normalize [file join $script_dir ".."]]
+set sv_file_path [file join $project_root "hwpq" $architecture_name "rtl" "src" "${architecture_name}.sv"]
+set base_log_path [file join $project_root "hwpq" $architecture_name "vivado_analysis_results_16bit_xcau25p"]
 
 # Clock frequency values
 set clock_freq_values {100 150 200 250 300 350 400 450 500 550 600 650 700 750 800}
@@ -70,7 +74,7 @@ foreach clock_freq $clock_freq_values {
   set synth_start_time [clock seconds]
 
   # NOTE - Run synthesis - Adjust the top module name accordingly
-  synth_design -top register_array -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+  synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
 
   # Record end time for synthesis
   set synth_end_time [clock seconds]

@@ -1,8 +1,6 @@
-# Register Tree Architecture Detailed Explaination
+# Register Tree
 
-During a replace operation, the highest-priority element is removed and returned in a single clock cycle.
-Concurrently, compare-and-swap operations are performed between nodes on alternating levels of the tree to restore the heap property.
-The dequeue operation behaves similarly, with the only distinction being that an invalid value is inserted in place of the removed root element.
+During a replace operation, the highest-priority element is removed and returned in a single clock cycle. Concurrently, compare-and-swap operations are performed between nodes on alternating levels of the tree to restore the heap property. The dequeue operation behaves similarly, with the only distinction being that an invalid value is inserted in place of the removed root element.
 
 In contrast, the enqueue operation follows a different procedure. It searches for the leftmost invalid entry and replaces it with the new data. This insertion triggers a reordering process to maintain the heap structure, resulting in a worst-case time complexity of $O(log\ N)$, consistent with its software counterpart.
 

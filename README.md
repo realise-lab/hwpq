@@ -101,3 +101,9 @@ Before running the synthesis and analysis, ensure you have the following install
 #### [BRAM Tree](hwpq/bram_tree/README.md)
 
 #### [Hybrid Tree](hwpq/hybrid_tree/README.md)
+
+## Reference
+
+https://vast.cs.ucla.edu/sites/default/files/publications/Scalable%20high-performance%20CPQ_1.pdf
+https://dl.acm.org/doi/abs/10.1155/2020/8896386
+https://dl.acm.org/doi/10.1109/12.895938
