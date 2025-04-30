@@ -35,3 +35,6 @@ vivado-runtime/run_param_sweep_parallel_cycled.sh
 # Linter
 .svlint.toml
 .svls.toml
+
+# MacOS
+.DS_Store
