@@ -9,3 +9,5 @@ The register array architecture is derived from the register tree, but instead o
 ![register_array_cyclce](../../imgs/register_array_cycle.png)
 
 ## Performance comparison against pipelined
+
+![register_array_perf](../../imgs/register_array_perf.png)
