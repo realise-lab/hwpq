@@ -138,6 +138,54 @@ Before running the synthesis and analysis, ensure you have the following install
 
 ## Reference
 
-https://vast.cs.ucla.edu/sites/default/files/publications/Scalable%20high-performance%20CPQ_1.pdf
-https://dl.acm.org/doi/abs/10.1155/2020/8896386
+```
+@article{moon2000,
+  author = {Sung-Whan Moon and Rexford, J. and Shin, K.G.},
+  journal = {IEEE Transactions on Computers},
+  title = {Scalable hardware priority queue architectures for high-speed packet switches},
+  year = {2000},
+  volume = {49},
+  number = {11},
+  pages = {1215-1227},
+  keywords = {Packet switching;Switches;Shift registers;Systolic arrays;Hardware design languages;Quality of service;Buildings;Binary trees;Clocks;Silicon compiler},
+  doi = {10.1109/12.895938},
+}
+```
+
 https://dl.acm.org/doi/10.1109/12.895938
+
+```
+@inproceedings{huang2014,
+  author = {Huang, Muhuan and Lim, Kevin and Cong, Jason},
+  booktitle = {2014 24th International Conference on Field Programmable Logic and Applications (FPL) },
+  title = {A scalable, high-performance customized priority queue},
+  year = {2014},
+  volume = {},
+  number = {},
+  pages = {1-4},
+  keywords = {Throughput;Field programmable gate arrays;Arrays;Registers;Clocks;Software;Database systems},
+  doi = {10.1109/FPL.2014.6927413},
+}
+```
+
+https://vast.cs.ucla.edu/sites/default/files/publications/Scalable%20high-performance%20CPQ_1.pdf
+
+```
+@article{zhou2020,
+  author = {Zhou, Yuzhi and Jin, Xi and Wang, Tianqi and Boluda, Jose A.},
+  title = {FPGA Implementation of A Star Algorithm for Real-Time Path Planning},
+  year = {2020},
+  issue_date = {2020},
+  publisher = {Hindawi Limited},
+  address = {London, GBR},
+  volume = {2020},
+  issn = {1687-7195},
+  url = {https://doi.org/10.1155/2020/8896386},
+  doi = {10.1155/2020/8896386},
+  journal = {Int. J. Reconfig. Comput.},
+  month = jan,
+  numpages = {11},
+}
+```
+
+https://dl.acm.org/doi/abs/10.1155/2020/8896386
