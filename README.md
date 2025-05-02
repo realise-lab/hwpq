@@ -125,7 +125,7 @@ Re-running synthesis is not necessary as all data is already available within ea
     python ../py-scripts/analysis_py/src/plotter
     ```
 
-## 📐 Current Support Priority Queue Architectures (Work in Progress)
+## 📐 Current Support Priority Queue Architectures
 
 ### Register Based
 
