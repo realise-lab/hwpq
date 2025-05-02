@@ -10,4 +10,4 @@ A second case occurs when the head of the OB is dequeued, leaving a "bubble" at 
 
 ## Dataflow
 
-(Work in Progress)
+![systolic_array_dataflow](../../imgs/systolic_array_data_flow.png)
