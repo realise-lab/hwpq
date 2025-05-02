@@ -28,25 +28,31 @@
 
 <!-- ## How to Use -->
 
-## Project Structure
+## 🏗️ Project Structure
 
 ![repo_structure](./imgs/hwpq_structure.png)
 
 - `hwpq/` - Contains RTL implementations of different priority queue architectures, along with **pre-collected key metrics logs**.
+
 - `py-scripts/` - Python scripts for data analysis and visualization.
+
 - `vivado-runtime/` - Contains shell scripts that run Vivado in Tcl mode to sweep through parameters of each architecture in parallel.
+
   - It is suggested that users execute any Tcl or Bash scripts inside this directory. Since Vivado generates log and journal files automatically, keeping them in this specific directory facilitates later access and debugging.
+
 - `vivado-synthesis_tcl/` - Tcl scripts for Vivado synthesis.
 
-## Prerequisites
+## ❗ Prerequisites
 
 Before running the synthesis and analysis, ensure you have the following installed:
 
 - **Xilinx Vivado**: 2024.2 preferred
+
   - Download here: https://www.xilinx.com/support/download.html
+
 - **Python 3**: verison>=3.8 preferred
 
-## Running Synthesis and Analysis
+## ⌨️ Running Synthesis and Analysis
 
 Re-running synthesis is not necessary as all data is already available within each architecture's directory. If you're interested in analyzing the existing results, please proceed directly to the Analysis section below. Only re-run synthesis if you've modified an architecture or wish to test with different parameters.
 
@@ -83,6 +89,7 @@ Re-running synthesis is not necessary as all data is already available within ea
     ```
 
     - **`<architecture_name>`**:
+
       - register_tree
       - register_tree_pipelined
       - register_array
@@ -91,8 +98,11 @@ Re-running synthesis is not necessary as all data is already available within ea
       - bram_tree
       - bram_tree_pipelined
       - hybrid_tree
+
     - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
+
     - **`<data_width>`**: e.g., `8`, `16`, `32`, `64` (integer)
+
     - **`<queue_size>`**: architecture and application-dependent (integer)
 
 ### Analysis
@@ -115,7 +125,7 @@ Re-running synthesis is not necessary as all data is already available within ea
     python ../py-scripts/analysis_py/src/plotter
     ```
 
-## Current Support Priority Queue Architectures (Work in Progress)
+## 📐 Current Support Priority Queue Architectures (Work in Progress)
 
 ### Register Based
 
