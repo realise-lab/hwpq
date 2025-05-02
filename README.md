@@ -1,8 +1,10 @@
 # Hardware Priority Queue Architecture Library
 
-<img src="./imgs/ChatGPT_Logo.png" alt="hwpq_logo" width="300" height="300" class="center">
+<img src="./imgs/ChatGPT_Logo.png" alt="hwpq_logo" width="300" height="300">
 
-🎯 This library serves as a comprehensive resource for hardware researchers and developers exploring **hardware priority queues for high-performance computing applications**. It enables straightforward comparison of various architectural approaches published in literature, supporting critical use cases such as task scheduling, event simulation, network packet processing, and real-time systems.
+🎯 This library serves as a comprehensive resource for hardware researchers and developers exploring **hardware priority queues for high-performance computing applications**.
+
+<!-- It enables straightforward comparison of various architectural approaches published in literature, supporting critical use cases such as task scheduling, event simulation, network packet processing, and real-time systems. -->
 
 <!-- This project presents a comprehensive evaluation of hardware priority queue architectures, focusing on their performance, resource utilization, and scalability in modern FPGA implementations. We analyze various architectures proposed in the past decades, including register tree, register array, systolic array, BRAM tree, and hybrid tree designs, under different configurations and queue sizes. Our study provides insights into architectural trade-offs and helps researchers choose the most suitable design for their specific requirements. To support reproducibility and further research, we provide this open-source library containing parameterized RTL implementations of each architecture, along with synthesis and analysis scripts compatible with [Xilinx Vivado](https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html). -->
 
@@ -30,10 +32,10 @@
 
 ![repo_structure](./imgs/hwpq_structure.png)
 
-- `hwpq/` - Contains RTL implementations of different priority queue architectures, along with collected key metrics logs.
+- `hwpq/` - Contains RTL implementations of different priority queue architectures, along with **pre-collected key metrics logs**.
 - `py-scripts/` - Python scripts for data analysis and visualization.
 - `vivado-runtime/` - Contains shell scripts that run Vivado in Tcl mode to sweep through parameters of each architecture in parallel.
-  - It is suggested that users execute any Tcl or Bash scripts inside this directory. Since Vivado generates log and journal files automatically, keeping them in this specific directory facilitates later access.
+  - It is suggested that users execute any Tcl or Bash scripts inside this directory. Since Vivado generates log and journal files automatically, keeping them in this specific directory facilitates later access and debugging.
 - `vivado-synthesis_tcl/` - Tcl scripts for Vivado synthesis.
 
 ## Prerequisites
@@ -42,84 +44,73 @@ Before running the synthesis and analysis, ensure you have the following install
 
 - **Xilinx Vivado**: 2024.2 preferred
   - Download here: https://www.xilinx.com/support/download.html
-- **Python 3**: verison >= 3.8 preferred
+- **Python 3**: verison>=3.8 preferred
 
 ## Running Synthesis and Analysis
+
+Re-running synthesis is not necessary as all data is already available within each architecture's directory. If you're interested in analyzing the existing results, please proceed directly to the Analysis section below. Only re-run synthesis if you've modified an architecture or wish to test with different parameters.
 
 ### Synthesis
 
 1.  Clone the repository.
-2.  Navigate to the `vivado-runtime` directory:
-    ```bash
-    cd hwpq_qw2246/vivado-runtime
-    ```
-3.  Run Vivado synthesis using the provided Tcl scripts. Replace `<tcl_script>` with the desired script name:
+2.  Navigate to the `hwpq` directory:
 
     ```bash
-    vivado -mode batch -source ../vivado-synthesis_tcl/<tcl_script>
+    cd hwpq/vivado-runtime
     ```
 
-    Available scripts:
-
-    - `synth_design_param_sweep.tcl`
-
-      - This script is a good starting point for analyzing a specific module. It sweeps through the **enqueue on/off switch**, **queue sizes**, and **various frequencies**.
-      - You will need to manually change two variables inside this Tcl script if you would like to run it
-        - `sv_file_path`
-        - `base_log_path`
-      - Change the `<path_to_your_workspace>` to where you cloned this repository.
-
-      - You will also need to change the `<top_module_name>` to the architecture module you are testing.
-
-      ```
-      synth_design -top <top_module_name> -part $running_device -generic ENQ_ENA=$enq_ena -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
-      ```
-
-    - `synth_design_param_sweep_parallel.tcl`
-
-      - This script differs from `synth_design_param_sweep.tcl` by only sweeping frequencies within the script itself. Other parameters (enqueue switch, data width, queue size) must be provided via command-line arguments or handled by a controlling Bash script. This script is designed to **find the maximum achievable frequency** of a specific architecture for a given parameter set.
-
-      ```bash
-      vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <enqueue_on/off> <data_width> <queue_size>
-      ```
-
-      - **`<architecture_name>`**:
-        - register_tree
-        - register_tree_pipelined
-        - register_array
-        - register_array_pipelined
-        - systolic_array
-        - bram_tree
-        - bram_tree_pipelined
-        - hybrid_tree
-      - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
-      - **`<data_width>`**: e.g., `8`, `16`, `32`, `64` (integer)
-      - **`<queue_size>`**: architecture and application-dependent (integer)
-
-### Analysis
-
-1.  Execute the parameter sweep Bash script (ensure you are in the `vivado-runtime` directory):
+3.  Execute the parameter sweep Bash script, this script would find sweep through all possible combinations of **enqueue swtich (if supported)**, **queue_size (you can change the range inside of the script)** with **data width set to 16 bits (change also be changed inside of the script)**:
 
     ```bash
     ./run_param_sweep_parallel.sh <architecture>
     ```
 
-    Aviable architectures:
+    - Aviable architectures:
 
-    - register_tree
-    - register_tree_pipelined
-    - register_array
-    - register_array_pipelined
-    - systolic_array
-    - bram_tree
-    - bram_tree_pipelined
-    - hybrid_tree
+      - register_tree
+      - register_tree_pipelined
+      - register_array
+      - register_array_pipelined
+      - systolic_array
+      - bram_tree
+      - bram_tree_pipelined
+      - hybrid_tree
+
+4.  Alternatively, if you just want to synthesize an architecture under a specific configurations, you could also run the tcl scipt instead:
+
+    ```bash
+    vivado -mode batch -source ../vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl -tclargs <architecture_name> <enqueue_on/off> <data_width> <queue_size>
+    ```
+
+    - **`<architecture_name>`**:
+      - register_tree
+      - register_tree_pipelined
+      - register_array
+      - register_array_pipelined
+      - systolic_array
+      - bram_tree
+      - bram_tree_pipelined
+      - hybrid_tree
+    - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
+    - **`<data_width>`**: e.g., `8`, `16`, `32`, `64` (integer)
+    - **`<queue_size>`**: architecture and application-dependent (integer)
+
+### Analysis
+
+1.  Navigate to the `hwpq` directory:
+
+    ```bash
+    cd hwpq/vivado-runtime
+    ```
 
 2.  Install the required Python packages:
+
     ```bash
     pip install -r ../py-scripts/requirements.txt
     ```
+
 3.  Process and visualize the results using the Python plotting script:
+
     ```bash
     python ../py-scripts/analysis_py/src/plotter
     ```
@@ -130,13 +121,19 @@ Before running the synthesis and analysis, ensure you have the following install
 
 #### [Register Tree](hwpq/register_tree/README.md)
 
+#### [Register Tree Pipelined](hwpq/register_tree_pipelined/README.md)
+
 #### [Register Array](hwpq/register_array/README.md)
+
+#### [Register Array Pipelined](hwpq/register_array_pipelined/README.md)
 
 #### [Systolic Array](hwpq/systolic_array/README.md)
 
 ### BRAM Based
 
 #### [BRAM Tree](hwpq/bram_tree/README.md)
+
+#### [BRAM Tree Pipelined](hwpq/bram_tree_pipelined/README.md)
 
 #### [Hybrid Tree](hwpq/hybrid_tree/README.md)
 
