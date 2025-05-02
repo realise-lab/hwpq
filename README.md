@@ -129,25 +129,25 @@ Re-running synthesis is not necessary as all data is already available within ea
 
 ### Register Based
 
-#### [Register Tree](hwpq/register_tree/README.md)
+- #### [Register Tree](hwpq/register_tree/README.md)
 
-#### [Register Tree Pipelined](hwpq/register_tree_pipelined/README.md)
+- #### [Register Tree Pipelined](hwpq/register_tree_pipelined/README.md)
 
-#### [Register Array](hwpq/register_array/README.md)
+- #### [Register Array](hwpq/register_array/README.md)
 
-#### [Register Array Pipelined](hwpq/register_array_pipelined/README.md)
+- #### [Register Array Pipelined](hwpq/register_array_pipelined/README.md)
 
-#### [Systolic Array](hwpq/systolic_array/README.md)
+- #### [Systolic Array](hwpq/systolic_array/README.md)
 
 ### BRAM Based
 
-#### [BRAM Tree](hwpq/bram_tree/README.md)
+- #### [BRAM Tree](hwpq/bram_tree/README.md)
 
-#### [BRAM Tree Pipelined](hwpq/bram_tree_pipelined/README.md)
+- #### [BRAM Tree Pipelined](hwpq/bram_tree_pipelined/README.md)
 
-#### [Hybrid Tree](hwpq/hybrid_tree/README.md)
+- #### [Hybrid Tree](hwpq/hybrid_tree/README.md)
 
-## Reference
+## 📝 Reference
 
 ```
 @article{moon2000,
