@@ -6,6 +6,10 @@ In contrast to the pipelined BRAM-tree, this flat BRAM-tree stores all elements 
 
 The flat BRAM-tree reduces memory overhead associated with maintaining multiple BRAM instances and allows more efficient utilization of BRAM capacity. However, since all memory operations are funneled through a single BRAM, concurrent access is serialized, resulting in higher latency for compare-and-swap operations. As a result, each replace operation may take multiple clock cycles depending on the memory access scheduling.
 
+## Strcuture
+
+![bram_tree_structure](../../imgs/bram_tree_structure.png)
+
 ## Performance
 
 ![bram_based_arch_perf_comp](../../imgs/bram_based_arch_perf_comp.png)

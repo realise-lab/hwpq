@@ -6,6 +6,10 @@ A BRAM-tree is derived from a register-tree by packing the registers at each tre
 
 To optimize area usage, the top few levels—where node counts are small—are retained in registers rather than BRAMs, which avoids inefficient use of fixed-size memory blocks. Although BRAM access introduces additional latency, requiring multiple clock cycles per compare-and-swap operation, the design maintains scalability for large priority queues. Experimental results show that the throughput of this architecture is one replace operation every four clock cycles.
 
+## Strcuture
+
+![bram_tree_structure](../../imgs/bram_tree_pipelined_structure.png)
+
 ## Performance
 
 ![bram_based_arch_perf_comp](../../imgs/bram_based_arch_perf_comp.png)
