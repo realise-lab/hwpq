@@ -32,6 +32,8 @@ vivado-synthesis_tcl/synth_design_param_sweep_parallel_cycled.tcl
 
 vivado-runtime/run_param_sweep_parallel_cycled.sh
 
+hwpq/register_array/rtl_elaboration/
+
 # Linter
 .svlint.toml
 .svls.toml
