@@ -1,5 +1,7 @@
 # Hardware Priority Queue Architecture Library
 
+<img src="./imgs/ChatGPT_Logo.png" alt="hwpq_logo" width="300" height="300" class="center">
+
 🎯 This library serves as a comprehensive resource for hardware researchers and developers exploring **hardware priority queues for high-performance computing applications**. It enables straightforward comparison of various architectural approaches published in literature, supporting critical use cases such as task scheduling, event simulation, network packet processing, and real-time systems.
 
 <!-- This project presents a comprehensive evaluation of hardware priority queue architectures, focusing on their performance, resource utilization, and scalability in modern FPGA implementations. We analyze various architectures proposed in the past decades, including register tree, register array, systolic array, BRAM tree, and hybrid tree designs, under different configurations and queue sizes. Our study provides insights into architectural trade-offs and helps researchers choose the most suitable design for their specific requirements. To support reproducibility and further research, we provide this open-source library containing parameterized RTL implementations of each architecture, along with synthesis and analysis scripts compatible with [Xilinx Vivado](https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html). -->
@@ -26,7 +28,7 @@
 
 ## Project Structure
 
-![repo_structure](../hwpq_qw2246/imgs/repo_structure.png)
+![repo_structure](./imgs/hwpq_structure.png)
 
 - `hwpq/` - Contains RTL implementations of different priority queue architectures, along with collected key metrics logs.
 - `py-scripts/` - Python scripts for data analysis and visualization.
@@ -38,9 +40,9 @@
 
 Before running the synthesis and analysis, ensure you have the following installed:
 
-- **Xilinx Vivado**: The synthesis and implementation process requires Vivado to be installed and properly configured. The project has been tested with Vivado 2024.2, but other recent versions should also work.
+- **Xilinx Vivado**: 2024.2 preferred
   - Download here: https://www.xilinx.com/support/download.html
-- **Python 3**
+- **Python 3**: verison >= 3.8 preferred
 
 ## Running Synthesis and Analysis
 
