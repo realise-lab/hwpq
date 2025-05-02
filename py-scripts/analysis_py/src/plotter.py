@@ -22,12 +22,12 @@ ARCHITECTURE_STYLES = {
         "display_name": "Register Array (Enqueue Enabled)",
     },
     "register_array_pipelined_enq_disabled": {
-        "color": "violet",
+        "color": "royalblue",
         "marker": "X",
         "display_name": "Register Array Pipelined (Enqueue Disabled)",
     },
     "register_array_pipelined_enq_enabled": {
-        "color": "violet",
+        "color": "royalblue",
         "marker": "P",
         "display_name": "Register Array Pipelined (Enqueue Enabled)",
     },
@@ -47,12 +47,12 @@ ARCHITECTURE_STYLES = {
         "display_name": "Register Tree (Enqueue Enabled)",
     },
     "register_tree_pipelined_enq_disabled": {
-        "color": "darkorange",
+        "color": "maroon",
         "marker": "h", 
         "display_name": "Register Tree Pipelined (Enqueue Disabled)",
     },
     "register_tree_pipelined_enq_enabled": {
-        "color": "darkorange",
+        "color": "maroon",
         "marker": "v", 
         "display_name": "Register Tree Pipelined (Enqueue Enabled)",
     },
@@ -62,7 +62,7 @@ ARCHITECTURE_STYLES = {
         "display_name": "BRAM Tree"
     },
     "bram_tree_pipelined": {
-        "color": "slategray",
+        "color": "violet",
         "marker": "D",
         "display_name": "BRAM Tree Pipelined",
     },
@@ -150,7 +150,7 @@ def plot_frequency_vs_queue_size(ax, data_dict, title=None, arch_name=None):
         color=style["color"],
         linewidth=4,
         label=style["display_name"],
-        markersize=12,
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -189,8 +189,9 @@ def plot_lut_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
         luts,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -228,8 +229,9 @@ def plot_lut_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=None
         lut_percentages,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -268,8 +270,9 @@ def plot_register_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None)
         registers,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -307,8 +310,9 @@ def plot_register_utilization_vs_queue_size(ax, data_dict, title=None, arch_name
         reg_percentages,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -347,8 +351,9 @@ def plot_bram_usage_vs_queue_size(ax, data_dict, title=None, arch_name=None):
         brams,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -385,10 +390,9 @@ def plot_bram_utilization_vs_queue_size(ax, data_dict, title=None, arch_name=Non
         bram_percentages,
         f"{style['marker']}-",
         color=style["color"],
-        linewidth=2,
+        linewidth=4,
         label=style["display_name"],
-        # linewidth=4,
-        # markersize=16,
+        markersize=14,
     )
 
     ax.set_xlabel("Queue Size")
@@ -441,9 +445,8 @@ def plot_performance_comparison(ax, data_dict, arch_list, operation, title=None)
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                # linewidth=4,
-                linewidth=2,
-                # markersize=12,
+                linewidth=4,
+                markersize=14,
             )
 
             # if len(queue_sizes) > 0 and (arch_name.startswith("hybrid")):
@@ -581,9 +584,8 @@ def plot_resource_comparison(ax, data_dict, arch_list, title=None):
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                # linewidth=4,
-                linewidth=2,
-                # markersize=12,
+                linewidth=4,
+                markersize=14,
             )
 
     ax.set_xlabel("Queue Size")
@@ -626,7 +628,8 @@ def plot_efficiency_comparison(ax, data_dict, arch_list, operation, title=None):
                 f"{style['marker']}-",
                 color=style["color"],
                 label=style["display_name"],
-                linewidth=2,
+                linewidth=4,
+                markersize=14,
             )
 
     ax.set_xlabel("Queue Size")
@@ -1092,29 +1095,121 @@ def process_and_plot_all(base_dir, output_dir=None):
                 # Store data for comparison
                 all_data[arch_dir] = data_dict
 
-    # Create comparison plots if we have data for multiple architectures
+    # Create individual plots if we have data for multiple architectures
     if len(all_data) > 1:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Create focused comparison for systolic_array, register_array_enq_enabled, and register_tree_enq_enabled
-        # focused_path = os.path.join(output_dir, f"resource_util_comp_{timestamp}.pdf")
-        # create_focused_comparison(all_data, focused_path)
+        # Create directory for individual plots
+        individual_plots_dir = os.path.join(output_dir, f"individual_plots_{timestamp}")
+        os.makedirs(individual_plots_dir, exist_ok=True)
         
-        # Comment out or remove other comparison plots if you only want the focused comparison
-        comparison_path = os.path.join(output_dir, f"architecture_comparison_{timestamp}.pdf")
-        create_comparison_plots(all_data, comparison_path)
+        # Generate individual plots for frequency comparison
+        fig, ax = plt.subplots(figsize=(30, 10))
+        for arch_name, data_dict in all_data.items():
+            plot_frequency_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust the right margin to make room for the legend
+        plot_path = os.path.join(individual_plots_dir, "frequency_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
         
-        # # Handle RegisterArray variants
-        # reg_array_variants = {k: v for k, v in all_data.items() if "register_array" in k.lower()}
-        # if len(reg_array_variants) > 1:
-        #     reg_array_path = os.path.join(output_dir, f"register_array_comparison_{timestamp}.pdf")
-        #     create_architecture_variant_comparison(reg_array_variants, "register_array", reg_array_path)
+        # Generate individual plots for LUT utilization
+        fig, ax = plt.subplots(figsize=(30, 10))
+        for arch_name, data_dict in all_data.items():
+            plot_lut_utilization_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "lut_utilization_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
         
-        # # Handle RegisterTree variants
-        # reg_tree_variants = {k: v for k, v in all_data.items() if "register_tree" in k.lower()}
-        # if len(reg_tree_variants) > 1:
-        #     reg_tree_path = os.path.join(output_dir, f"register_tree_comparison_{timestamp}.pdf")
-        #     # create_architecture_variant_comparison(reg_tree_variants, "register_tree", reg_tree_path)
+        # Generate individual plots for register utilization
+        fig, ax = plt.subplots(figsize=(30, 10))
+        for arch_name, data_dict in all_data.items():
+            plot_register_utilization_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "register_utilization_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
+        
+        # Generate individual plots for BRAM utilization (only for BRAM-based architectures)
+        fig, ax = plt.subplots(figsize=(30, 10))
+        bram_archs = {k: v for k, v in all_data.items() if k in ['hybrid_tree', 'bram_tree', 'bram_tree_pipelined']}
+        for arch_name, data_dict in bram_archs.items():
+            plot_bram_utilization_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "bram_utilization_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
+        
+        # Generate individual plots for LUT usage
+        fig, ax = plt.subplots(figsize=(30, 10))
+        for arch_name, data_dict in all_data.items():
+            plot_lut_usage_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "lut_usage_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
+        
+        # Generate individual plots for register usage
+        fig, ax = plt.subplots(figsize=(30, 10))
+        for arch_name, data_dict in all_data.items():
+            plot_register_usage_vs_queue_size(ax, data_dict, arch_name=arch_name)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "register_usage_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
+        
+        # Generate individual plots for operations
+        operations = ["enqueue", "dequeue", "replace"]
+        for operation in operations:
+            # Filter architectures that support this operation
+            if operation == "enqueue":
+                valid_archs = {k: v for k, v in all_data.items() if "enq_disabled" not in k and not ("bram_tree" in k or "hybrid_tree" in k)}
+            else:
+                valid_archs = all_data
+                
+            if valid_archs:
+                fig, ax = plt.subplots(figsize=(30, 10))
+                plot_performance_comparison(ax, valid_archs, list(valid_archs.keys()), operation)
+                ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+                plt.tight_layout(rect=[0, 0, 0.85, 1])
+                plot_path = os.path.join(individual_plots_dir, f"{operation}_performance_comparison.png")
+                plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+                plt.close(fig)
+                print(f"Saved individual plot to {plot_path}")
+                
+                # Also generate efficiency plots for each operation
+                fig, ax = plt.subplots(figsize=(30, 10))
+                plot_efficiency_comparison(ax, valid_archs, list(valid_archs.keys()), operation)
+                ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+                plt.tight_layout(rect=[0, 0, 0.85, 1])
+                plot_path = os.path.join(individual_plots_dir, f"{operation}_efficiency_comparison.png")
+                plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+                plt.close(fig)
+                print(f"Saved individual plot to {plot_path}")
+        
+        # Generate resource comparison plot
+        fig, ax = plt.subplots(figsize=(30, 10))
+        plot_resource_comparison(ax, all_data, list(all_data.keys()))
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plot_path = os.path.join(individual_plots_dir, "resource_comparison.png")
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", format="png")
+        plt.close(fig)
+        print(f"Saved individual plot to {plot_path}")
+        
+        print(f"All individual plots saved to {individual_plots_dir}")
 
 if __name__ == "__main__":
     base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "hwpq")
