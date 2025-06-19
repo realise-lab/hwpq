@@ -147,7 +147,20 @@ Re-running synthesis is not necessary as all data is already available within ea
 
 - #### [Hybrid Tree](hwpq/hybrid_tree/README.md)
 
-## 📝 Reference
+## Citing This Work
+If you use this library in your work, please include a reference to the following citation:
+```
+@inproceedings{wu2025hwpq,
+  author = {Wu, Charlie and Rovinski, Austin},
+  title = {Revisiting Hardware Priority Queue Architectures},
+  booktitle = {Fourth Workshop on Open-Source Computer Architecture Research (OSCAR)}
+  year = {2025},
+  month = {June}
+}
+```
+
+## 📝 References
+The architectures in this library are primarily dervied from the following references:
 
 ```
 @article{moon2000,
@@ -163,8 +176,6 @@ Re-running synthesis is not necessary as all data is already available within ea
 }
 ```
 
-https://dl.acm.org/doi/10.1109/12.895938
-
 ```
 @inproceedings{huang2014,
   author = {Huang, Muhuan and Lim, Kevin and Cong, Jason},
@@ -178,8 +189,6 @@ https://dl.acm.org/doi/10.1109/12.895938
   doi = {10.1109/FPL.2014.6927413},
 }
 ```
-
-https://vast.cs.ucla.edu/sites/default/files/publications/Scalable%20high-performance%20CPQ_1.pdf
 
 ```
 @article{zhou2020,
@@ -198,5 +207,3 @@ https://vast.cs.ucla.edu/sites/default/files/publications/Scalable%20high-perfor
   numpages = {11},
 }
 ```
-
-https://dl.acm.org/doi/abs/10.1155/2020/8896386
