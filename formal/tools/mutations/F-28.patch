@@ -1,0 +1,21 @@
+# F-28 mutation: the readies depended on the request, so the whole proof went vacuous
+#
+#   git apply formal/tools/mutations/F-28.patch && formal/run.sh bram_tree
+#
+# Expect: 11 proven, 0 cex, but 13 UNREACHABLE covers. NO assert fires; the cover set is the only detector.
+#
+# WHY A PATCH AND NOT A REVERT: reverting the fixing commit conflicts; the term
+# was renamed to fsm_idle. This restores the request-dependent half.
+diff --git a/hwpq/bram_tree/src/bram_tree.sv b/hwpq/bram_tree/src/bram_tree.sv
+index 6bc7bc6..15f0473 100644
+--- a/hwpq/bram_tree/src/bram_tree.sv
++++ b/hwpq/bram_tree/src/bram_tree.sv
+@@ -723,7 +723,7 @@ module bram_tree #(
+   // ready signals and that polling protocol were written in the same commit
+   // (73d7b62), so the harness was shaped around this behaviour rather than
+   // independently checking it.
+-  assign fsm_idle      = (state == IDLE) && !filling;
++  assign fsm_idle      = (state == IDLE) && !filling && !(i_read || i_wrt);
+   assign o_write_ready = (queue_size != QUEUE_SIZE) && fsm_idle;
+   assign o_read_ready  = (queue_size != 0)          && fsm_idle;
+   assign o_data        = (queue_size == 0) ? 0 : top_level.value;

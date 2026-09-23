@@ -1,0 +1,61 @@
+# F-1c mutation: a replace-only queue advertises data it cannot deliver (F-1 containment)
+#
+#   git apply formal/tools/mutations/F-1c.patch && formal/run.sh register_array_enq0
+#
+# Expect: 1 cex on a_head_not_placeholder (8 proven/1 cex)
+#
+# WHY A PATCH AND NOT A REVERT: reverting the fixing commit conflicts; later
+# edits touch the same assigns. This removes the same guard term from all four
+# register modules.
+diff --git a/hwpq/register_array/src/register_array.sv b/hwpq/register_array/src/register_array.sv
+index 1ce22b3..3114036 100644
+--- a/hwpq/register_array/src/register_array.sv
++++ b/hwpq/register_array/src/register_array.sv
+@@ -94,7 +94,7 @@ module register_array #(
+   //
+   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
+   // which never seat a placeholder at the head.
+-  assign o_read_ready = !empty && (ENQ_ENA || o_data != '1);
++  assign o_read_ready = !empty;
+   assign o_data = queue[0];
+ 
+   always_ff @(posedge i_CLK or negedge i_RSTn) begin
+diff --git a/hwpq/register_array_pipelined/src/register_array_pipelined.sv b/hwpq/register_array_pipelined/src/register_array_pipelined.sv
+index 847471c..7439a88 100644
+--- a/hwpq/register_array_pipelined/src/register_array_pipelined.sv
++++ b/hwpq/register_array_pipelined/src/register_array_pipelined.sv
+@@ -95,7 +95,7 @@ module register_array_pipelined #(
+   //
+   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
+   // which never seat a placeholder at the head.
+-  assign o_read_ready = !empty && head_valid && (ENQ_ENA || o_data != '1);
++  assign o_read_ready = !empty && head_valid;
+   assign o_data = queue[0];
+ 
+   always_ff @(posedge i_CLK or negedge i_RSTn) begin
+diff --git a/hwpq/register_tree/src/register_tree.sv b/hwpq/register_tree/src/register_tree.sv
+index 6733029..ce50a3b 100644
+--- a/hwpq/register_tree/src/register_tree.sv
++++ b/hwpq/register_tree/src/register_tree.sv
+@@ -136,7 +136,7 @@ module register_tree #(
+   //
+   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
+   // which never seat a placeholder at the head.
+-  assign o_read_ready  = !empty && head_valid && (ENQ_ENA || o_data != '1);
++  assign o_read_ready  = !empty && head_valid;
+   assign o_data = queue[0];
+ 
+   //----------------------------------------------------------------------
+diff --git a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
+index 6b449ab..9550741 100644
+--- a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
++++ b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
+@@ -121,7 +121,7 @@ module register_tree_pipelined #(
+   //
+   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
+   // which never seat a placeholder at the head.
+-  assign o_read_ready = !empty && head_valid && (ENQ_ENA || o_data != '1);
++  assign o_read_ready = !empty && head_valid;
+   assign o_data = queue[0];
+ 
+   //----------------------------------------------------------------------
