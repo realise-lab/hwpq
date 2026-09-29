@@ -6,7 +6,7 @@ set running_device xcau25p-ffvb676-1-e
 set_param general.maxThreads 16
 
 # NOTE - Specify the sv file path accordingly, this is the file that will be modified
-set sv_file_path <path_to_your_workspace>/hwpq/hwpq/<architecture_name>/rtl/src/<architecture_name>.sv
+set sv_file_path <path_to_your_workspace>/hwpq/hwpq/<architecture_name>/src/<architecture_name>.sv
 
 # NOTE Set the base log file path accordingly, this is the directory that will store the results
 set base_log_path <path_to_your_workspace>/hwpq/hwpq/<architecture_name>/vivado_analysis_results_16bit_cycled

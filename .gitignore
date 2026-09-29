@@ -44,3 +44,5 @@ hwpq/register_array/rtl_elaboration/
 obj_dir
 *.vvp
 *.vcd
+
+build/
