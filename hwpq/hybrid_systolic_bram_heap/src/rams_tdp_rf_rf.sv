@@ -28,10 +28,13 @@ module rams_tdp_rf_rf #(
   initial begin
     int level;
     int node_capacity;
+    bram_tree_mem_t node;
     for (int i = 0; i < DEPTH; i++) begin
       level         = $clog2(i + 2) - 1;
       node_capacity = ((DEPTH + 1) >> level) - 1; 
-      ram[i] = {1'b0, '0, ADDRESS_WIDTH'(node_capacity)};
+      node          = '0;
+      node.capacity = ADDRESS_WIDTH'(node_capacity);
+      ram[i]        = node;
     end
   end
 

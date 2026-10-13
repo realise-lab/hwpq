@@ -33,10 +33,21 @@ module bram_tree (
     REPLACE_COMPARE_CHILD = 4'd11
   } state_t;
 
+  // Counts resets, so it is not reset itself.
+  logic [GEN_W-1:0] gen        = '0;
+  logic             rst_pend;
+  logic             rst_pend_q = 1'b0;
+
   // Struct builders in place of assignment patterns, which iverilog does not parse.
   function automatic bram_tree_mem_t mem_node(input logic a, input logic [DATA_WIDTH-1:0] v,
                                               input logic [ADDRESS_WIDTH-1:0] c);
-    mem_node.active = a; mem_node.value = v; mem_node.capacity = c;
+    mem_node.gen = gen; mem_node.active = a; mem_node.value = v; mem_node.capacity = c;
+  endfunction
+
+  function automatic logic [ADDRESS_WIDTH-1:0] node_cap(input logic [ADDRESS_WIDTH-1:0] idx);
+    node_cap = NODES_NEEDED;
+    for (int l = 1; l < TREE_DEPTH; l++)
+      if (idx >= ADDRESS_WIDTH'((1 << l) - 1)) node_cap = ADDRESS_WIDTH'(NODES_NEEDED >> l);
   endfunction
 
   function automatic bram_tree_curr_t curr_node(input logic [DATA_WIDTH-1:0] v,
@@ -60,6 +71,8 @@ module bram_tree (
   logic                     we_b;
   bram_tree_mem_t           dout_a;
   bram_tree_mem_t           dout_b;
+  bram_tree_mem_t           ram_a, ram_b;
+  logic [ADDRESS_WIDTH-1:0] addr_a_q, addr_b_q;
   // value of the second-best candidate. UNKNOWN_VAL (all ones) = not known: pessimistic, shows as the
   // best possible priority while rebalancing so the hybrid stalls reads. Mirror of the min-heap's 0.
   logic [DATA_WIDTH-1:0] second_largest, next_second_largest;
@@ -76,9 +89,29 @@ module bram_tree (
   assign fill_cap = ADDRESS_WIDTH'(((NODES_NEEDED + 1) >> fill_level) - 1);
 
   rams_tdp_rf_rf bram_inst (
-    .clka (i_CLK), .ena(1'b1), .wea(we_a), .addra(addr_a), .dia(din_a), .doa(dout_a),
-    .clkb (i_CLK), .enb(1'b1), .web(we_b), .addrb(addr_b), .dib(din_b), .dob(dout_b)
+    .clka (i_CLK), .ena(1'b1), .wea(we_a), .addra(addr_a), .dia(din_a), .doa(ram_a),
+    .clkb (i_CLK), .enb(1'b1), .web(we_b), .addrb(addr_b), .dib(din_b), .dob(ram_b)
   );
+
+  always_ff @(posedge i_CLK) begin
+    addr_a_q <= addr_a;
+    addr_b_q <= addr_b;
+  end
+
+  // A node from an earlier generation reads as empty, with its whole subtree free.
+  assign dout_a = (ram_a.gen == gen) ? ram_a : mem_node(1'b0, EMPTY_VAL, node_cap(addr_a_q));
+  assign dout_b = (ram_b.gen == gen) ? ram_b : mem_node(1'b0, EMPTY_VAL, node_cap(addr_b_q));
+
+  // gen advances when rst_pend falls, so it counts each reset pulse without sampling i_RSTn.
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) rst_pend <= 1'b1;
+    else         rst_pend <= 1'b0;
+  end
+
+  always_ff @(posedge i_CLK) begin : gen_seq
+    rst_pend_q <= rst_pend;
+    if (rst_pend_q && !rst_pend) gen <= gen + 1'b1;
+  end
 
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : fsm_seq
     if (!i_RSTn) begin
