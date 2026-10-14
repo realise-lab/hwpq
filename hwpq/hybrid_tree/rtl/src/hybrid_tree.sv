@@ -1,16 +1,37 @@
+/*******************************************************************************
+  Module Name: hybrid_tree
+  Date: 2025/03/21
+  Description: A hybrid priority queue (Max H-PQ) that combines a register
+               array holding the root nodes of multiple BRAM-based trees. New
+               items replace the leftmost register entry and propagate down
+               the corresponding BRAM tree, while the register array is kept
+               sorted so each entry is >= its right neighbor. Supports
+               enqueue, dequeue, and replace operations.
+  Parameters: QUEUE_SIZE - Maximum number of elements in the priority queue
+              DATA_WIDTH - Bit width of data elements
+  Inputs: i_CLK - System clock
+          i_RSTn - Active-low reset signal
+          i_wrt - Write/insert command (enqueue operation)
+          i_read - Read/pop command (dequeue operation)
+          i_data - Input data to be inserted (or used for replace)
+  Outputs: o_write_ready - High when the queue has room to accept a write
+           o_read_ready - High when the queue holds data available to read
+           o_data - Output data from the highest priority element
+*******************************************************************************/
+
 module hybrid_tree #(
     parameter integer QUEUE_SIZE = 4,
     parameter integer DATA_WIDTH = 16
 ) (
-    input  logic                  CLK,
-    input  logic                  RSTn,
+    input  logic                  i_CLK,
+    input  logic                  i_RSTn,
     // Inputs
     input  logic                  i_wrt,    // Write/insert command
     input  logic                  i_read,   // Read/pop command
     input  logic [DATA_WIDTH-1:0] i_data,   // Data to be inserted (or used for replace)
     // Outputs
-    output logic                  o_full,   // High if the heap is full
-    output logic                  o_empty,  // High if the heap is empty
+    output logic                  o_write_ready,   // High if the queue can accept a write
+    output logic                  o_read_ready,  // High if the queue has data to read
     output logic [DATA_WIDTH-1:0] o_data    // Output data (popped value)
 );
 
@@ -72,8 +93,8 @@ module hybrid_tree #(
   logic [$clog2(QUEUE_SIZE)-1:0] next_size;
   logic empty, full;
 
-  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
-    if (!RSTn) begin
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : queue_size_seq
+    if (!i_RSTn) begin
       size <= 0;
     end else begin
       size <= next_size;
@@ -99,8 +120,8 @@ module hybrid_tree #(
   logic bram_i_read[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] bram_i_data[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] next_bram_i_data[ARRAY_SIZE-1:0];
-  logic bram_o_full[ARRAY_SIZE-1:0];
-  logic bram_o_empty[ARRAY_SIZE-1:0];
+  logic bram_o_write_ready[ARRAY_SIZE-1:0];
+  logic bram_o_read_ready[ARRAY_SIZE-1:0];
   logic bram_o_valid[ARRAY_SIZE-1:0];
   logic [DATA_WIDTH-1:0] bram_o_data[ARRAY_SIZE-1:0];
   logic bram_enqueue[ARRAY_SIZE-1:0];
@@ -146,13 +167,13 @@ module hybrid_tree #(
           .DATA_WIDTH(DATA_WIDTH),
           .QUEUE_SIZE(BRAM_SIZE)
       ) bram_tree_inst (
-          .CLK(CLK),
-          .RSTn(RSTn),
+          .i_CLK(i_CLK),
+          .i_RSTn(i_RSTn),
           .i_wrt(bram_i_wrt[bram_tree_gen]),
           .i_read(bram_i_read[bram_tree_gen]),
           .i_data(bram_i_data[bram_tree_gen]),
-          .o_full(bram_o_full[bram_tree_gen]),
-          .o_empty(bram_o_empty[bram_tree_gen]),
+          .o_write_ready(bram_o_write_ready[bram_tree_gen]),
+          .o_read_ready(bram_o_read_ready[bram_tree_gen]),
           .o_valid(bram_o_valid[bram_tree_gen]),
           .o_data(bram_o_data[bram_tree_gen])
       );
@@ -162,8 +183,8 @@ module hybrid_tree #(
   //-------------------------------------------------------------------------
   // Regsiter Array Mamagement
   //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : array_seq
-    if (!RSTn) begin
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : array_seq
+    if (!i_RSTn) begin
       for (int i = 0; i < ARRAY_SIZE; i++) begin
         level_0_data[i]   <= '{default: 0};
         level_0_target[i] <= '{default: 0};
@@ -274,19 +295,19 @@ module hybrid_tree #(
   always_comb begin : empty_check
     empty = (size == 0);
     for (int i = 0; i < ARRAY_SIZE; i++) begin
-      empty = empty & bram_o_empty[i];  // AND operation to ensure all are empty
+      empty = empty & !bram_o_read_ready[i];  // AND operation to ensure all are empty
     end
   end
 
   always_comb begin : full_check
     full = (size == ARRAY_SIZE);
     for (int i = 0; i < ARRAY_SIZE; i++) begin
-      full = full & bram_o_full[i];  // AND operation to ensure all are full
+      full = full & !bram_o_write_ready[i];  // AND operation to ensure all are full
     end
   end
 
-  assign o_empty = empty;
-  assign o_full  = full;
+  assign o_read_ready = !empty;
+  assign o_write_ready  = !full;
   assign o_data  = level_0_data[0];
 
 endmodule
