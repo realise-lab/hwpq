@@ -883,6 +883,26 @@ task automatic test_reset_midstream();
   end
 endtask
 
+// Every other phase refills to capacity after a reset, which rewrites all of a DUT's storage.
+// Here two deep fills sit 16 resets apart with only shallow fills between, so storage written
+// by the first must stay retired across many resets, including any reset counter's wrap.
+task automatic test_reset_shallow();
+  begin
+    $display("\nTest Case 9b: Repeated resets at shallow occupancy");
+    apply_reset();
+    model_reset();
+    for (int i = 0; i < QUEUE_SIZE * 3 / 4; i++) enqueue(rand_value());
+    for (int r = 0; r < 16; r++) begin
+      apply_reset();
+      model_reset();
+      for (int i = 0; i < (QUEUE_SIZE + 3) / 4; i++) enqueue(rand_value());
+      drain_and_compare($sformatf("shallow fill %0d", r));
+    end
+    for (int i = 0; i < QUEUE_SIZE * 3 / 4; i++) enqueue(rand_value());
+    drain_and_compare("deep fill 16 resets after the first");
+  end
+endtask
+
 task automatic test_impolite();
   begin
     $display("\nTest Case 10: Commands the DUT says it will not accept");
@@ -1136,6 +1156,8 @@ initial begin
   else         test_enq_disabled();
 
   test_reset_midstream();
+
+  if (ENQ_ENA) test_reset_shallow();
 
   test_impolite();
 
