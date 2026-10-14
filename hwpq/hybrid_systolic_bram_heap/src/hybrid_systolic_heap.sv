@@ -56,6 +56,16 @@ module hybrid_systolic_heap (
 
   logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;
 
+  logic [GEN_W-1:0]         tree_gen;
+  logic                     tree_gen_pending, tree_filling;
+  logic [ADDRESS_WIDTH-1:0] tree_fill_addr, tree_fill_cap;
+
+  bram_tree_reset tree_reset (
+    .i_CLK(i_CLK), .i_RSTn(i_RSTn),
+    .o_gen(tree_gen), .o_gen_pending(tree_gen_pending),
+    .o_filling(tree_filling), .o_fill_addr(tree_fill_addr), .o_fill_cap(tree_fill_cap)
+  );
+
   generate
     for (genvar k=0; k<TREE_COUNT; k++) begin : g_trees
       bram_tree heap_inst (
@@ -64,6 +74,11 @@ module hybrid_systolic_heap (
         .i_wrt(heap_write[k]),
         .i_read(heap_read[k]),
         .i_data(heap_input[k]),
+        .i_gen(tree_gen),
+        .i_gen_pending(tree_gen_pending),
+        .i_filling(tree_filling),
+        .i_fill_addr(tree_fill_addr),
+        .i_fill_cap(tree_fill_cap),
         .o_full(heap_full[k]),
         .o_empty(heap_empty[k]),
         .o_data(heap_output[k]),

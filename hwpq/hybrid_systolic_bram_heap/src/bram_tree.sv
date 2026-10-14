@@ -8,6 +8,12 @@ module bram_tree (
     input  logic                  i_wrt,    // Write/insert command
     input  logic                  i_read,   // Read/pop command
     input  logic [DATA_WIDTH-1:0] i_data,   // Input data
+    // Reset generation and memory fill, from the bram_tree_reset shared by every tree
+    input  logic [GEN_W-1:0]         i_gen,
+    input  logic                     i_gen_pending,  // gen has not yet counted the last reset
+    input  logic                     i_filling,
+    input  logic [ADDRESS_WIDTH-1:0] i_fill_addr,
+    input  logic [ADDRESS_WIDTH-1:0] i_fill_cap,
     // Outputs
     output logic                  o_full,   // High if the heap is full
     output logic                  o_empty,  // High if the heap is empty
@@ -33,15 +39,10 @@ module bram_tree (
     REPLACE_COMPARE_CHILD = 4'd11
   } state_t;
 
-  // Counts resets, so it is not reset itself.
-  logic [GEN_W-1:0] gen        = '0;
-  logic             rst_pend;
-  logic             rst_pend_q = 1'b0;
-
   // Struct builders in place of assignment patterns, which iverilog does not parse.
   function automatic bram_tree_mem_t mem_node(input logic a, input logic [DATA_WIDTH-1:0] v,
                                               input logic [ADDRESS_WIDTH-1:0] c);
-    mem_node.gen = gen; mem_node.active = a; mem_node.value = v; mem_node.capacity = c;
+    mem_node.gen = i_gen; mem_node.active = a; mem_node.value = v; mem_node.capacity = c;
   endfunction
 
   function automatic logic [ADDRESS_WIDTH-1:0] node_cap(input logic [ADDRESS_WIDTH-1:0] idx);
@@ -77,17 +78,6 @@ module bram_tree (
   // best possible priority while rebalancing so the hybrid stalls reads. Mirror of the min-heap's 0.
   logic [DATA_WIDTH-1:0] second_largest, next_second_largest;
 
-  // The BRAM has no reset port: a reset retires its contents by advancing gen, and the fill
-  // rewrites every node only when gen wraps, since a wrapped tag can match a stale node.
-  logic                            filling    = POWERUP_FILL;
-  logic [ADDRESS_WIDTH-1:0]        fill_cnt   = '0;
-  logic [$clog2(TREE_DEPTH+1)-1:0] fill_level = '0;
-  logic [ADDRESS_WIDTH+1:0]        fill_bound = 'd1;
-  logic [ADDRESS_WIDTH-1:0]        fill_cap;
-
-  // fill_cap halves per fill_level, so each depth's nodes get that subtree's capacity.
-  assign fill_cap = ADDRESS_WIDTH'(((NODES_NEEDED + 1) >> fill_level) - 1);
-
   rams_tdp_rf_rf bram_inst (
     .clka (i_CLK), .ena(1'b1), .wea(we_a), .addra(addr_a), .dia(din_a), .doa(ram_a),
     .clkb (i_CLK), .enb(1'b1), .web(we_b), .addrb(addr_b), .dib(din_b), .dob(ram_b)
@@ -99,19 +89,8 @@ module bram_tree (
   end
 
   // A node from an earlier generation reads as empty, with its whole subtree free.
-  assign dout_a = (ram_a.gen == gen) ? ram_a : mem_node(1'b0, EMPTY_VAL, node_cap(addr_a_q));
-  assign dout_b = (ram_b.gen == gen) ? ram_b : mem_node(1'b0, EMPTY_VAL, node_cap(addr_b_q));
-
-  // gen advances when rst_pend falls, so it counts each reset pulse without sampling i_RSTn.
-  always_ff @(posedge i_CLK or negedge i_RSTn) begin
-    if (!i_RSTn) rst_pend <= 1'b1;
-    else         rst_pend <= 1'b0;
-  end
-
-  always_ff @(posedge i_CLK) begin : gen_seq
-    rst_pend_q <= rst_pend;
-    if (rst_pend_q && !rst_pend) gen <= gen + 1'b1;
-  end
+  assign dout_a = (ram_a.gen == i_gen) ? ram_a : mem_node(1'b0, EMPTY_VAL, node_cap(addr_a_q));
+  assign dout_b = (ram_b.gen == i_gen) ? ram_b : mem_node(1'b0, EMPTY_VAL, node_cap(addr_b_q));
 
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : fsm_seq
     if (!i_RSTn) begin
@@ -126,25 +105,6 @@ module bram_tree (
       curr           <= next;
       second_largest <= next_second_largest;
       top_level      <= next_top_level;
-    end
-  end
-
-  always_ff @(posedge i_CLK) begin : fill_seq
-    if (rst_pend_q && !rst_pend && &gen) begin
-      filling    <= 1'b1;
-      fill_cnt   <= '0;
-      fill_level <= '0;
-      fill_bound <= 'd1;
-    end else if (filling && !rst_pend) begin
-      if (fill_cnt == ADDRESS_WIDTH'(NODES_NEEDED - 1)) begin
-        filling <= 1'b0;
-      end else begin
-        fill_cnt <= fill_cnt + 1'b1;
-        if ((fill_cnt + 1'b1) == fill_bound[ADDRESS_WIDTH-1:0]) begin
-          fill_level <= fill_level + 1'b1;
-          fill_bound <= (fill_bound << 1) + 'd1;
-        end
-      end
     end
   end
 
@@ -165,12 +125,12 @@ module bram_tree (
     child_idx_left  = curr.position * 2 + 1;
     child_idx_right = curr.position * 2 + 2;
 
-    if (filling) begin
+    if (i_filling) begin
       // Park the walk in IDLE while the sweep rewrites the node memory.
       next_state = IDLE;
-      addr_a     = fill_cnt;
+      addr_a     = i_fill_addr;
       we_a       = 1'b1;
-      din_a      = mem_node(1'b0, EMPTY_VAL, fill_cap);
+      din_a      = mem_node(1'b0, EMPTY_VAL, i_fill_cap);
     end else begin
     case (state)
       IDLE: begin
@@ -495,5 +455,68 @@ module bram_tree (
   assign o_empty = (queue_size == 0);
   assign o_data  = top_level.value;
   // Low until gen has advanced and through the fill, so no command reads a stale node as live.
-  assign o_ready = (state == IDLE) && !filling && !rst_pend && !rst_pend_q && !(i_read || i_wrt);
+  assign o_ready = (state == IDLE) && !i_filling && !i_gen_pending && !(i_read || i_wrt);
+endmodule
+
+// Reset generation and tree memory fill, shared by trees that reset together.
+module bram_tree_reset (
+    input  logic                     i_CLK,
+    input  logic                     i_RSTn,
+    output logic [GEN_W-1:0]         o_gen,
+    output logic                     o_gen_pending,
+    output logic                     o_filling,
+    output logic [ADDRESS_WIDTH-1:0] o_fill_addr,
+    output logic [ADDRESS_WIDTH-1:0] o_fill_cap
+);
+  // Counts resets, so it is not reset itself.
+  logic [GEN_W-1:0] gen        = '0;
+  logic             rst_pend;
+  logic             rst_pend_q = 1'b0;
+
+  // The BRAM has no reset port: a reset retires its contents by advancing gen, and the fill
+  // rewrites every node only when gen wraps, since a wrapped tag can match a stale node.
+  logic                            filling    = POWERUP_FILL;
+  logic [ADDRESS_WIDTH-1:0]        fill_cnt   = '0;
+  logic [$clog2(TREE_DEPTH+1)-1:0] fill_level = '0;
+  logic [ADDRESS_WIDTH+1:0]        fill_bound = 'd1;
+  logic [ADDRESS_WIDTH-1:0]        fill_cap;
+
+  // fill_cap halves per fill_level, so each depth's nodes get that subtree's capacity.
+  assign fill_cap = ADDRESS_WIDTH'(((NODES_NEEDED + 1) >> fill_level) - 1);
+
+  // gen advances when rst_pend falls, so it counts each reset pulse without sampling i_RSTn.
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) rst_pend <= 1'b1;
+    else         rst_pend <= 1'b0;
+  end
+
+  always_ff @(posedge i_CLK) begin : gen_seq
+    rst_pend_q <= rst_pend;
+    if (rst_pend_q && !rst_pend) gen <= gen + 1'b1;
+  end
+
+  always_ff @(posedge i_CLK) begin : fill_seq
+    if (rst_pend_q && !rst_pend && &gen) begin
+      filling    <= 1'b1;
+      fill_cnt   <= '0;
+      fill_level <= '0;
+      fill_bound <= 'd1;
+    end else if (filling && !rst_pend) begin
+      if (fill_cnt == ADDRESS_WIDTH'(NODES_NEEDED - 1)) begin
+        filling <= 1'b0;
+      end else begin
+        fill_cnt <= fill_cnt + 1'b1;
+        if ((fill_cnt + 1'b1) == fill_bound[ADDRESS_WIDTH-1:0]) begin
+          fill_level <= fill_level + 1'b1;
+          fill_bound <= (fill_bound << 1) + 'd1;
+        end
+      end
+    end
+  end
+
+  assign o_gen         = gen;
+  assign o_gen_pending = rst_pend || rst_pend_q;
+  assign o_filling     = filling;
+  assign o_fill_addr   = fill_cnt;
+  assign o_fill_cap    = fill_cap;
 endmodule
