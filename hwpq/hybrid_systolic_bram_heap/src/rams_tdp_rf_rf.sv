@@ -21,9 +21,8 @@ module rams_tdp_rf_rf #(
     output bram_tree_mem_t dob
 );
   localparam STRUCT_WIDTH = $bits(bram_tree_mem_t);
-  //logic [STRUCT_WIDTH-1:0] ram [DEPTH-1:0];
-  // use this for testing, easier to see values in waveform
-  bram_tree_mem_t ram [DEPTH-1:0];
+  // Flat words: an array of structs infers a separate RAM for each field.
+  logic [STRUCT_WIDTH-1:0] ram [DEPTH-1:0];
 
   initial begin
     int level;
