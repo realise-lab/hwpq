@@ -53,6 +53,7 @@ module hybrid_systolic_heap (
   logic [DATA_WIDTH-1:0]        heap_input  [TREE_COUNT-1:0];
   logic [DATA_WIDTH-1:0]        heap_output [TREE_COUNT-1:0];
   logic [TREE_COUNT-1:0]        heap_ready;
+  logic [TREE_COUNT-1:0]        heap_top_moved;
 
   logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;
 
@@ -82,7 +83,8 @@ module hybrid_systolic_heap (
         .o_full(heap_full[k]),
         .o_empty(heap_empty[k]),
         .o_data(heap_output[k]),
-        .o_ready(heap_ready[k])
+        .o_ready(heap_ready[k]),
+        .o_top_moved(heap_top_moved[k])
       );
     end
   endgenerate
@@ -220,19 +222,18 @@ module hybrid_systolic_heap (
   // max tree (heap-style indexing: node n has children 2n (lower idx) and 2n+1)
   logic [DATA_WIDTH-1:0]                t_val [2*TC_P2];
   logic                                 t_v   [2*TC_P2];
-  logic                                 t_r   [2*TC_P2];
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      t_i   [2*TC_P2];
   logic                                 t_rw;
   logic                                 max_valid;
   logic                                 max_rdy;
 
-  // The max tree's result is registered: it describes the trees one cycle ago. A tree changes
-  // only while busy (seen as not ready) or after a command, so a cycle that issues any tree
-  // command must treat the registered max as unknown.
+  // The max over tree tops is registered from last cycle's values, ignoring readiness. It is
+  // exact unless a tree's top moved since (o_top_moved) or a tree is busy now, and either
+  // makes the max the unknown bound.
   logic [DATA_WIDTH-1:0]                max_q;
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      max_idx_q;
-  logic                                 max_v_q, max_r_q;
-  logic                                 tree_cmd;
+  logic                                 max_v_q;
+  logic                                 tree_hold;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire;
@@ -297,18 +298,16 @@ module hybrid_systolic_heap (
     heap_spill_data <= IB[HALF_SIZE-1];
   end
 
-  // Resets to "unknown and not ready", which stalls reads and pulls until the trees report.
+  // Resets to "no tree holds a value"; every o_top_moved resets high, which holds the first cycle.
   always_ff @(posedge i_CLK or negedge i_RSTn) begin
     if (!i_RSTn) begin
-      max_q     <= UNKNOWN_VAL;
+      max_q     <= EMPTY_VAL;
       max_idx_q <= '0;
-      max_v_q   <= 1'b1;
-      max_r_q   <= 1'b0;
+      max_v_q   <= 1'b0;
     end else begin
       max_q     <= t_v[1] ? t_val[1] : EMPTY_VAL;
       max_idx_q <= t_v[1] ? t_i[1] : '0;
       max_v_q   <= t_v[1];
-      max_r_q   <= t_r[1];
     end
   end
 
@@ -640,34 +639,32 @@ module hybrid_systolic_heap (
     heap_systolic_full  = (h_empt != 2'd3);
     heap_systolic_empty = h_all_empty;
 
-    // ---- log-depth max tree ----
-    // A later index wins a value-tie only if it is ready.
+    // ---- log-depth max tree over tree tops; a later index wins a value-tie ----
+    tree_hold = 1'b0;
     for (int i = 0; i < TC_P2; i++) begin
       if (i < TREE_COUNT) begin
-        t_val[TC_P2+i] = heap_ready[i] ? heap_output[i] : UNKNOWN_VAL;
-        t_v[TC_P2+i]   = !heap_empty[i] && ((heap_output[i] != EMPTY_VAL) || heap_ready[i]);
-        t_r[TC_P2+i]   = heap_ready[i];
+        t_val[TC_P2+i] = heap_output[i];
+        t_v[TC_P2+i]   = !heap_empty[i] && (heap_output[i] != EMPTY_VAL);
+        // A busy non-empty tree may hold any value, so it holds reads and pulls.
+        tree_hold      = tree_hold || heap_top_moved[i]
+                         || (!heap_ready[i] && !heap_empty[i]);
       end else begin
         t_val[TC_P2+i] = EMPTY_VAL;
         t_v[TC_P2+i]   = 1'b0;
-        t_r[TC_P2+i]   = 1'b0;
       end
       t_i[TC_P2+i] = BRAM_TREE_ADDR_WIDTH'(i);
     end
     for (int n = TC_P2-1; n >= 1; n--) begin
-      t_rw = t_v[2*n+1] && (!t_v[2*n] || (t_val[2*n+1] > t_val[2*n])
-                            || ((t_val[2*n+1] == t_val[2*n]) && t_r[2*n+1]));
+      t_rw = t_v[2*n+1] && (!t_v[2*n] || (t_val[2*n+1] >= t_val[2*n]));
       t_v[n]   = t_v[2*n] | t_v[2*n+1];
       t_val[n] = t_rw ? t_val[2*n+1] : t_val[2*n];
-      t_r[n]   = t_rw ? t_r[2*n+1]   : t_r[2*n];
       t_i[n]   = t_rw ? t_i[2*n+1]   : t_i[2*n];
     end
 
-    tree_cmd     = |{heap_read, heap_write};
-    max_valid    = max_v_q || tree_cmd;
-    max_rdy      = max_r_q && !tree_cmd;
+    max_valid    = max_v_q || tree_hold;
+    max_rdy      = max_v_q && !tree_hold;
     max_node_idx = max_idx_q;
-    max_node     = tree_cmd ? UNKNOWN_VAL : max_q;
+    max_node     = tree_hold ? UNKNOWN_VAL : max_q;
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
@@ -780,11 +777,11 @@ module hybrid_systolic_heap (
         : (m_dequeue_pending ? (heap_OB[0] > m_forecast) : (heap_OB[0] > OB[0]));
     rd_sel = output_from_heap_systolic ? h_head : m_head;
 
-    // max_node is the unknown bound '1 while tree_cmd, and no head can reach it ('1 is reserved).
-    // Pulls and evictions need max_rdy, which excludes tree_cmd, so they compare max_q.
+    // max_node is the unknown bound '1 while tree_hold, and no head can reach it ('1 is reserved).
+    // Pulls and evictions need max_rdy, which excludes tree_hold, so they compare max_q.
     h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
     m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
-    rd_ge_max = !tree_cmd && (output_from_heap_systolic ? h_ge_max : m_ge_max);
+    rd_ge_max = !tree_hold && (output_from_heap_systolic ? h_ge_max : m_ge_max);
     max_gt_h_head = h_dequeue_pending ? (max_q > h_forecast) : (max_q > heap_OB[0]);
 
     // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main

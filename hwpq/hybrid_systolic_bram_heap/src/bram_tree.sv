@@ -18,7 +18,8 @@ module bram_tree (
     output logic                  o_full,   // High if the heap is full
     output logic                  o_empty,  // High if the heap is empty
     output logic [DATA_WIDTH-1:0] o_data,   // Output data (Root node, the max)
-    output logic                  o_ready   // Stall if we are still propagating/rebalancing
+    output logic                  o_ready,  // Stall if we are still propagating/rebalancing
+    output logic                  o_top_moved  // o_data or o_empty may differ from last cycle
 );
 
   typedef enum logic [3:0] {
@@ -91,6 +92,16 @@ module bram_tree (
   // A node from an earlier generation reads as empty, with its whole subtree free.
   assign dout_a = (ram_a.gen == i_gen) ? ram_a : mem_node(1'b0, EMPTY_VAL, node_cap(addr_a_q));
   assign dout_b = (ram_b.gen == i_gen) ? ram_b : mem_node(1'b0, EMPTY_VAL, node_cap(addr_b_q));
+
+  // Conservative: set after every FSM state that may assign next_top_level or next_queue_size.
+  // A state that starts writing either must be added here.
+  logic top_moved;
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) top_moved <= 1'b1;
+    else         top_moved <= (state == IDLE && (i_wrt || i_read))
+                              || state == DEQUEUE_COMPARE_ROOT || state == REPLACE_COMPARE_ROOT;
+  end
+  assign o_top_moved = top_moved;
 
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : fsm_seq
     if (!i_RSTn) begin
