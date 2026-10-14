@@ -1,5 +1,27 @@
 `default_nettype none
 
+/*******************************************************************************
+  Module Name: register_tree
+  Date: 2026/06/22
+  Description: A register-based priority queue that preserves the heap
+               property across a binary tree of registers, closely
+               resembling a software heap. Enqueue searches for the leftmost
+               invalid entry and reorders the tree; dequeue and replace
+               remove/update the root in a single cycle while alternating-
+               level compare-and-swap operations restore heap order.
+  Parameters: ENQ_ENA - Enables the enqueue datapath when set
+              QUEUE_SIZE - Maximum number of elements in the priority queue
+              DATA_WIDTH - Bit width of data elements
+  Inputs: i_CLK - System clock
+          i_RSTn - Active-low reset signal
+          i_wrt - Write/insert command (enqueue/replace operation)
+          i_read - Read/pop command (dequeue/replace operation)
+          i_data - Input data to be enqueued (or used for replace)
+  Outputs: o_write_ready - High when the queue has room to accept a write
+           o_read_ready - High when the queue holds data available to read
+           o_data - Output data from the highest priority element
+*******************************************************************************/
+
 module register_tree #(
     parameter bit ENQ_ENA = 1,    // Define if user would like to enable enqueue
     parameter int QUEUE_SIZE = 4095,
@@ -13,8 +35,8 @@ module register_tree #(
     input var logic i_read,
     input var logic [DATA_WIDTH-1:0] i_data,
     // Outputs
-    output var logic o_full,
-    output var logic o_empty,
+    output var logic o_write_ready,
+    output var logic o_read_ready,
     output var logic [DATA_WIDTH-1:0] o_data
 );
 
@@ -79,8 +101,8 @@ module register_tree #(
   // Size counter signals
   assign empty = (size <= 0);
   assign full = (size >= QUEUE_SIZE);
-  assign o_full = full;
-  assign o_empty = empty;
+  assign o_write_ready = !full;
+  assign o_read_ready = !empty;
   assign o_data = queue[0];
 
   //----------------------------------------------------------------------
