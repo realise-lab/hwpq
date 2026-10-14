@@ -224,6 +224,15 @@ module hybrid_systolic_heap (
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      t_i   [2*TC_P2];
   logic                                 t_rw;
   logic                                 max_valid;
+  logic                                 max_rdy;
+
+  // The max tree's result is registered: it describes the trees one cycle ago. A tree changes
+  // only while busy (seen as not ready) or after a command, so a cycle that issues any tree
+  // command must treat the registered max as unknown.
+  logic [DATA_WIDTH-1:0]                max_q;
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]      max_idx_q;
+  logic                                 max_v_q, max_r_q;
+  logic                                 tree_cmd;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire;
@@ -259,9 +268,9 @@ module hybrid_systolic_heap (
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
   // a replace on each side). Without the swap a full heap buffer can hide the maximum.
-  assign pull_fire  = !user_heap && !user_heap_enq && max_valid && heap_ready[max_node_idx] && !spill_hits_max
+  assign pull_fire  = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
                       && h_wr_rdy;
-  assign evict_fire = !user_heap && !user_heap_enq && max_valid && heap_ready[max_node_idx] && !spill_hits_max
+  assign evict_fire = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
                       && heap_systolic_full && h_rd_rdy && (max_node > h_head);
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
@@ -280,6 +289,21 @@ module hybrid_systolic_heap (
   always_ff @(posedge i_CLK) begin
     heap_rep_data   <= h_head;
     heap_spill_data <= IB[HALF_SIZE-1];
+  end
+
+  // Resets to "unknown and not ready", which stalls reads and pulls until the trees report.
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) begin
+      max_q     <= UNKNOWN_VAL;
+      max_idx_q <= '0;
+      max_v_q   <= 1'b1;
+      max_r_q   <= 1'b0;
+    end else begin
+      max_q     <= t_v[1] ? t_val[1] : EMPTY_VAL;
+      max_idx_q <= t_v[1] ? t_i[1] : '0;
+      max_v_q   <= t_v[1];
+      max_r_q   <= t_r[1];
+    end
   end
 
   // Sequential logic
@@ -633,9 +657,11 @@ module hybrid_systolic_heap (
       t_i[n]   = t_rw ? t_i[2*n+1]   : t_i[2*n];
     end
 
-    max_valid    = t_v[1];
-    max_node_idx = t_v[1] ? t_i[1] : '0;
-    max_node     = t_v[1] ? t_val[1] : EMPTY_VAL;   // value comes straight from the tree, no wide idx mux
+    tree_cmd     = |{heap_read, heap_write};
+    max_valid    = max_v_q || tree_cmd;
+    max_rdy      = max_r_q && !tree_cmd;
+    max_node_idx = max_idx_q;
+    max_node     = tree_cmd ? UNKNOWN_VAL : max_q;
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
