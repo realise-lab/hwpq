@@ -119,11 +119,10 @@ logic [DATA_WIDTH-1:0] o_data_prev;
 
 // Payload alphabet.
 //
-// $urandom_range(1, 1023) over a 16-bit payload means ties essentially never
-// occur, so the comparators are least tested exactly where ordering and
-// tie-breaking bugs live. The proofs run at DATA_WIDTH=2 (two legal values
-// once both sentinels are reserved), where every comparison is a tie. This
-// narrows the stimulus to 1..3 for one phase to force duplicates.
+// Values span the full width, mixing three shapes so every comparator bit decides some
+// ordering: fully random, small (1..1023), and a fixed high prefix with random low bits.
+// Wide random values almost never tie, so one phase narrows the stimulus to 1..3 to force
+// duplicates; the proofs run at DATA_WIDTH=2, where every comparison is a tie.
 //
 // Both reserved values stay off the alphabet either way: '0 is the empty marker
 // and the dequeue mechanism, '1 is the max-priority placeholder, and both are
@@ -131,8 +130,15 @@ logic [DATA_WIDTH-1:0] o_data_prev;
 bit narrow_alphabet = 0;
 
 function automatic logic [DATA_WIDTH-1:0] rand_value();
-  return narrow_alphabet ? DATA_WIDTH'($urandom_range(1, 3))
-                         : DATA_WIDTH'($urandom_range(1, 1023));
+  logic [DATA_WIDTH-1:0] v;
+  if (narrow_alphabet) return DATA_WIDTH'($urandom_range(1, 3));
+  for (int i = 0; i < DATA_WIDTH; i++) v[i] = $urandom_range(0, 1);
+  case ($urandom_range(0, 2))
+    0: ;
+    1: v = DATA_WIDTH'($urandom_range(1, 1023));
+    default: v = ({(DATA_WIDTH + 3) / 4{4'b1010}} & ~DATA_WIDTH'(1023)) | (v & DATA_WIDTH'(1023));
+  endcase
+  return (v == '0 || v == '1) ? DATA_WIDTH'(1) : v;
 endfunction
 
 logic [DATA_WIDTH-1:0] random_value;
