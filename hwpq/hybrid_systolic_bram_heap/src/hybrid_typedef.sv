@@ -11,6 +11,9 @@
 `ifndef HYBRID_GEN_W
   `define HYBRID_GEN_W 3
 `endif
+`ifndef HYBRID_DATA_WIDTH
+  `define HYBRID_DATA_WIDTH 128
+`endif
 `ifndef HYBRID_POWERUP_FILL
   `define HYBRID_POWERUP_FILL 0
 `endif
@@ -21,7 +24,7 @@ package bram_tree_pkg;
 
   localparam integer BRAM_TREE_QUEUE_SIZE = `HYBRID_BRAM_TREE_QUEUE_SIZE;
   localparam integer QUEUE_SIZE = 15;
-  localparam integer DATA_WIDTH = 16;
+  localparam integer DATA_WIDTH = `HYBRID_DATA_WIDTH;
   localparam integer TREE_DEPTH    = $clog2(BRAM_TREE_QUEUE_SIZE + 1);
   localparam integer NODES_NEEDED  = (1 << TREE_DEPTH) - 1; 
   localparam integer ADDRESS_WIDTH = $clog2(NODES_NEEDED);
