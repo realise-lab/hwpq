@@ -257,6 +257,12 @@ module hybrid_systolic_heap (
   logic                    heap_IB_room        [HALF_SIZE-1];
   logic [SV_W-1:0]         room_g, room_p, room_v, hroom_g, hroom_p, hroom_v;
   logic                    user_heap, user_heap_enq;
+
+  // Comparisons are made against each register source and the 1-bit results selected, so no
+  // wide mux sits in front of a wide compare on the command path.
+  logic                    h_from_user;
+  logic                    h_gt_ob0, h_gt_ob1, h_gt_ib0, h_gt_ib1, h_lt_ob0;
+  logic                    h_ge_max, m_ge_max, rd_ge_max, max_gt_h_head;
   logic                    hybrid_empty, rep_empty;
 
   generate
@@ -271,14 +277,14 @@ module hybrid_systolic_heap (
   assign pull_fire  = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
                       && h_wr_rdy;
   assign evict_fire = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
-                      && heap_systolic_full && h_rd_rdy && (max_node > h_head);
+                      && heap_systolic_full && h_rd_rdy && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
   assign o_write_ready = m_wr_rdy || h_wr_rdy;
   // The head is the larger buffer head, once both buffers and the trees can be compared.
   assign o_read_ready  = (output_from_heap_systolic ? h_rd_rdy : m_rd_rdy)
                          && (systolic_empty || m_rd_rdy) && (heap_systolic_empty || h_rd_rdy)
-                         && (rd_sel >= max_node);
+                         && rd_ge_max;
 
   logic [5:0][DATA_WIDTH-1:0] head_v;
   always_comb begin
@@ -484,13 +490,13 @@ module hybrid_systolic_heap (
 
       if (h_enq_ok) begin
         if (heap_OB_shift[0] && heap_OB_shift_valid[0]) begin
-          if (h_data > heap_OB[1]) begin
+          if (h_gt_ob1) begin
             heap_OB[0] <= h_data;
           end else begin
             heap_IB[0] <= h_data;
           end
         end else begin
-          if (h_data > heap_OB[0]) begin
+          if (h_gt_ob0) begin
             heap_OB[0] <= h_data;
             heap_IB[0] <= heap_OB[0];
           end else begin
@@ -503,7 +509,7 @@ module hybrid_systolic_heap (
         if (heap_systolic_empty) begin
           heap_OB[0] <= h_data;
         end else begin
-          if ((h_data > heap_OB[1]) && (h_data > heap_IB[1]) && (h_data > heap_IB[0])) begin
+          if (h_gt_ob1 && h_gt_ib1 && h_gt_ib0) begin
             heap_OB[0] <= h_data;
           end else begin
             heap_IB[0] <= h_data;
@@ -517,7 +523,7 @@ module hybrid_systolic_heap (
 
       if (h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]) && !h_enq_fwd) begin
         heap_OB[1] <= heap_IB[0];
-        if (!h_writing_ib0 || (h_writing_ib0 && h_read && (h_data > heap_OB[1]) && !heap_IB_gt_OB_next[0]) || (h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && (h_data > heap_OB[1]))) begin
+        if (!h_writing_ib0 || (h_writing_ib0 && h_read && h_gt_ob1 && !heap_IB_gt_OB_next[0]) || (h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && h_gt_ob1)) begin
           heap_IB[0] <= EMPTY_VAL;
         end
       end
@@ -542,9 +548,9 @@ module hybrid_systolic_heap (
             heap_IB[i+1] <= heap_IB[i];
             if (((i == 0 && !h_writing_ib0)
             || (i > 0 && (!heap_IB_shift_valid[i-1] || (heap_IB_shift_to_OB[i-1] && !h_enq_fwd)))
-            || (i == 0 && h_writing_ib0 && h_read && (h_data > heap_OB[1]) && !heap_IB_gt_OB_next[0])
+            || (i == 0 && h_writing_ib0 && h_read && h_gt_ob1 && !heap_IB_gt_OB_next[0])
             || (i > 0 && !heap_IB_shift[i-1] && !heap_IB_gt_OB_next[i-1])
-            || (i == 0 && h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && (h_data > heap_OB[1])))
+            || (i == 0 && h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && h_gt_ob1))
             && !(i>0 && h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]) && heap_IB_gt_OB_next[i-1]))
             heap_IB[i] <= EMPTY_VAL;
           end
@@ -567,7 +573,7 @@ module hybrid_systolic_heap (
           end
 
           heap_IB_gt_OB[i] && !(i < (HALF_SIZE-1) && heap_OB_shift[i] && heap_OB_shift_valid[i]): begin
-            if (!(h_enq_ok && (h_data < heap_OB[0]) && (i == 0))) heap_IB[i] <= heap_OB[i];
+            if (!(h_enq_ok && h_lt_ob0 && (i == 0))) heap_IB[i] <= heap_OB[i];
             heap_OB[i] <= heap_IB[i];
           end
 
@@ -579,7 +585,7 @@ module hybrid_systolic_heap (
             heap_OB[i+1] <= heap_IB[i];
             heap_IB[i+1] <= heap_OB[i+1];
             if (i == 0 && h_writing_ib0) begin
-              if (h_data > heap_OB[0] && !h_read) begin
+              if (h_gt_ob0 && !h_read) begin
                 heap_IB[i] <= heap_OB[0];
               end else begin
                 heap_IB[i] <= h_data;
@@ -589,7 +595,7 @@ module hybrid_systolic_heap (
             || (heap_IB_gt_OB[i-1] && (i-1 != 0)))) || (i == 0 && !h_writing_ib0)) begin
               heap_IB[i] <= EMPTY_VAL;
             end
-            if (i == 0 && h_wrt && h_read && h_rd_rdy && (h_data > heap_OB[1]) && (h_data > heap_IB[1]) && (h_data > heap_IB[0])) begin
+            if (i == 0 && h_wrt && h_read && h_rd_rdy && h_gt_ob1 && h_gt_ib1 && h_gt_ib0) begin
               heap_IB[i] <= EMPTY_VAL;
             end
             if ((i > 0) && (heap_IB_shift[i-1] && heap_IB_shift_valid[i-1] && (heap_IB[i-1] == EMPTY_VAL) && !(heap_IB_gt_OB[i-1]) && !(heap_IB_gt_OB_next[i-1]))) begin
@@ -769,8 +775,17 @@ module hybrid_systolic_heap (
     h_wr_rdy   = !heap_systolic_full && h_ib0_free;
     h_rd_rdy   = !heap_systolic_empty && (h_head != EMPTY_VAL) && !h_dequeue_pending && h_ib0_free;
 
-    output_from_heap_systolic = (h_head > m_head);
+    output_from_heap_systolic = h_dequeue_pending
+        ? (m_dequeue_pending ? (h_forecast > m_forecast) : (h_forecast > OB[0]))
+        : (m_dequeue_pending ? (heap_OB[0] > m_forecast) : (heap_OB[0] > OB[0]));
     rd_sel = output_from_heap_systolic ? h_head : m_head;
+
+    // max_node is the unknown bound '1 while tree_cmd, and no head can reach it ('1 is reserved).
+    // Pulls and evictions need max_rdy, which excludes tree_cmd, so they compare max_q.
+    h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
+    m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
+    rd_ge_max = !tree_cmd && (output_from_heap_systolic ? h_ge_max : m_ge_max);
+    max_gt_h_head = h_dequeue_pending ? (max_q > h_forecast) : (max_q > heap_OB[0]);
 
     // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main
     // one is full; dequeue and replace go to the buffer holding the head; the heap buffer
@@ -787,7 +802,13 @@ module hybrid_systolic_heap (
     m_data = i_data;
     h_wrt  = (user_heap && i_wrt) || user_heap_enq || pull_fire || evict_fire;
     h_read = user_heap || evict_fire;
-    h_data = (user_heap || user_heap_enq) ? i_data : max_node;
+    h_from_user = user_heap || user_heap_enq;
+    h_data   = h_from_user ? i_data : max_q;
+    h_gt_ob0 = h_from_user ? (i_data > heap_OB[0]) : (max_q > heap_OB[0]);
+    h_gt_ob1 = h_from_user ? (i_data > heap_OB[1]) : (max_q > heap_OB[1]);
+    h_gt_ib0 = h_from_user ? (i_data > heap_IB[0]) : (max_q > heap_IB[0]);
+    h_gt_ib1 = h_from_user ? (i_data > heap_IB[1]) : (max_q > heap_IB[1]);
+    h_lt_ob0 = h_from_user ? (i_data < heap_OB[0]) : (max_q < heap_OB[0]);
 
     // Main buffer: command-dependent terms.
     m_enq_ok      = m_wrt && !m_read && !systolic_full && m_wr_rdy;
@@ -815,7 +836,7 @@ module hybrid_systolic_heap (
     h_enq_ok      = h_wrt && !h_read && !heap_systolic_full && h_wr_rdy;
     // Not gated on the readies: that would put the IB_room chain in series with the sort
     // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
-    h_enq_fwd     = h_wrt && !h_read && !heap_systolic_full && (h_data > heap_OB[1]);
+    h_enq_fwd     = h_wrt && !h_read && !heap_systolic_full && h_gt_ob1;
     h_writing_ib0 = h_enq_ok || (h_wrt && h_read && (h_rd_rdy || heap_systolic_empty));
 
     for (int i = 0; i < HALF_SIZE - 1; i++) begin
