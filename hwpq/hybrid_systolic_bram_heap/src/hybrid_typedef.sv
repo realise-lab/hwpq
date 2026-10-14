@@ -11,6 +11,9 @@
 `ifndef HYBRID_GEN_W
   `define HYBRID_GEN_W 3
 `endif
+`ifndef HYBRID_POWERUP_FILL
+  `define HYBRID_POWERUP_FILL 0
+`endif
 
 package bram_tree_pkg;
   localparam integer SYSTOLIC_QUEUE_SIZE = `HYBRID_SYSTOLIC_QUEUE_SIZE;
@@ -26,6 +29,8 @@ package bram_tree_pkg;
   localparam integer QUEUE_COUNT_WIDTH = $clog2(BRAM_TREE_QUEUE_SIZE + 1);
   // One reset in 2^GEN_W rewrites all tree memory; raise it if mid-operation resets are frequent.
   localparam integer GEN_W = `HYBRID_GEN_W;
+  // Rewrite tree memory at power-up, for a target whose RAM has no initial contents.
+  localparam bit POWERUP_FILL = `HYBRID_POWERUP_FILL;
 
   // Max-heap: a node is just its value, and 0 is the "empty" sentinel
   // (it is the lowest possible priority, so empties naturally sink to the bottom).

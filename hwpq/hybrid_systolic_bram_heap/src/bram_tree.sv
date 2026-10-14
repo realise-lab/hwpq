@@ -77,12 +77,12 @@ module bram_tree (
   // best possible priority while rebalancing so the hybrid stalls reads. Mirror of the min-heap's 0.
   logic [DATA_WIDTH-1:0] second_largest, next_second_largest;
 
-  // The BRAM has no reset port; the fill sequencer runs after every reset to
-  // explicitly write the initial values to all nodes.
-  logic                            filling;
-  logic [ADDRESS_WIDTH-1:0]        fill_cnt;
-  logic [$clog2(TREE_DEPTH+1)-1:0] fill_level;
-  logic [ADDRESS_WIDTH+1:0]        fill_bound;
+  // The BRAM has no reset port: a reset retires its contents by advancing gen, and the fill
+  // rewrites every node only when gen wraps, since a wrapped tag can match a stale node.
+  logic                            filling    = POWERUP_FILL;
+  logic [ADDRESS_WIDTH-1:0]        fill_cnt   = '0;
+  logic [$clog2(TREE_DEPTH+1)-1:0] fill_level = '0;
+  logic [ADDRESS_WIDTH+1:0]        fill_bound = 'd1;
   logic [ADDRESS_WIDTH-1:0]        fill_cap;
 
   // fill_cap halves per fill_level, so each depth's nodes get that subtree's capacity.
@@ -129,14 +129,13 @@ module bram_tree (
     end
   end
 
-  // Reset fill sequencer
-  always_ff @(posedge i_CLK or negedge i_RSTn) begin : fill_seq
-    if (!i_RSTn) begin
+  always_ff @(posedge i_CLK) begin : fill_seq
+    if (rst_pend_q && !rst_pend && &gen) begin
       filling    <= 1'b1;
       fill_cnt   <= '0;
       fill_level <= '0;
       fill_bound <= 'd1;
-    end else if (filling) begin
+    end else if (filling && !rst_pend) begin
       if (fill_cnt == ADDRESS_WIDTH'(NODES_NEEDED - 1)) begin
         filling <= 1'b0;
       end else begin
@@ -495,6 +494,6 @@ module bram_tree (
   assign o_full  = (queue_size == BRAM_TREE_QUEUE_SIZE);
   assign o_empty = (queue_size == 0);
   assign o_data  = top_level.value;
-  // Low through the reset fill, so no command reaches a half-rewritten memory.
-  assign o_ready = (state == IDLE) && !filling && !(i_read || i_wrt);
+  // Low until gen has advanced and through the fill, so no command reads a stale node as live.
+  assign o_ready = (state == IDLE) && !filling && !rst_pend && !rst_pend_q && !(i_read || i_wrt);
 endmodule
