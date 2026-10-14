@@ -6,8 +6,8 @@ module register_array_tb;
   localparam int DATA_WIDTH = 16;
 
   // Clock and reset signals
-  logic                 CLK;
-  logic                 RSTn;
+  logic                 i_CLK;
+  logic                 i_RSTn;
 
   // Input signals - for ENQ_ENA enabled
   logic                  i_wrt_ena;
@@ -20,18 +20,18 @@ module register_array_tb;
   logic [DATA_WIDTH-1:0] i_data_dis;
 
   // Output signals - for ENQ_ENA enabled
-  logic                  o_full_ena;
-  logic                  o_empty_ena;
+  logic                  o_write_ready_ena;
+  logic                  o_read_ready_ena;
   logic [DATA_WIDTH-1:0] o_data_ena;
   
   // Output signals - for ENQ_ENA disabled
-  logic                  o_full_dis;
-  logic                  o_empty_dis;
+  logic                  o_write_ready_dis;
+  logic                  o_read_ready_dis;
   logic [DATA_WIDTH-1:0] o_data_dis;
   
   // Current active outputs for testing
-  logic                  o_full;
-  logic                  o_empty;
+  logic                  o_write_ready;
+  logic                  o_read_ready;
   logic [DATA_WIDTH-1:0] o_data;
   logic [DATA_WIDTH-1:0] o_data_prev;
   
@@ -65,13 +65,13 @@ module register_array_tb;
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
   ) u_RegisterArray_ena (
-      .i_CLK(CLK),
-      .i_RSTn(RSTn),
+      .i_CLK(i_CLK),
+      .i_RSTn(i_RSTn),
       .i_wrt(i_wrt_ena),
       .i_read(i_read_ena),
       .i_data(i_data_ena),
-      .o_full(o_full_ena),
-      .o_empty(o_empty_ena),
+      .o_write_ready(o_write_ready_ena),
+      .o_read_ready(o_read_ready_ena),
       .o_data(o_data_ena)
   );
   
@@ -81,42 +81,44 @@ module register_array_tb;
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
   ) u_RegisterArray_dis (
-      .i_CLK(CLK),
-      .i_RSTn(RSTn),
+      .i_CLK(i_CLK),
+      .i_RSTn(i_RSTn),
       .i_wrt(i_wrt_dis),
       .i_read(i_read_dis),
       .i_data(i_data_dis),
-      .o_full(o_full_dis),
-      .o_empty(o_empty_dis),
+      .o_write_ready(o_write_ready_dis),
+      .o_read_ready(o_read_ready_dis),
       .o_data(o_data_dis)
   );
 
   always_comb begin : output_signal_switch
     case (current_mode)
       ENABLED : begin
-        o_full = o_full_ena;
-        o_empty = o_empty_ena;
+        o_write_ready = o_write_ready_ena;
+        o_read_ready = o_read_ready_ena;
         o_data = o_data_ena;
       end
       DISABLED : begin
-        o_full = o_full_dis;
-        o_empty = o_empty_dis;
+        o_write_ready = o_write_ready_dis;
+        o_read_ready = o_read_ready_dis;
         o_data = o_data_dis;
       end
       default : begin
-        o_full = o_full_dis;
-        o_empty = o_empty_dis;
+        o_write_ready = o_write_ready_dis;
+        o_read_ready = o_read_ready_dis;
         o_data = o_data_dis;
       end
     endcase
   end
 
   // Clock generation: 10ns period
-  always #5 CLK <= ~CLK;
+  always #5 i_CLK <= ~i_CLK;
+
+  int error_count = 0;
 
   initial begin
     // Initialize signals
-    CLK = 0;
+    i_CLK = 0;
     i_wrt_ena = 0;
     i_read_ena = 0;
     i_data_ena = 0;
@@ -129,10 +131,10 @@ module register_array_tb;
     ref_queue_prev = {};
 
     // Reset the modules
-    RSTn = 0;
-    @(posedge CLK);
-    RSTn = 1;
-    @(posedge CLK);
+    i_RSTn = 0;
+    @(posedge i_CLK);
+    i_RSTn = 1;
+    @(posedge i_CLK);
 
     // Test with ENQ_ENA enabled
     $display("\n=== Testing with ENQ_ENA enabled ===");
@@ -144,16 +146,16 @@ module register_array_tb;
       random_value = $urandom_range(1, 1023);
       enqueue(random_value);
     end
-    assert (o_full) else $error("The queue should be filled by the intialization!");
+    assert (!o_write_ready) else begin error_count++; $error("The queue should be filled by the intialization!"); end;
 
     // Test Case 1: Dequeue nodes with ENQ_ENA enabled
     $display("\nTest Case 1: Dequeue Test (ENQ_ENA enabled)");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       dequeue();
-      if (!o_empty) begin
-        assert (o_data == ref_queue_enq_1[0]) else $error("Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+      if (o_read_ready) begin
+        assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
       end else begin
-        assert (o_data == '0) else $error("Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+        assert (o_data == '0) else begin error_count++; $error("Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data); end;
       end
     end
 
@@ -162,16 +164,16 @@ module register_array_tb;
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = $urandom_range(1, 1023);
       enqueue(random_value);
-      assert (o_data == ref_queue_enq_1[0]) else $error("Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+      assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
     end
-    assert (o_full) else $error("The queue should be filled after enqueue!");
+    assert (!o_write_ready) else begin error_count++; $error("The queue should be filled after enqueue!"); end;
 
     // Test Case 3: Replace nodes with ENQ_ENA enabled
     $display("\nTest Case 3: Replace Test (ENQ_ENA enabled)");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = $urandom_range(1, 1023);
       replace(random_value);
-      assert (o_data == ref_queue_enq_1[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+      assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
     end
     
     // Test case 4: Random opertaion for 50 times
@@ -182,20 +184,20 @@ module register_array_tb;
         ENQUEUE: begin
           random_value = $urandom_range(1, 1023);
           enqueue(random_value);
-          assert (o_data == ref_queue_enq_1[0]) else $error("Random Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+          assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Random Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
         end
         DEQUEUE: begin
           dequeue();
-          if (!o_empty) begin
-            assert (o_data == ref_queue_enq_1[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+          if (o_read_ready) begin
+            assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
           end else begin
-            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+            assert (o_data == '0) else begin error_count++; $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data); end;
           end
         end
         REPLACE: begin
           random_value = $urandom_range(1, 1023);
           replace(random_value);
-          assert (o_data == ref_queue_enq_1[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data);
+          assert (o_data == ref_queue_enq_1[0]) else begin error_count++; $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_1[0], o_data); end;
         end
       endcase
     end
@@ -205,10 +207,10 @@ module register_array_tb;
     current_mode = DISABLED;
 
     // Reset the modules
-    RSTn = 0;
-    @(posedge CLK);
-    RSTn = 1;
-    @(posedge CLK);
+    i_RSTn = 0;
+    @(posedge i_CLK);
+    i_RSTn = 1;
+    @(posedge i_CLK);
     
     // Initialize queue inside enqueue disabled module
     $display("\nInitializing enqueue disabled module by replacing into it");
@@ -222,18 +224,18 @@ module register_array_tb;
 
 
 
-    repeat (2) @(posedge CLK);
+    repeat (2) @(posedge i_CLK);
 
 
     // Test Case 5: Dequeue Test with ENQ_ENA disabled
     $display("\nTest Case 5: Dequeue Test (ENQ_ENA disabled)");
-    assert (o_full) else $error("The queue should be filled by the intialization!");
+    assert (!o_write_ready) else begin error_count++; $error("The queue should be filled by the intialization!"); end;
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       dequeue();
-      if (!o_empty) begin
-        assert (o_data == ref_queue_enq_0[0]) else $error("Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+      if (o_read_ready) begin
+        assert (o_data == ref_queue_enq_0[0]) else begin error_count++; $error("Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data); end;
       end else begin
-        assert (o_data == 'd0) else $error("Dequeue: Node value mismatch -> expected %d, got %d", 'd0, o_data);
+        assert (o_data == 'd0) else begin error_count++; $error("Dequeue: Node value mismatch -> expected %d, got %d", 'd0, o_data); end;
       end
     end
     
@@ -244,9 +246,9 @@ module register_array_tb;
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = $urandom_range(1, 1023);
       enqueue(random_value);
-      assert (o_data == ref_queue_enq_0[0]) else $error("Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+      assert (o_data == ref_queue_enq_0[0]) else begin error_count++; $error("Enqueue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data); end;
     end
-    assert (o_data == o_data_prev) else $error("The queue should not have change!");
+    assert (o_data == o_data_prev) else begin error_count++; $error("The queue should not have change!"); end;
     begin
       bit queues_match;
       bit error_flag;
@@ -262,16 +264,16 @@ module register_array_tb;
           end
         end
       end
-      assert (!error_flag) else $error("The queue should not have change!");
+      assert (!error_flag) else begin error_count++; $error("The queue should not have change!"); end;
     end
-    assert (!o_full && !o_empty) else $error("The queue should not do anything!");
+    assert (o_write_ready && o_read_ready) else begin error_count++; $error("The queue should not do anything!"); end;
 
     // Test Case 7: Test Replace operation with ENQ_ENA disabled
     $display("\nTest Case 7: Replace Test (ENQ_ENA disabled)");
     for (int i = 0; i < QUEUE_SIZE / 2; i++) begin
       random_value = $urandom_range(1, 1023);
       replace(random_value);
-      assert (o_data == ref_queue_enq_0[0]) else $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+      assert (o_data == ref_queue_enq_0[0]) else begin error_count++; $error("Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data); end;
     end
     
     // Test case 8: Random opertaion for 50 times
@@ -281,149 +283,175 @@ module register_array_tb;
       case (random_operation)
         DEQUEUE: begin
           dequeue();
-          if (!o_empty) begin
-            assert (o_data == ref_queue_enq_0[0]) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+          if (o_read_ready) begin
+            assert (o_data == ref_queue_enq_0[0]) else begin error_count++; $error("Random Dequeue: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data); end;
           end else begin
-            assert (o_data == '0) else $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data);
+            assert (o_data == '0) else begin error_count++; $error("Random Dequeue: Node value mismatch -> expected %d, got %d", '0, o_data); end;
           end
         end
         REPLACE: begin
           random_value = $urandom_range(1, 1023);
           replace(random_value);
-          assert (o_data == ref_queue_enq_0[0]) else $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data);
+          assert (o_data == ref_queue_enq_0[0]) else begin error_count++; $error("Random Replace: Node value mismatch -> expected %d, got %d", ref_queue_enq_0[0], o_data); end;
         end
       endcase
     end
 
-    $display("\nTest completed!");
-    $finish;
+    if (error_count == 0) begin
+      $display("\nTest completed!");
+      $finish;
+    end else begin
+      $display("\n%0d error(s) detected during simulation.", error_count);
+      $fatal(1, "Test FAILED with %0d error(s).", error_count);
+    end
   end
 
   task automatic enqueue(input logic [DATA_WIDTH-1:0] value);
     begin
-      if (!o_full) begin
-        if (current_mode == ENABLED) begin
-          i_wrt_ena = 1;
-          i_read_ena = 0;
-          i_data_ena = value;
+      if (o_write_ready) begin
+        case (current_mode)
+          ENABLED: begin
+            i_wrt_ena = 1;
+            i_read_ena = 0;
+            i_data_ena = value;
 
-          ref_queue_enq_1[ref_queue_enq_1_size] = value;
-          ref_queue_enq_1_size++;
-      
-          rsort_ena();
-        end else if (current_mode == DISABLED) begin
-          i_wrt_dis = 1;
-          i_read_dis = 0;
-          i_data_dis = value;
-//          $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
-        end
+            ref_queue_enq_1[ref_queue_enq_1_size] = value;
+            ref_queue_enq_1_size++;
+
+            rsort_ena();
+          end
+          DISABLED: begin
+            i_wrt_dis = 1;
+            i_read_dis = 0;
+            i_data_dis = value;
+//            $display("Enqueue attempt with ENQ_ENA disabled - should have no effect");
+          end
+          default: begin
+            $display("Enqueue: Invalid mode, skipping enqueue");
+          end
+        endcase
       end else begin
         $display("Enqueue: Queue full, skipping enqueue");
       end
-      @(posedge CLK);
+      @(posedge i_CLK);
       i_wrt_ena  = 0;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (2) @(posedge CLK); // should have no effects
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 
   task automatic dequeue();
     begin
-      if (!o_empty) begin
-        if (current_mode == ENABLED) begin
-          i_wrt_ena  = 0;
-          i_read_ena = 1;
-          i_data_ena = 0;
+      if (o_read_ready) begin
+        case (current_mode)
+          ENABLED: begin
+            i_wrt_ena  = 0;
+            i_read_ena = 1;
+            i_data_ena = 0;
 
-          for (int i = 0; i < ref_queue_enq_1_size - 1; i++) begin
-            ref_queue_enq_1[i] = ref_queue_enq_1[i+1];
+            for (int i = 0; i < ref_queue_enq_1_size - 1; i++) begin
+              ref_queue_enq_1[i] = ref_queue_enq_1[i+1];
+            end
+            ref_queue_enq_1[ref_queue_enq_1_size-1] = '0;
+            ref_queue_enq_1_size--;
           end
-          ref_queue_enq_1[ref_queue_enq_1_size-1] = '0; 
-          ref_queue_enq_1_size--;
+          DISABLED: begin
+            i_wrt_dis  = 0;
+            i_read_dis = 1;
+            i_data_dis = 0;
 
-        end else if (current_mode == DISABLED) begin
-          i_wrt_dis  = 0;
-          i_read_dis = 1;
-          i_data_dis = 0;
-
-          for (int i = 0; i < ref_queue_enq_0_size - 1; i++) begin
-            ref_queue_enq_0[i] = ref_queue_enq_0[i+1];
+            for (int i = 0; i < ref_queue_enq_0_size - 1; i++) begin
+              ref_queue_enq_0[i] = ref_queue_enq_0[i+1];
+            end
+            ref_queue_enq_0[ref_queue_enq_0_size-1] = '0;
+            ref_queue_enq_0_size--;
           end
-          ref_queue_enq_0[ref_queue_enq_0_size-1] = '0; 
-          ref_queue_enq_0_size--;
-
-        end
+          default: begin
+            $display("Dequeue: Invalid mode, skipping dequeue");
+          end
+        endcase
       end else begin
         $display("Dequeue: Queue empty, skipping dequeue");
       end
-      @(posedge CLK);
+      @(posedge i_CLK);
       i_wrt_ena  = 0;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
+
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 
   task automatic replace(input logic [DATA_WIDTH-1:0] value);
     begin
-      if (current_mode == ENABLED) begin
-        i_wrt_ena  = 1;
-        i_read_ena = 1;
-        i_data_ena = value;
-        if (o_empty) begin
-          ref_queue_enq_1[ref_queue_enq_1_size] = value;
-          ref_queue_enq_1_size++;
-          rsort_ena();
-        end else begin
-          ref_queue_enq_1[0] = value;
-          rsort_ena();
+      case (current_mode)
+        ENABLED: begin
+          i_wrt_ena  = 1;
+          i_read_ena = 1;
+          i_data_ena = value;
+          if (!o_read_ready) begin
+            ref_queue_enq_1[ref_queue_enq_1_size] = value;
+            ref_queue_enq_1_size++;
+            rsort_ena();
+          end else begin
+            ref_queue_enq_1[0] = value;
+            rsort_ena();
+          end
         end
-      end else if (current_mode == DISABLED) begin
-        i_wrt_dis  = 1;
-        i_read_dis = 1;
-        i_data_dis = value;
-        if (o_empty) begin
-          ref_queue_enq_0[ref_queue_enq_0_size] = value;
-          ref_queue_enq_0_size++;
-          rsort_dis();
-        end else begin
-          ref_queue_enq_0[0] = value;
-          rsort_dis();
+        DISABLED: begin
+          i_wrt_dis  = 1;
+          i_read_dis = 1;
+          i_data_dis = value;
+          if (!o_read_ready) begin
+            ref_queue_enq_0[ref_queue_enq_0_size] = value;
+            ref_queue_enq_0_size++;
+            rsort_dis();
+          end else begin
+            ref_queue_enq_0[0] = value;
+            rsort_dis();
+          end
         end
-      end
-      @(posedge CLK);
+        default: begin
+          $display("Replace: Invalid mode, skipping replace");
+        end
+      endcase
+      @(posedge i_CLK);
       i_wrt_ena  = 0;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
+
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 
   task automatic replace_init(input logic [DATA_WIDTH-1:0] value);
     begin
-      if (current_mode == ENABLED) begin
-        i_wrt_ena  = 1;
-        i_read_ena = 1;
-        i_data_ena = value;
-      end else if (current_mode == DISABLED) begin
-        i_wrt_dis  = 1;
-        i_read_dis = 1;
-        i_data_dis = value;
-      end
-      @(posedge CLK);
+      case (current_mode)
+        ENABLED: begin
+          i_wrt_ena  = 1;
+          i_read_ena = 1;
+          i_data_ena = value;
+        end
+        DISABLED: begin
+          i_wrt_dis  = 1;
+          i_read_dis = 1;
+          i_data_dis = value;
+        end
+        default: begin
+          $display("Replace: Invalid mode, skipping replace");
+        end
+      endcase
+      @(posedge i_CLK);
       i_wrt_ena  = 0;
       i_read_ena = 0;
       i_wrt_dis  = 0;
       i_read_dis = 0;
-      if (current_mode == ENABLED) repeat (2) @(posedge CLK);
-      else if (current_mode == DISABLED) repeat (2) @(posedge CLK);
+
+      repeat (2) @(posedge i_CLK);
     end
   endtask
 

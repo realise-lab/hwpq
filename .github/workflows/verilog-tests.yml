@@ -66,6 +66,11 @@ jobs:
         continue-on-error: true
         run: scripts/run_sim.sh "bram_tree_pipelined" "hwpq/bram_tree_pipelined/rtl/sim/pipelined_bram_tree_tb.sv" "bram_tree_pipelined_tb"
 
+      - name: hybrid_systolic_bram_heap
+        id: test_hybrid_systolic_bram_heap
+        continue-on-error: true
+        run: scripts/run_sim.sh "hybrid_systolic_bram_heap" "hwpq/hybrid_systolic_bram_heap/sim/shared_hybrid_systolic_heap_tb.sv" "shared_hybrid_systolic_heap_tb" "-DHYBRID_TREE_COUNT=2 -DHYBRID_BRAM_TREE_QUEUE_SIZE=7"
+
 #      - name: hybrid_tree
 #        id: test_hybrid_tree
 #        continue-on-error: true
@@ -80,7 +85,8 @@ jobs:
           steps.test_systolic_array.outcome == 'failure' ||
           steps.test_systolic_array_bug.outcome == 'failure' ||
           steps.test_bram_tree.outcome == 'failure' ||
-          steps.test_bram_tree_pipelined.outcome == 'failure'
+          steps.test_bram_tree_pipelined.outcome == 'failure' ||
+          steps.test_hybrid_systolic_bram_heap.outcome == 'failure'
 #          steps.test_hybrid_tree.outcome == 'failure'
         run: |
           echo "ERROR: One or more module testbenches failed verification!"
