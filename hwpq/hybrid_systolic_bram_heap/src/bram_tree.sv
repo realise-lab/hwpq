@@ -490,12 +490,14 @@ module bram_tree_reset (
     else         rst_pend <= 1'b0;
   end
 
-  always_ff @(posedge i_CLK) begin : gen_seq
+  // Plain always, not always_ff: strict simulators count the declaration initializers as a
+  // second driver, and the initializers are what give these unreset flops a power-up value.
+  always @(posedge i_CLK) begin : gen_seq
     rst_pend_q <= rst_pend;
     if (rst_pend_q && !rst_pend) gen <= gen + 1'b1;
   end
 
-  always_ff @(posedge i_CLK) begin : fill_seq
+  always @(posedge i_CLK) begin : fill_seq
     if (rst_pend_q && !rst_pend && &gen) begin
       filling    <= 1'b1;
       fill_cnt   <= '0;
