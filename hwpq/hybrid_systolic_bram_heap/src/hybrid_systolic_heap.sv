@@ -55,8 +55,11 @@ module hybrid_systolic_heap (
   logic [TREE_COUNT-1:0]        heap_ready;
   logic [TREE_COUNT-1:0]        heap_top_moved;
 
-  logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;  // first tree a spill tries
-  logic [BRAM_TREE_ADDR_WIDTH-1:0]        spill_tgt;
+  // The spill target is chosen a cycle ahead, so the choice stays off the readiness paths:
+  // the first ready, non-full tree after the last target, else the first non-full one, which
+  // the spill then waits on. A tree that only frees up in between costs a cycle.
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]        spill_tgt, spill_tgt_next;
+  logic                                   spill_found_rdy;
 
   logic [GEN_W-1:0]         tree_gen;
   logic                     tree_gen_pending, tree_filling;
@@ -338,7 +341,7 @@ module hybrid_systolic_heap (
     if (!i_RSTn) begin  // Reset
       heap_write  <= 0;
       heap_read   <= 0;
-      heap_round_robin <= 0;
+      spill_tgt <= 0;
       m_dequeue_pending <= 1'b0;
       h_dequeue_pending <= 1'b0;
       m_forecast <= EMPTY_VAL;
@@ -356,13 +359,7 @@ module hybrid_systolic_heap (
         heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx);
       end
 
-      if (spill_fire) begin
-        if (spill_tgt == TREE_COUNT - 1) begin
-          heap_round_robin <= 0;
-        end else begin
-          heap_round_robin <= spill_tgt + 1;
-        end
-      end
+      spill_tgt <= spill_tgt_next;
 
       // Main buffer: systolic_array's sorting network, driven by m_wrt/m_read/m_data.
       if (m_read && !m_wrt && !systolic_empty && m_rd_rdy) begin
@@ -693,15 +690,17 @@ module hybrid_systolic_heap (
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
-    // The spill takes the first ready, non-full tree from the round-robin pointer on, so a busy
-    // tree never costs a cycle while another could take the tail.
-    spill_tgt           = heap_round_robin;
-    spill_to_heap_valid = 1'b0;
-    for (int d = TREE_COUNT - 1; d >= 0; d--) begin
-      if (heap_ready[(heap_round_robin + d) % TREE_COUNT]
-          && !heap_full[(heap_round_robin + d) % TREE_COUNT]) begin
-        spill_tgt           = BRAM_TREE_ADDR_WIDTH'((heap_round_robin + d) % TREE_COUNT);
-        spill_to_heap_valid = 1'b1;
+    spill_to_heap_valid = heap_ready[spill_tgt] && !heap_full[spill_tgt];
+    spill_tgt_next      = spill_tgt;
+    spill_found_rdy     = 1'b0;
+    for (int d = TREE_COUNT; d >= 1; d--) begin
+      if (!heap_full[(spill_tgt + d) % TREE_COUNT])
+        spill_tgt_next = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+    end
+    for (int d = TREE_COUNT; d >= 1; d--) begin
+      if (heap_ready[(spill_tgt + d) % TREE_COUNT] && !heap_full[(spill_tgt + d) % TREE_COUNT]) begin
+        spill_tgt_next  = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+        spill_found_rdy = 1'b1;
       end
     end
     spill_fire          = spill_to_heap && spill_to_heap_valid;
