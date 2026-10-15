@@ -55,7 +55,8 @@ module hybrid_systolic_heap (
   logic [TREE_COUNT-1:0]        heap_ready;
   logic [TREE_COUNT-1:0]        heap_top_moved;
 
-  logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;  // first tree a spill tries
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]        spill_tgt;
 
   logic [GEN_W-1:0]         tree_gen;
   logic                     tree_gen_pending, tree_filling;
@@ -335,16 +336,16 @@ module hybrid_systolic_heap (
       end
     end else begin
       for (int k = 0; k < TREE_COUNT; k++) begin
-        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == heap_round_robin));
+        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == spill_tgt));
         heap_data_sel[k] <= evict_fire && (k == max_node_idx);
         heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx);
       end
 
-      if (spill_to_heap) begin
-        if (heap_round_robin == TREE_COUNT - 1) begin
+      if (spill_fire) begin
+        if (spill_tgt == TREE_COUNT - 1) begin
           heap_round_robin <= 0;
         end else begin
-          heap_round_robin <= heap_round_robin + 1;
+          heap_round_robin <= spill_tgt + 1;
         end
       end
 
@@ -674,11 +675,21 @@ module hybrid_systolic_heap (
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
-    spill_to_heap_valid = heap_ready[heap_round_robin] && !heap_full[heap_round_robin];
+    // The spill takes the first ready, non-full tree from the round-robin pointer on, so a busy
+    // tree never costs a cycle while another could take the tail.
+    spill_tgt           = heap_round_robin;
+    spill_to_heap_valid = 1'b0;
+    for (int d = TREE_COUNT - 1; d >= 0; d--) begin
+      if (heap_ready[(heap_round_robin + d) % TREE_COUNT]
+          && !heap_full[(heap_round_robin + d) % TREE_COUNT]) begin
+        spill_tgt           = BRAM_TREE_ADDR_WIDTH'((heap_round_robin + d) % TREE_COUNT);
+        spill_to_heap_valid = 1'b1;
+      end
+    end
     spill_fire          = spill_to_heap && spill_to_heap_valid;
 
     // if a spill is going into the same heap this cycle, the spill wins and the pull retries next cycle
-    spill_hits_max = spill_fire && (max_node_idx == heap_round_robin);
+    spill_hits_max = spill_fire && (max_node_idx == spill_tgt);
 
 
 
