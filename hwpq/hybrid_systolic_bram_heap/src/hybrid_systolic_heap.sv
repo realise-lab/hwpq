@@ -152,6 +152,8 @@ module hybrid_systolic_heap (
 
   logic [HALF_SIZE-1:0] ib_e, ob_e, hib_e, hob_e; // slot is empty (value == 0)
   logic [1:0]           m_empt, h_empt;           // #empty slots, saturating at 3
+  logic                 h_last_write;             // the heap buffer takes exactly one more write
+  logic                 pull_reserved;
   logic                 m_all_empty, h_all_empty;
 
   function automatic logic [1:0] empties_sat(input logic [TOT-1:0] e);
@@ -168,6 +170,19 @@ module hybrid_systolic_heap (
       end
     end
     return lvl[0];
+  endfunction
+
+  function automatic logic more_than_3(input logic [TOT-1:0] e);
+    logic [2:0] lvl [TOTP];
+    logic [3:0] s;
+    for (int i = 0; i < TOTP; i++) lvl[i] = (i < TOT) ? {2'b0, e[i]} : 3'd0;
+    for (int n = TOTP; n > 1; n = n >> 1) begin
+      for (int i = 0; i < n/2; i++) begin
+        s      = {1'b0, lvl[2*i]} + {1'b0, lvl[2*i+1]};
+        lvl[i] = (s > 4'd4) ? 3'd4 : s[2:0];
+      end
+    end
+    return lvl[0] == 3'd4;
   endfunction
 
   function automatic logic [SV_W-1:0] scan_bwd(input logic [SV_W-1:0] g,
@@ -283,9 +298,9 @@ module hybrid_systolic_heap (
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
   // a replace on each side). Without the swap a full heap buffer can hide the maximum.
-  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy;
+  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy && !pull_reserved;
   assign evict_ok = max_valid && max_rdy && !spill_hits_max
-                    && heap_systolic_full && h_rd_rdy && max_gt_h_head;
+                    && (heap_systolic_full || pull_reserved) && h_rd_rdy && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
   assign o_write_ready = m_wr_rdy || h_wr_rdy;
@@ -644,6 +659,10 @@ module hybrid_systolic_heap (
     systolic_full       = (m_empt != 2'd3);   // was size >= SIZE-2
     systolic_empty      = m_all_empty;
     heap_systolic_full  = (h_empt != 2'd3);
+    h_last_write        = !heap_systolic_full && !more_than_3({hib_e, hob_e});
+    // While the main buffer is full, the heap buffer's last write slot is the only room a write
+    // can reach at once; a pull would move that room into a tree, so evict in its place.
+    pull_reserved       = systolic_full && h_last_write;
     heap_systolic_empty = h_all_empty;
 
     // ---- log-depth max tree over tree tops; a later index wins a value-tie ----
