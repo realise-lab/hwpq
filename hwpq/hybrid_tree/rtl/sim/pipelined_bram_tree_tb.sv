@@ -4,8 +4,8 @@ module pipelined_bram_tree_tb;
   localparam integer DataWidth = 16;
 
   // Clock and reset signals
-  logic                   CLK;
-  logic                   RSTn;
+  logic                   i_CLK;
+  logic                   i_RSTn;
 
   // Input signals
   logic                   i_wrt;
@@ -13,8 +13,8 @@ module pipelined_bram_tree_tb;
   logic   [DataWidth-1:0] i_data;
 
   // Output signals
-  logic                   o_full;
-  logic                   o_empty;
+  logic                   o_write_ready;
+  logic                   o_read_ready;
   logic                   o_valid;
   logic   [DataWidth-1:0] o_data;
 
@@ -36,32 +36,32 @@ module pipelined_bram_tree_tb;
       .QUEUE_SIZE(QueueSize),
       .DATA_WIDTH(DataWidth)
   ) uut (
-      .CLK(CLK),
-      .RSTn(RSTn),
+      .i_CLK(i_CLK),
+      .i_RSTn(i_RSTn),
       .i_wrt(i_wrt),
       .i_read(i_read),
       .i_data(i_data),
-      .o_full(o_full),
-      .o_empty(o_empty),
+      .o_write_ready(o_write_ready),
+      .o_read_ready(o_read_ready),
       .o_valid(o_valid),
       .o_data(o_data)
   );
 
   // Clock generation: 10ns period
-  always #5 CLK <= ~CLK;
+  always #5 i_CLK <= ~i_CLK;
 
   initial begin
     // Initialize signals
-    CLK = 0;
-    RSTn = 0;
+    i_CLK = 0;
+    i_RSTn = 0;
     i_wrt = 0;
     i_read = 0;
     i_data = 0;
 
     // Reset the module
-    @(posedge CLK);
-    RSTn = 1;
-    @(posedge CLK);
+    @(posedge i_CLK);
+    i_RSTn = 1;
+    @(posedge i_CLK);
 
     // Initialize the reference queue, sort the reference queue, and write to the queue
     for (int i = 0; i < QueueSize; i++) begin
@@ -87,14 +87,14 @@ module pipelined_bram_tree_tb;
     uut.next_queue_size = QueueSize;
     uut.next_state = 0;
 
-    repeat (16) @(posedge CLK);
+    repeat (16) @(posedge i_CLK);
 
     // Test Case 1: Dequeue nodes
     // Dequeue nodes for QUEUE_SIZE times
     $display("\nTest Case 1: Dequeue Test");
     for (int i = 0; i < QueueSize; i++) begin
       dequeue();
-      if (!o_empty) begin
+      if (o_read_ready) begin
         assert (o_data == ref_queue[0])
         else $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
       end else begin
@@ -126,7 +126,7 @@ module pipelined_bram_tree_tb;
     uut.next_queue_size = QueueSize;
     uut.next_state = 0;
 
-    repeat (16) @(posedge CLK);
+    repeat (16) @(posedge i_CLK);
 
     // Test Case 2: Replace nodes
     // Replace root node for QUEUE_SIZE times
@@ -147,7 +147,7 @@ module pipelined_bram_tree_tb;
       case (random_operation)
         DEQUEUE: begin
           dequeue();
-          if (!o_empty) begin
+          if (o_read_ready) begin
             assert (o_data == ref_queue[0])
             else
               $error("Dequeue: Node f value mismatch -> expected %d, got %d", ref_queue[0], o_data);
@@ -177,7 +177,7 @@ module pipelined_bram_tree_tb;
   // Task to read root node
   task automatic dequeue();
     begin
-      if (!o_empty) begin
+      if (o_read_ready) begin
         i_wrt  = 0;
         i_read = 1;
         ref_queue.pop_front();
@@ -185,10 +185,10 @@ module pipelined_bram_tree_tb;
       end else begin
         $display("Dequeue: Queue empty, skipping dequeue");
       end
-      @(posedge CLK);
+      @(posedge i_CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (24) @(posedge CLK);
+      repeat (24) @(posedge i_CLK);
     end
   endtask
 
@@ -201,10 +201,10 @@ module pipelined_bram_tree_tb;
       ref_queue.pop_front();
       ref_queue.push_back(value);
       ref_queue.rsort();
-      @(posedge CLK);
+      @(posedge i_CLK);
       i_wrt  = 0;
       i_read = 0;
-      repeat (24) @(posedge CLK);
+      repeat (24) @(posedge i_CLK);
     end
   endtask
 
