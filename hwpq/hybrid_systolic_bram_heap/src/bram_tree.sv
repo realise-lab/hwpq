@@ -19,7 +19,10 @@ module bram_tree (
     output logic                  o_empty,  // High if the heap is empty
     output logic [DATA_WIDTH-1:0] o_data,   // Output data (Root node, the max)
     output logic                  o_ready,  // Stall if we are still propagating/rebalancing
-    output logic                  o_top_moved  // o_data or o_empty may differ from last cycle
+    output logic                  o_top_moved,  // o_data or o_empty may differ from last cycle
+    // Upper bound on every value below the top, valid while o_next_ok; registered from last cycle
+    output logic [DATA_WIDTH-1:0] o_next,
+    output logic                  o_next_ok
 );
 
   typedef enum logic [3:0] {
@@ -113,6 +116,30 @@ module bram_tree (
     else         top_moved <= state == IDLE && (i_wrt || i_read);
   end
   assign o_top_moved = top_moved;
+
+  // Below the top every value sits under a root child or is an insert walk's carry. A dequeue or
+  // replace walk leaves a root child below its subtree until it refills it, so no bound then.
+  // Registered a cycle late: a command's carry is in curr before a caller can owe the tree.
+  logic [DATA_WIDTH-1:0] next_l, next_r, next_c;
+  logic                  ins_walk, refill_walk;
+  always_comb begin
+    next_l      = child_l.active ? child_l.value : EMPTY_VAL;
+    next_r      = child_r.active ? child_r.value : EMPTY_VAL;
+    ins_walk    = state == ENQUEUE_READ_CHILD || state == ENQUEUE_COMPARE_CHILD;
+    refill_walk = state == DEQUEUE_READ_CHILD || state == DEQUEUE_COMPARE_CHILD
+                  || state == REPLACE_READ_CHILD || state == REPLACE_COMPARE_CHILD;
+    next_c      = ins_walk ? curr.value : EMPTY_VAL;
+  end
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) begin
+      o_next    <= EMPTY_VAL;
+      o_next_ok <= 1'b0;
+    end else begin
+      o_next    <= (next_l >= next_r) ? ((next_l >= next_c) ? next_l : next_c)
+                                      : ((next_r >= next_c) ? next_r : next_c);
+      o_next_ok <= !(refill_walk && curr.position <= 2) && !i_filling;
+    end
+  end
 
   always_ff @(posedge i_CLK or negedge i_RSTn) begin : fsm_seq
     if (!i_RSTn) begin
