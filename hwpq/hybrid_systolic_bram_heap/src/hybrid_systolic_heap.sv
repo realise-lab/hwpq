@@ -68,8 +68,9 @@ module hybrid_systolic_heap (
   // the spill then waits on. A tree that only frees up in between costs a cycle.
   logic [BRAM_TREE_ADDR_WIDTH-1:0]        spill_tgt, spill_tgt_next;
   logic                                   spill_found_rdy;
-  // An owed evict's heap head goes to another ready tree, chosen alike and never the spill target.
-  logic [BRAM_TREE_ADDR_WIDTH-1:0]        evict_tgt, evict_tgt_next;
+  // An owed evict's heap head goes to another tree, chosen a cycle ahead among idle trees that take
+  // no command at that edge, so it is idle and not full when used; never the spill target.
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]        evict_tgt, evict_tgt_next, tc;
   logic                                   evict_found, evict_found_next;
 
   logic [GEN_W-1:0]         tree_gen;
@@ -339,14 +340,12 @@ module hybrid_systolic_heap (
   // evict from a busy tree owes it the pop and sends the heap head to the evict target instead.
   assign pull_ok  = max_valid && (max_rdy || owe_ok) && !spill_hits_max && h_wr_rdy
                     && !pull_reserved;
-  assign evict_ok = max_valid && (max_rdy || (owe_ok && evict_found && heap_ready[evict_tgt]
-                                               && !heap_full[evict_tgt] && !dw_req))
+  assign evict_ok = max_valid && (max_rdy || (owe_ok && evict_found && !dw_req))
                     && !spill_hits_max && (heap_systolic_full || pull_reserved) && h_rd_rdy
                     && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
-  assign dw_rdy        = evict_found && heap_ready[evict_tgt] && !heap_full[evict_tgt]
-                         && (evict_tgt != max_idx_q);
+  assign dw_rdy        = evict_found && (evict_tgt != max_idx_q);
   assign o_write_ready = m_wr_rdy || h_wr_rdy || dw_rdy;
   // The head is the larger buffer head, once both buffers and the trees can be compared.
   assign o_read_ready  = (output_from_heap_systolic ? h_rd_rdy : m_rd_rdy)
@@ -773,13 +772,15 @@ module hybrid_systolic_heap (
       end
     end
     spill_fire          = spill_to_heap && spill_to_heap_valid;
-    evict_tgt_next      = evict_tgt;
-    evict_found_next    = 1'b0;
+    // A tree idle now and none of those this cycle's commands can reach (the max tree, the spill
+    // and evict targets) is idle next cycle. Registers only, off the command decode.
+    evict_tgt_next   = evict_tgt;
+    evict_found_next = 1'b0;
     for (int d = 1; d <= TREE_COUNT; d++) begin
-      if (heap_ready[(spill_tgt + d) % TREE_COUNT] && !heap_full[(spill_tgt + d) % TREE_COUNT]
-          && !owed[(spill_tgt + d) % TREE_COUNT]
-          && BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT) != spill_tgt_next) begin
-        evict_tgt_next   = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+      tc = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+      if (heap_ready[tc] && !heap_full[tc] && !owed[tc] && tc != spill_tgt_next
+          && tc != spill_tgt && tc != max_idx_q && !(evict_found && tc == evict_tgt)) begin
+        evict_tgt_next   = tc;
         evict_found_next = 1'b1;
       end
     end
