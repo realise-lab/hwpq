@@ -244,12 +244,12 @@ module hybrid_systolic_heap (
   logic                                 max_rdy;
 
   // The max over tree tops is registered from last cycle's values, ignoring readiness. It is
-  // exact unless a tree's top moved since (o_top_moved) or a tree is busy now, and either
-  // makes the max the unknown bound.
+  // exact unless a tree's top moved since (o_top_moved), which holds reads. Pulls and
+  // evictions also wait while the max tree is busy (tree_hold), since they command it.
   logic [DATA_WIDTH-1:0]                max_q;
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      max_idx_q;
   logic                                 max_v_q;
-  logic                                 tree_hold;
+  logic                                 tree_hold, top_moved_any;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire, pull_ok, evict_ok;
@@ -666,14 +666,11 @@ module hybrid_systolic_heap (
     heap_systolic_empty = h_all_empty;
 
     // ---- log-depth max tree over tree tops; a later index wins a value-tie ----
-    tree_hold = 1'b0;
+    top_moved_any = |heap_top_moved;
     for (int i = 0; i < TC_P2; i++) begin
       if (i < TREE_COUNT) begin
         t_val[TC_P2+i] = heap_output[i];
         t_v[TC_P2+i]   = !heap_empty[i] && (heap_output[i] != EMPTY_VAL);
-        // A busy non-empty tree may hold any value, so it holds reads and pulls.
-        tree_hold      = tree_hold || heap_top_moved[i]
-                         || (!heap_ready[i] && !heap_empty[i]);
       end else begin
         t_val[TC_P2+i] = EMPTY_VAL;
         t_v[TC_P2+i]   = 1'b0;
@@ -687,6 +684,8 @@ module hybrid_systolic_heap (
       t_i[n]   = t_rw ? t_i[2*n+1]   : t_i[2*n];
     end
 
+    // Pulls and evictions command only the max tree, so only that tree must be idle.
+    tree_hold    = top_moved_any || !heap_ready[max_idx_q];
     max_valid    = max_v_q || tree_hold;
     max_rdy      = max_v_q && !tree_hold;
     max_node_idx = max_idx_q;
@@ -813,11 +812,11 @@ module hybrid_systolic_heap (
         : (m_dequeue_pending ? (heap_OB[0] > m_forecast) : (heap_OB[0] > OB[0]));
     rd_sel = output_from_heap_systolic ? h_head : m_head;
 
-    // max_node is the unknown bound '1 while tree_hold, and no head can reach it ('1 is reserved).
-    // Pulls and evictions need max_rdy, which excludes tree_hold, so they compare max_q.
+    // A tree's top bounds its contents whenever o_top_moved is low, busy or not, so reads wait
+    // only for a moved top. Pulls and evictions command a tree and also wait for it to be idle.
     h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
     m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
-    rd_ge_max = !tree_hold && (output_from_heap_systolic ? h_ge_max : m_ge_max);
+    rd_ge_max = !top_moved_any && (output_from_heap_systolic ? h_ge_max : m_ge_max);
     max_gt_h_head = h_dequeue_pending ? (max_q > h_forecast) : (max_q > heap_OB[0]);
 
     // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main
