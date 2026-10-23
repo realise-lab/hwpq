@@ -120,8 +120,6 @@ module hybrid_systolic_heap (
   logic                    heap_systolic_full;
   logic                    heap_systolic_empty;
 
-  logic                    heap_write_to_buffer;
-  logic                    heap_replace_to_buffer;
   logic                    output_from_heap_systolic;
 
   logic [DATA_WIDTH-1:0]           max_node;
@@ -198,7 +196,7 @@ module hybrid_systolic_heap (
   logic [SV_W-1:0] hob_g, hob_p, hob_v;
   logic [SV_W-1:0] ib_g,  ib_p,  ib_v;
   logic [SV_W-1:0] hib_g, hib_p, hib_v;
-  logic            ib_a, ib_b, hib_a, hib_b;
+  logic            ib_b, hib_b;
   
   localparam int TC_P2 = 1 << BRAM_TREE_ADDR_WIDTH;
 
@@ -212,13 +210,30 @@ module hybrid_systolic_heap (
   logic                                 t_rw;
   logic                                 max_valid;
 
-  logic hib0_empty, can_write, can_replace;
   logic spill_fire, spill_hits_max;
-  logic pull_fire, replace_fire;
+  logic pull_fire, evict_fire;
 
   logic [DATA_WIDTH-1:0] heap_rep_data;     // no reset, data only
   logic [DATA_WIDTH-1:0] heap_spill_data;   // no reset, data only
   logic [TREE_COUNT-1:0] heap_data_sel;     // 1 = replace data, 0 = spill data (registered with heap_write)
+
+  // Per-buffer command, readies and head (systolic_array's i_wrt/i_read/i_data,
+  // o_write_ready/o_read_ready/o_data).
+  logic                    m_wrt, m_read, h_wrt, h_read;
+  logic [DATA_WIDTH-1:0]   m_data, h_data;
+  logic                    m_wr_rdy, m_rd_rdy, h_wr_rdy, h_rd_rdy;
+  logic [DATA_WIDTH-1:0]   m_head, h_head;
+  logic                    m_dequeue_pending, h_dequeue_pending;
+  logic [DATA_WIDTH-1:0]   m_forecast, h_forecast;
+  logic                    m_ib0_to_ob1, h_ib0_to_ob1;
+  logic                    m_ib0_free, h_ib0_free;
+  logic                    m_enq_ok, h_enq_ok, m_enq_fwd, h_enq_fwd;
+  logic                    m_writing_ib0, h_writing_ib0;
+  logic                    IB_room             [HALF_SIZE-1];
+  logic                    heap_IB_room        [HALF_SIZE-1];
+  logic [SV_W-1:0]         room_g, room_p, room_v, hroom_g, hroom_p, hroom_v;
+  logic                    user_heap, user_heap_enq;
+  logic                    hybrid_empty, rep_empty;
 
   generate
     for (genvar k = 0; k < TREE_COUNT; k++) begin : g_heap_in
@@ -226,24 +241,29 @@ module hybrid_systolic_heap (
     end
   endgenerate
 
-  assign pull_fire    = heap_ready[max_node_idx] && (heap_write_to_buffer || heap_replace_to_buffer);
-  assign replace_fire = heap_ready[max_node_idx] && heap_replace_to_buffer;
+  // A tree head moves into the heap buffer when it has room (pull), or swaps with the
+  // heap buffer's head when that buffer is full and the tree head outranks it (evict:
+  // a replace on each side). Without the swap a full heap buffer can hide the maximum.
+  assign pull_fire  = !user_heap && !user_heap_enq && max_valid && heap_ready[max_node_idx] && !spill_hits_max
+                      && h_wr_rdy;
+  assign evict_fire = !user_heap && !user_heap_enq && max_valid && heap_ready[max_node_idx] && !spill_hits_max
+                      && heap_systolic_full && h_rd_rdy && (max_node > h_head);
 
-
-  // dont think i need (!systolic_full && (IB[0] == 0)
-  assign o_write_ready = ((!systolic_full && !(&heap_full) && !heap_systolic_full) || (!systolic_full)) && (!ob_e[0] || systolic_empty);
-  assign o_read_ready = (rd_sel != EMPTY_VAL)
-    && (rd_sel >= max_node) && (rd_sel >= OB[1])      && (rd_sel >= heap_OB[1])
-    && (rd_sel >= IB[0])    && (rd_sel >= heap_IB[0]);
+  // Room in either buffer takes a write, so one is accepted in the cycle after any read.
+  assign o_write_ready = m_wr_rdy || h_wr_rdy;
+  // The head is the larger buffer head, once both buffers and the trees can be compared.
+  assign o_read_ready  = (output_from_heap_systolic ? h_rd_rdy : m_rd_rdy)
+                         && (systolic_empty || m_rd_rdy) && (heap_systolic_empty || h_rd_rdy)
+                         && (rd_sel >= max_node);
 
   logic [5:0][DATA_WIDTH-1:0] head_v;
   always_comb begin
     head_v  = {heap_OB[1], heap_IB[0], IB[0], OB[1], OB[0], heap_OB[0]};
-    o_max_value = oh6_select(head_v, argmax6_oh(head_v));
+    o_max_value = bram_tree_pkg::oh6_select(head_v, bram_tree_pkg::argmax6_oh(head_v));
   end
 
   always_ff @(posedge i_CLK) begin
-    heap_rep_data   <= heap_IB[2];
+    heap_rep_data   <= h_head;
     heap_spill_data <= IB[HALF_SIZE-1];
   end
 
@@ -253,6 +273,10 @@ module hybrid_systolic_heap (
       heap_write  <= 0;
       heap_read   <= 0;
       heap_round_robin <= 0;
+      m_dequeue_pending <= 1'b0;
+      h_dequeue_pending <= 1'b0;
+      m_forecast <= EMPTY_VAL;
+      h_forecast <= EMPTY_VAL;
       for (int i = 0; i < HALF_SIZE; i++) begin
         IB[i] <= EMPTY_VAL;  // initialize to the sentinel (0, lowest priority), since this is a max-queue
         OB[i] <= EMPTY_VAL;
@@ -260,251 +284,293 @@ module hybrid_systolic_heap (
         heap_OB[i] <= EMPTY_VAL;
       end
     end else begin
-      heap_write  <= 0;
-      heap_read   <= 0;
-
-
-      // Dequeue operation
-      if (i_read && !i_wrt && o_read_ready) begin // pop the head of OB
-        if (output_from_heap_systolic) begin
-          heap_OB[0] <= EMPTY_VAL;
-        end else begin
-          OB[0] <= EMPTY_VAL;
-        end
-      end
-
-      // Enqueue operation
-      if (i_wrt && !i_read && o_write_ready) begin
-        if (i_data > OB[0]) begin
-          OB[0] <= i_data;
-          IB[0] <= OB[0];
-        end else begin
-          IB[0] <= i_data;  // insert the new node at the head of IB
-        end
-      end
-
-      // Replace operation
-      // Write stall doesn't trigger here, since it's replace we should always be able to write
-      if (i_wrt && i_read && o_read_ready) begin
-        // if the output is from the heap systolic we read from heap systolic, and write to main systolic
-        if (output_from_heap_systolic) begin
-          if (systolic_full) begin
-            heap_IB[0] <= i_data;
-            heap_OB[0] <= EMPTY_VAL;
-          end else if (systolic_empty) begin
-            OB[0] <= i_data;
-            heap_OB[0] <= EMPTY_VAL;
-          end else begin
-            if (i_data > OB[0]) begin
-              OB[0] <= i_data;
-              IB[0] <= OB[0];
-            end else begin
-              IB[0] <= i_data;
-            end
-            heap_OB[0] <= EMPTY_VAL;
-          end
-        end else begin
-          if (systolic_empty) begin
-            OB[0] <= i_data;  // insert the new node at the head of OB
-          end else begin
-            IB[0] <= i_data;  // replace the head of IB
-            OB[0] <= EMPTY_VAL;  // pop the head of OB
-          end
-        end
-      end
-
       for (int k = 0; k < TREE_COUNT; k++) begin
-        heap_write[k]    <= (replace_fire && (k == max_node_idx)) || (spill_fire && (k == heap_round_robin));
-        heap_data_sel[k] <= replace_fire && (k == max_node_idx);
-        heap_read[k]     <= pull_fire && (k == max_node_idx);
+        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == heap_round_robin));
+        heap_data_sel[k] <= evict_fire && (k == max_node_idx);
+        heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx);
       end
-      
+
       if (spill_to_heap) begin
-        if (spill_to_heap_valid) begin
-          if ((!(IB_shift_valid[HALF_SIZE-2]) && (IB_shift[HALF_SIZE-2] || !IB_gt_OB_next[HALF_SIZE-2])) || IB_shift_to_OB[HALF_SIZE-2]) IB[HALF_SIZE-1] <= EMPTY_VAL;
-        end
         if (heap_round_robin == TREE_COUNT - 1) begin
           heap_round_robin <= 0;
         end else begin
           heap_round_robin <= heap_round_robin + 1;
         end
       end
-      
-      // writing to the heap_systolic
-      if (heap_ready[max_node_idx]) begin
-        if (heap_write_to_buffer) begin
-          if ((max_node > heap_OB[0]) && (!hob_e[0] && heap_systolic_empty)) begin
-            heap_OB[0] <= max_node;
-            heap_IB[0] <= heap_OB[0];
+
+      // Main buffer: systolic_array's sorting network, driven by m_wrt/m_read/m_data.
+      if (m_read && !m_wrt && !systolic_empty && m_rd_rdy) begin
+        OB[0] <= EMPTY_VAL;
+      end
+
+      if (m_enq_ok) begin
+        if (OB_shift[0] && OB_shift_valid[0]) begin
+          if (m_data > OB[1]) begin
+            OB[0] <= m_data;
           end else begin
-            heap_IB[0] <= max_node;  
+            IB[0] <= m_data;
           end
-        end else if (heap_replace_to_buffer) begin
-          heap_IB[2] <= EMPTY_VAL;
-          if (max_node > heap_OB[0] && (!hob_e[0])) begin
-            heap_OB[0] <= max_node;
-            heap_IB[0] <= heap_OB[0];
+        end else begin
+          if (m_data > OB[0]) begin
+            OB[0] <= m_data;
+            IB[0] <= OB[0];
           end else begin
-            heap_IB[0] <= max_node;  
+            IB[0] <= m_data;
           end
         end
       end
 
-      // Sorting logic
-      for (int i = 0; i < HALF_SIZE; i++) begin  // Iterate through each element
-         priority case (1'b1)
-          OB_shift[i] && OB_shift_valid[i]: begin
-            OB[i] <= OB[i+1]; 
-            if ((i == (HALF_SIZE - 2) || !OB_shift_valid[i+1] || !IB_shift_to_OB[i+1] || !OB_shift[i+1])) OB[i+1] <= EMPTY_VAL;
+      if (m_wrt && m_read && (m_rd_rdy || systolic_empty)) begin
+        if (systolic_empty) begin
+          OB[0] <= m_data;
+        end else begin
+          if ((m_data > OB[1]) && (m_data > IB[1]) && (m_data > IB[0])) begin
+            OB[0] <= m_data;
+          end else begin
+            IB[0] <= m_data;
+            OB[0] <= EMPTY_VAL;
+          end
+        end
+      end
+
+      m_dequeue_pending <= m_read && m_rd_rdy;
+      m_forecast        <= (IB[0] < OB[1]) ? OB[1] : IB[0];
+
+      // The tail leaves for a tree; a shift or move into it later in this block wins.
+      if (spill_fire) IB[HALF_SIZE-1] <= EMPTY_VAL;
+
+      if (m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0]) && !m_enq_fwd) begin
+        OB[1] <= IB[0];
+        if (!m_writing_ib0 || (m_writing_ib0 && m_read && (m_data > OB[1]) && !IB_gt_OB_next[0]) || (m_writing_ib0 && !systolic_full && m_wr_rdy && OB_shift[0] && OB_shift_valid[0] && (m_data > OB[1]))) begin
+          IB[0] <= EMPTY_VAL;
+        end
+      end
+
+      for (int i = 0; i < HALF_SIZE; i++) begin
+        priority case (1'b1)
+          (i < HALF_SIZE-1) && OB_shift[i] && OB_shift_valid[i]
+          && !(i > 0 && m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0]) && !m_enq_fwd)
+          && !m_enq_fwd: begin
+            OB[i] <= OB[i+1];
+            if (!(i == 0 && m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0])) && (i == (HALF_SIZE - 2) || !OB_shift_valid[i+1] || !IB_shift_to_OB[i+1] || !OB_shift[i+1] || (OB[i+2] == 0))) OB[i+1] <= EMPTY_VAL;
           end
           default: begin
-            // No action needed
           end
         endcase
 
         priority case (1'b1)
-          IB_shift[i] && IB_shift_valid[i]: begin
-            // We slide this value down
+          (i < HALF_SIZE-1) && IB_shift[i] && IB_shift_valid[i] &&
+          !(m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0])) &&
+          !(!m_dequeue_pending && OB_shift[i] && OB_shift_valid[i] && (i < HALF_SIZE - 2) && m_enq_ok && IB_gt_OB_next[i+1])
+          : begin
             IB[i+1] <= IB[i];
-            if ((i == 0 && !i_wrt) || (i > 0 && !IB_shift_valid[i-1])) IB[i] <= EMPTY_VAL;
+            if (((i == 0 && !m_writing_ib0)
+            || (i > 0 && (!IB_shift_valid[i-1] || (IB_shift_to_OB[i-1] && !m_enq_fwd)))
+            || (i == 0 && m_writing_ib0 && m_read && (m_data > OB[1]) && !IB_gt_OB_next[0])
+            || (i > 0 && !IB_shift[i-1] && !IB_gt_OB_next[i-1])
+            || (i == 0 && m_writing_ib0 && !systolic_full && m_wr_rdy && OB_shift[0] && OB_shift_valid[0] && (m_data > OB[1])))
+            && !(i>0 && m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0]) && IB_gt_OB_next[i-1]))
+            IB[i] <= EMPTY_VAL;
           end
           default: begin
-            // No action needed
           end
         endcase
 
         priority case (1'b1)
-          OB_next_gt_OB[i] && !OB_shift_valid[i] && !IB_gt_OB[i]
+          (i < HALF_SIZE-1) && OB_next_gt_OB[i] && !OB_shift_valid[i] && !IB_gt_OB[i]
           && (i > 0 && !IB_gt_OB_next[i-1]): begin
-            // If we cannot shift, we can swap
             OB[i+1] <= OB[i];
             OB[i] <= OB[i+1];
           end
 
-          IB_shift_to_OB[i]: begin
-            // if OB is shifting while we want to swap in, we can just swap down instead
+          (i < HALF_SIZE-1) && IB_shift_to_OB[i]
+          && !(m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0]))
+          && !m_enq_fwd: begin
             OB[i] <= IB[i];
-            if (!(IB_shift[i-1] && IB_shift_valid[i-1])) IB[i] <= EMPTY_VAL;
+            if (i > 0 && !(IB_shift[i-1] && IB_shift_valid[i-1])) IB[i] <= EMPTY_VAL;
           end
 
           IB_gt_OB[i] && !(i < (HALF_SIZE-1) && OB_shift[i] && OB_shift_valid[i]): begin
-            IB[i] <=  OB[i];
-            OB[i] <=  IB[i];
+            if (!(m_enq_ok && (m_data < OB[0]) && (i == 0))) IB[i] <= OB[i];
+            OB[i] <= IB[i];
           end
 
-          IB_gt_OB_next[i] && (!IB_gt_OB[i+1])
-          && ((ib_e[i+1]) || (IB_gt_OB_next[i+1]) || (IB_shift[i+1]) || (spill_to_heap && spill_to_heap_valid)) && IB_shift_valid[i]: begin
-            // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
+          (i < HALF_SIZE-1) && IB_gt_OB_next[i] && (!IB_gt_OB[i+1])
+          && ((IB[i+1] == 0) || (i+1 < HALF_SIZE-1 && IB_gt_OB_next[i+1])
+          || (i+1 < HALF_SIZE-1 && IB_shift[i+1]) || (i+1 == HALF_SIZE-1 && spill_fire))
+          && (IB_shift_valid[i] || (i+1 < HALF_SIZE-1 && IB_shift_valid[i+1]))
+          && !(m_ib0_to_ob1 && (OB_shift_valid[0] && OB_shift[0])): begin
             OB[i+1] <= IB[i];
             IB[i+1] <= OB[i+1];
-            // if we are also writing this cycle, we need to replace the value with i_data or OB[0] if i_data > OB[0]
-            if (i == 0 && i_wrt) begin
-              if (i_data > OB[0] && !i_read) begin
+            if (i == 0 && m_writing_ib0) begin
+              if (m_data > OB[0] && !m_read) begin
                 IB[i] <= OB[0];
               end else begin
-                IB[i] <= i_data;
+                IB[i] <= m_data;
               end
             end
-            if ((i > 0 && (IB_shift_to_OB[i-1] || IB_gt_OB[i-1])) || (i == 0 && !i_wrt)) begin
+            if ((i > 0 && (IB_shift_to_OB[i-1] && !m_enq_fwd
+            || (IB_gt_OB[i-1] && (i-1 != 0)))) || (i == 0 && !m_writing_ib0)) begin
+              IB[i] <= EMPTY_VAL;
+            end
+            if (i == 0 && m_wrt && m_read && m_rd_rdy && (m_data > OB[1]) && (m_data > IB[1]) && (m_data > IB[0])) begin
+              IB[i] <= EMPTY_VAL;
+            end
+            if ((i > 0) && (IB_shift[i-1] && IB_shift_valid[i-1] && (IB[i-1] == EMPTY_VAL) && !(IB_gt_OB[i-1]) && !(IB_gt_OB_next[i-1]))) begin
               IB[i] <= EMPTY_VAL;
             end
           end
 
-          IB_gt_OB_next[i] && !IB_shift_valid[i] && !IB_gt_OB[i+1]: begin
-            // If we cannot shift, we can swap
+          (i < HALF_SIZE-1) && IB_gt_OB_next[i] && !IB_shift_valid[i] && !IB_gt_OB[i+1]: begin
             IB[i] <= OB[i+1];
             OB[i+1] <= IB[i];
           end
 
-          IB_gt_IB_next[i] && !IB_shift_valid[i]
+          (i < HALF_SIZE-1) && IB_gt_IB_next[i] && !IB_shift_valid[i]
           && ((i == (HALF_SIZE - 2)) || (!IB_gt_IB_next[i+1] && !IB_gt_OB_next[i+1]))
           && (!IB_gt_OB[i+1]): begin
-            // If we cannot shift, we can swap
             IB[i] <= IB[i+1];
             IB[i+1] <= IB[i];
           end
 
           default: begin
-            // No action needed
           end
         endcase
       end
-      
+
+      // Heap buffer: systolic_array's sorting network, driven by h_wrt/h_read/h_data.
+      if (h_read && !h_wrt && !heap_systolic_empty && h_rd_rdy) begin
+        heap_OB[0] <= EMPTY_VAL;
+      end
+
+      if (h_enq_ok) begin
+        if (heap_OB_shift[0] && heap_OB_shift_valid[0]) begin
+          if (h_data > heap_OB[1]) begin
+            heap_OB[0] <= h_data;
+          end else begin
+            heap_IB[0] <= h_data;
+          end
+        end else begin
+          if (h_data > heap_OB[0]) begin
+            heap_OB[0] <= h_data;
+            heap_IB[0] <= heap_OB[0];
+          end else begin
+            heap_IB[0] <= h_data;
+          end
+        end
+      end
+
+      if (h_wrt && h_read && (h_rd_rdy || heap_systolic_empty)) begin
+        if (heap_systolic_empty) begin
+          heap_OB[0] <= h_data;
+        end else begin
+          if ((h_data > heap_OB[1]) && (h_data > heap_IB[1]) && (h_data > heap_IB[0])) begin
+            heap_OB[0] <= h_data;
+          end else begin
+            heap_IB[0] <= h_data;
+            heap_OB[0] <= EMPTY_VAL;
+          end
+        end
+      end
+
+      h_dequeue_pending <= h_read && h_rd_rdy;
+      h_forecast        <= (heap_IB[0] < heap_OB[1]) ? heap_OB[1] : heap_IB[0];
+
+      if (h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]) && !h_enq_fwd) begin
+        heap_OB[1] <= heap_IB[0];
+        if (!h_writing_ib0 || (h_writing_ib0 && h_read && (h_data > heap_OB[1]) && !heap_IB_gt_OB_next[0]) || (h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && (h_data > heap_OB[1]))) begin
+          heap_IB[0] <= EMPTY_VAL;
+        end
+      end
+
       for (int i = 0; i < HALF_SIZE; i++) begin
-         priority case (1'b1)
-          heap_OB_shift[i] && heap_OB_shift_valid[i]: begin
-            heap_OB[i] <= heap_OB[i+1]; 
-            if ((i == (HALF_SIZE - 2) || !heap_OB_shift_valid[i+1] || !heap_IB_shift_to_OB[i+1] || !heap_OB_shift[i+1])) heap_OB[i+1] <= EMPTY_VAL;
+        priority case (1'b1)
+          (i < HALF_SIZE-1) && heap_OB_shift[i] && heap_OB_shift_valid[i]
+          && !(i > 0 && h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]) && !h_enq_fwd)
+          && !h_enq_fwd: begin
+            heap_OB[i] <= heap_OB[i+1];
+            if (!(i == 0 && h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0])) && (i == (HALF_SIZE - 2) || !heap_OB_shift_valid[i+1] || !heap_IB_shift_to_OB[i+1] || !heap_OB_shift[i+1] || (heap_OB[i+2] == 0))) heap_OB[i+1] <= EMPTY_VAL;
           end
           default: begin
-            // No action needed
           end
         endcase
 
         priority case (1'b1)
-          heap_IB_shift[i] && heap_IB_shift_valid[i]: begin
-            // We slide this value down
+          (i < HALF_SIZE-1) && heap_IB_shift[i] && heap_IB_shift_valid[i] &&
+          !(h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0])) &&
+          !(!h_dequeue_pending && heap_OB_shift[i] && heap_OB_shift_valid[i] && (i < HALF_SIZE - 2) && h_enq_ok && heap_IB_gt_OB_next[i+1])
+          : begin
             heap_IB[i+1] <= heap_IB[i];
-            if ((i == 0 && !((heap_write_to_buffer || heap_replace_to_buffer) && heap_ready[max_node_idx])) || (i > 0 && !heap_IB_shift_valid[i-1])) heap_IB[i] <= EMPTY_VAL;
+            if (((i == 0 && !h_writing_ib0)
+            || (i > 0 && (!heap_IB_shift_valid[i-1] || (heap_IB_shift_to_OB[i-1] && !h_enq_fwd)))
+            || (i == 0 && h_writing_ib0 && h_read && (h_data > heap_OB[1]) && !heap_IB_gt_OB_next[0])
+            || (i > 0 && !heap_IB_shift[i-1] && !heap_IB_gt_OB_next[i-1])
+            || (i == 0 && h_writing_ib0 && !heap_systolic_full && h_wr_rdy && heap_OB_shift[0] && heap_OB_shift_valid[0] && (h_data > heap_OB[1])))
+            && !(i>0 && h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]) && heap_IB_gt_OB_next[i-1]))
+            heap_IB[i] <= EMPTY_VAL;
           end
           default: begin
-            // No action needed
           end
         endcase
 
         priority case (1'b1)
-          heap_OB_next_gt_OB[i] && !heap_OB_shift_valid[i] && !heap_IB_gt_OB[i]
+          (i < HALF_SIZE-1) && heap_OB_next_gt_OB[i] && !heap_OB_shift_valid[i] && !heap_IB_gt_OB[i]
           && (i > 0 && !heap_IB_gt_OB_next[i-1]): begin
-            // If we cannot shift, we can swap
             heap_OB[i+1] <= heap_OB[i];
             heap_OB[i] <= heap_OB[i+1];
           end
 
-          heap_IB_shift_to_OB[i]: begin
-            // if OB is shifting while we want to swap in, we can just swap down instead
+          (i < HALF_SIZE-1) && heap_IB_shift_to_OB[i]
+          && !(h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0]))
+          && !h_enq_fwd: begin
             heap_OB[i] <= heap_IB[i];
-            if (!(heap_IB_shift[i-1] && heap_IB_shift_valid[i-1])) heap_IB[i] <= EMPTY_VAL;
+            if (i > 0 && !(heap_IB_shift[i-1] && heap_IB_shift_valid[i-1])) heap_IB[i] <= EMPTY_VAL;
           end
 
           heap_IB_gt_OB[i] && !(i < (HALF_SIZE-1) && heap_OB_shift[i] && heap_OB_shift_valid[i]): begin
-            heap_IB[i] <=  heap_OB[i];
-            heap_OB[i] <=  heap_IB[i];
+            if (!(h_enq_ok && (h_data < heap_OB[0]) && (i == 0))) heap_IB[i] <= heap_OB[i];
+            heap_OB[i] <= heap_IB[i];
           end
 
-          heap_IB_gt_OB_next[i] && (!heap_IB_gt_OB[i+1])
-          && ((hib_e[i+1]) || (heap_IB_gt_OB_next[i+1]) || (heap_IB_shift[i+1])) && heap_IB_shift_valid[i]: begin
-            // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
+          (i < HALF_SIZE-1) && heap_IB_gt_OB_next[i] && (!heap_IB_gt_OB[i+1])
+          && ((heap_IB[i+1] == 0) || (i+1 < HALF_SIZE-1 && heap_IB_gt_OB_next[i+1])
+          || (i+1 < HALF_SIZE-1 && heap_IB_shift[i+1]))
+          && (heap_IB_shift_valid[i] || (i+1 < HALF_SIZE-1 && heap_IB_shift_valid[i+1]))
+          && !(h_ib0_to_ob1 && (heap_OB_shift_valid[0] && heap_OB_shift[0])): begin
             heap_OB[i+1] <= heap_IB[i];
             heap_IB[i+1] <= heap_OB[i+1];
-            // if we are also writing this cycle, we need to replace the value with max_node or OB[0] if max_node > heap_OB[0]
-            if (i == 0 && (heap_write_to_buffer || heap_replace_to_buffer)) begin
-              if ( max_node > heap_OB[0] && !(heap_replace_to_buffer || (output_from_heap_systolic && i_read))) begin
+            if (i == 0 && h_writing_ib0) begin
+              if (h_data > heap_OB[0] && !h_read) begin
                 heap_IB[i] <= heap_OB[0];
               end else begin
-                heap_IB[i] <= max_node;
+                heap_IB[i] <= h_data;
               end
             end
-            if ((i > 0 && (heap_IB_shift_to_OB[i-1] || heap_IB_gt_OB[i-1])) || (i == 0 && !((heap_write_to_buffer || heap_replace_to_buffer) && heap_ready[max_node_idx]))) begin
+            if ((i > 0 && (heap_IB_shift_to_OB[i-1] && !h_enq_fwd
+            || (heap_IB_gt_OB[i-1] && (i-1 != 0)))) || (i == 0 && !h_writing_ib0)) begin
+              heap_IB[i] <= EMPTY_VAL;
+            end
+            if (i == 0 && h_wrt && h_read && h_rd_rdy && (h_data > heap_OB[1]) && (h_data > heap_IB[1]) && (h_data > heap_IB[0])) begin
+              heap_IB[i] <= EMPTY_VAL;
+            end
+            if ((i > 0) && (heap_IB_shift[i-1] && heap_IB_shift_valid[i-1] && (heap_IB[i-1] == EMPTY_VAL) && !(heap_IB_gt_OB[i-1]) && !(heap_IB_gt_OB_next[i-1]))) begin
               heap_IB[i] <= EMPTY_VAL;
             end
           end
 
-          heap_IB_gt_OB_next[i] && !heap_IB_shift_valid[i] && !heap_IB_gt_OB[i+1]: begin
-            // If we cannot shift, we can swap
+          (i < HALF_SIZE-1) && heap_IB_gt_OB_next[i] && !heap_IB_shift_valid[i] && !heap_IB_gt_OB[i+1]: begin
             heap_IB[i] <= heap_OB[i+1];
             heap_OB[i+1] <= heap_IB[i];
           end
 
-          heap_IB_gt_IB_next[i] && !heap_IB_shift_valid[i]
+          (i < HALF_SIZE-1) && heap_IB_gt_IB_next[i] && !heap_IB_shift_valid[i]
           && ((i == (HALF_SIZE - 2)) || (!heap_IB_gt_IB_next[i+1] && !heap_IB_gt_OB_next[i+1]))
           && (!heap_IB_gt_OB[i+1]): begin
-            // If we cannot shift, we can swap
             heap_IB[i] <= heap_IB[i+1];
             heap_IB[i+1] <= heap_IB[i];
           end
 
           default: begin
-            // No action needed
           end
         endcase
       end
@@ -561,104 +627,173 @@ module hybrid_systolic_heap (
     spill_to_heap_valid = heap_ready[heap_round_robin] && !heap_full[heap_round_robin];
     spill_fire          = spill_to_heap && spill_to_heap_valid;
 
-    // ---- pull from heap into heap systolic ----
-    hib0_empty  = hib_e[0];
-    can_write   = hib0_empty && (h_empt == 2'd3);      // was heap_systolic_size <  SIZE-2
-    can_replace = (h_empt == 2'd2) && !hib_e[2] && hib0_empty && hib_e[1]   // was == SIZE-2
-                  && (heap_IB[2] <= heap_IB[3]) && (heap_IB[2] <= heap_OB[2]) && (heap_IB[2] <= heap_OB[3]);
-
     // if a spill is going into the same heap this cycle, the spill wins and the pull retries next cycle
     spill_hits_max = spill_fire && (max_node_idx == heap_round_robin);
 
-    heap_write_to_buffer   = can_write   && max_valid && !spill_hits_max;
-    heap_replace_to_buffer = can_replace && max_valid && (max_node > heap_IB[2]) && !spill_hits_max;
-
-    output_from_heap_systolic = (heap_OB[0] > OB[0]);
-    rd_sel = output_from_heap_systolic ? heap_OB[0] : OB[0];
 
 
-    // comparison results (IB/OB/heap_IB/heap_OB are HALF_SIZE deep)
-    for (int i=0; i<HALF_SIZE-1;i++) begin
-      OB_shift[i] = (OB[i+1] >= IB[i]) && (OB[i+1] >= IB[i+1]) && (!ob_e[i+1]);
-      heap_OB_shift[i] = (heap_OB[i+1] >= heap_IB[i]) && (heap_OB[i+1] >= heap_IB[i+1]) && (!hob_e[i+1]);
-    end 
+    // Main buffer: state-only terms and readies.
+    m_head      = m_dequeue_pending ? m_forecast : OB[0];
+    m_ib0_to_ob1 = IB[0] > OB[2] && IB[0] < OB[1] && IB[0] > IB[1];
 
-    // OB_shift_valid[i] = (OB[i-1]==EMPTY | OB_shift_valid[i-1]) & OB_shift[i-1]   (i>=1)
-    // OB_shift_valid[0] = OB[0]==EMPTY
-    ob_g[0]  = ob_e[0];            
-    ob_p[0]  = 1'b0;
-    hob_g[0] = (hob_e[0]);       
-    hob_p[0] = 1'b0;
+    for (int i = 0; i < HALF_SIZE-1; i++) begin
+      OB_shift[i] = (OB[i+1] >= IB[i]) && (OB[i+1] >= IB[i+1]) && (OB[i+1] != EMPTY_VAL);
+    end
+    ob_g[0] = ob_e[0];
+    ob_p[0] = 1'b0;
     for (int i = 1; i < SV_W; i++) begin
-      ob_g[i]  = (ob_e[i-1])      && OB_shift[i-1];
-      ob_p[i]  = OB_shift[i-1];
-      hob_g[i] = (hob_e[i-1]) && heap_OB_shift[i-1];
-      hob_p[i] = heap_OB_shift[i-1];
+      ob_g[i] = ob_e[i-1] && OB_shift[i-1];
+      ob_p[i] = OB_shift[i-1];
     end
-    ob_v  = scan_fwd(ob_g,  ob_p);
-    hob_v = scan_fwd(hob_g, hob_p);
-    for (int i = 0; i < SV_W; i++) begin
-      OB_shift_valid[i]      = ob_v[i];
-      heap_OB_shift_valid[i] = hob_v[i];
-    end
+    ob_v = scan_fwd(ob_g, ob_p);
+    for (int i = 0; i < SV_W; i++) OB_shift_valid[i] = ob_v[i];
 
     for (int i = 0; i < HALF_SIZE; i++) begin
-      // IB_gt_OB should not happen at the front of the array
       IB_gt_OB[i] = (IB[i] > OB[i]);
-      heap_IB_gt_OB[i] = (heap_IB[i] > heap_OB[i]);
     end
-
     for (int i = 0; i < HALF_SIZE - 1; i++) begin
       IB_gt_OB_next[i] = IB[i] > OB[i+1];
       IB_gt_IB_next[i] = IB[i] > IB[i+1];
       OB_next_gt_OB[i] = OB[i+1] > OB[i];
-      IB_shift_to_OB[i] = IB_gt_OB_next[i] && (i > 0 && OB_shift[i-1] && OB_shift_valid[i-1]);
+    end
+    for (int i = HALF_SIZE-2; i >= 0; i--) begin
+      IB_shift[i] = (i < (HALF_SIZE-2) && (IB_gt_OB_next[i+1] || IB_gt_IB_next[i+1]))
+      || ((IB[i] <= OB[i]) && (IB[i] <= OB[i+1]) && (IB[i] != EMPTY_VAL))
+      || ((OB[i] == 0) && (i == 0) && (IB[i] <= OB[i+1]));
+    end
 
+    // IB_shift_valid without its command-dependent head-forward term, so the readies
+    // depend on state only.
+    room_g[SV_W-1] = ib_e[HALF_SIZE-1] || spill_fire;
+    room_p[SV_W-1] = 1'b0;
+    for (int i = 0; i < SV_W-1; i++) begin
+      ib_b  = !((IB_gt_OB[i+1] || IB_gt_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
+      room_g[i] = (ib_e[i+1] || (IB_gt_OB_next[i+1] && OB_shift[i] && OB_shift_valid[i]
+                                     && OB_shift[0] && OB_shift_valid[0])) && ib_b;
+      room_p[i] = ib_b;
+    end
+    room_v = scan_bwd(room_g, room_p);
+    for (int i = 0; i < SV_W; i++) IB_room[i] = room_v[i];
+
+    // IB[0] can take a write this cycle. Both readies drop without it: replace writes IB[0] too.
+    m_ib0_free = ib_e[0] || IB_room[0];
+    m_wr_rdy   = !systolic_full && m_ib0_free;
+    m_rd_rdy   = !systolic_empty && (m_head != EMPTY_VAL) && !m_dequeue_pending && m_ib0_free;
+
+    // Heap buffer: state-only terms and readies.
+    h_head      = h_dequeue_pending ? h_forecast : heap_OB[0];
+    h_ib0_to_ob1 = heap_IB[0] > heap_OB[2] && heap_IB[0] < heap_OB[1] && heap_IB[0] > heap_IB[1];
+
+    for (int i = 0; i < HALF_SIZE-1; i++) begin
+      heap_OB_shift[i] = (heap_OB[i+1] >= heap_IB[i]) && (heap_OB[i+1] >= heap_IB[i+1]) && (heap_OB[i+1] != EMPTY_VAL);
+    end
+    hob_g[0] = hob_e[0];
+    hob_p[0] = 1'b0;
+    for (int i = 1; i < SV_W; i++) begin
+      hob_g[i] = hob_e[i-1] && heap_OB_shift[i-1];
+      hob_p[i] = heap_OB_shift[i-1];
+    end
+    hob_v = scan_fwd(hob_g, hob_p);
+    for (int i = 0; i < SV_W; i++) heap_OB_shift_valid[i] = hob_v[i];
+
+    for (int i = 0; i < HALF_SIZE; i++) begin
+      heap_IB_gt_OB[i] = (heap_IB[i] > heap_OB[i]);
+    end
+    for (int i = 0; i < HALF_SIZE - 1; i++) begin
       heap_IB_gt_OB_next[i] = heap_IB[i] > heap_OB[i+1];
       heap_IB_gt_IB_next[i] = heap_IB[i] > heap_IB[i+1];
       heap_OB_next_gt_OB[i] = heap_OB[i+1] > heap_OB[i];
-      heap_IB_shift_to_OB[i] = heap_IB_gt_OB_next[i] && (i > 0 && heap_OB_shift[i-1] && heap_OB_shift_valid[i-1]);
+    end
+    for (int i = HALF_SIZE-2; i >= 0; i--) begin
+      heap_IB_shift[i] = (i < (HALF_SIZE-2) && (heap_IB_gt_OB_next[i+1] || heap_IB_gt_IB_next[i+1]))
+      || ((heap_IB[i] <= heap_OB[i]) && (heap_IB[i] <= heap_OB[i+1]) && (heap_IB[i] != EMPTY_VAL))
+      || ((heap_OB[i] == 0) && (i == 0) && (heap_IB[i] <= heap_OB[i+1]));
     end
 
-    for (int i=HALF_SIZE-2; i >= 0; i--) begin
-      IB_shift[i] = (i < (HALF_SIZE-2) && (IB_gt_OB_next[i+1] || IB_gt_IB_next[i+1])) || ((IB[i] <= OB[i]) && (IB[i] <= OB[i+1])) || (ob_e[i] && (i == 0) && (IB[i] <= OB[i+1]));
-      heap_IB_shift[i] = (i < (HALF_SIZE-2) && (heap_IB_gt_OB_next[i+1] || heap_IB_gt_IB_next[i+1])) || ((heap_IB[i] <= heap_OB[i]) && (heap_IB[i] <= heap_OB[i+1])) || (hob_e[i] && (i == 0) && (heap_IB[i] <= heap_OB[i+1]));
-    end
-    
-    // seed element (HALF_SIZE-2): x = base, p = 0
-    ib_g[SV_W-1]  = (ib_e[HALF_SIZE-1]) || (spill_to_heap && spill_to_heap_valid);
-    ib_p[SV_W-1]  = 1'b0;
-    hib_g[SV_W-1] = (hib_e[HALF_SIZE-1]);
-    hib_p[SV_W-1] = 1'b0;
-
+    // IB_shift_valid without its command-dependent head-forward term, so the readies
+    // depend on state only.
+    hroom_g[SV_W-1] = hib_e[HALF_SIZE-1] || 1'b0;
+    hroom_p[SV_W-1] = 1'b0;
     for (int i = 0; i < SV_W-1; i++) begin
-      // A: "room ahead" term that doesn't depend on the chain
-      ib_a  = (ib_e[i+1]) || IB_shift_to_OB[i+1];
-      hib_a = (hib_e[i+1]) || heap_IB_shift_to_OB[i+1];
+      hib_b  = !((heap_IB_gt_OB[i+1] || heap_IB_gt_OB[i]) && !(heap_OB_shift[i] && heap_OB_shift_valid[i]));
+      hroom_g[i] = (hib_e[i+1] || (heap_IB_gt_OB_next[i+1] && heap_OB_shift[i] && heap_OB_shift_valid[i]
+                                     && heap_OB_shift[0] && heap_OB_shift_valid[0])) && hib_b;
+      hroom_p[i] = hib_b;
+    end
+    hroom_v = scan_bwd(hroom_g, hroom_p);
+    for (int i = 0; i < SV_W; i++) heap_IB_room[i] = hroom_v[i];
 
-      // B: local "not blocked" term
-      ib_b  = !IB_shift_to_OB[i]
-              && !((IB_gt_OB[i+1] || IB_gt_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
-      hib_b = !heap_IB_shift_to_OB[i]
-              && !((heap_IB_gt_OB[i+1] || heap_IB_gt_OB[i]) && !(heap_OB_shift[i] && heap_OB_shift_valid[i]));
+    // IB[0] can take a write this cycle. Both readies drop without it: replace writes IB[0] too.
+    h_ib0_free = hib_e[0] || heap_IB_room[0];
+    h_wr_rdy   = !heap_systolic_full && h_ib0_free;
+    h_rd_rdy   = !heap_systolic_empty && (h_head != EMPTY_VAL) && !h_dequeue_pending && h_ib0_free;
 
-      ib_g[i]  = ib_a  & ib_b;   ib_p[i]  = ib_b;
-      hib_g[i] = hib_a & hib_b;  hib_p[i] = hib_b;
+    output_from_heap_systolic = (h_head > m_head);
+    rd_sel = output_from_heap_systolic ? h_head : m_head;
+
+    // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main
+    // one is full; dequeue and replace go to the buffer holding the head; the heap buffer
+    // also takes pulls and evictions.
+    // Replace on an empty queue inserts through the main buffer. A spill in flight is
+    // still an element, so the queue is not empty until the tree has taken it.
+    hybrid_empty = systolic_empty && heap_systolic_empty && (&heap_empty) && !(|heap_write);
+    rep_empty = i_wrt && i_read && hybrid_empty && m_wr_rdy;
+    user_heap = i_read && o_read_ready && output_from_heap_systolic;
+    user_heap_enq = i_wrt && !i_read && !m_wr_rdy && h_wr_rdy;
+    m_wrt  = (i_wrt && !i_read && m_wr_rdy)
+             || (i_wrt && i_read && (o_read_ready || rep_empty) && !output_from_heap_systolic);
+    m_read = i_read && (o_read_ready || rep_empty) && !output_from_heap_systolic;
+    m_data = i_data;
+    h_wrt  = (user_heap && i_wrt) || user_heap_enq || pull_fire || evict_fire;
+    h_read = user_heap || evict_fire;
+    h_data = (user_heap || user_heap_enq) ? i_data : max_node;
+
+    // Main buffer: command-dependent terms.
+    m_enq_ok      = m_wrt && !m_read && !systolic_full && m_wr_rdy;
+    // Not gated on the readies: that would put the IB_room chain in series with the sort
+    // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
+    m_enq_fwd     = m_wrt && !m_read && !systolic_full && (m_data > OB[1]);
+    m_writing_ib0 = m_enq_ok || (m_wrt && m_read && (m_rd_rdy || systolic_empty));
+
+    for (int i = 0; i < HALF_SIZE - 1; i++) begin
+      IB_shift_to_OB[i] = IB_gt_OB_next[i] && (i > 0 && OB_shift[i-1] && OB_shift_valid[i-1])
+                             && !m_enq_fwd;
     end
 
-    ib_v  = scan_bwd(ib_g,  ib_p);
+    ib_g[SV_W-1] = ib_e[HALF_SIZE-1] || spill_fire;
+    ib_p[SV_W-1] = 1'b0;
+    for (int i = 0; i < SV_W-1; i++) begin
+      ib_b  = !((IB_gt_OB[i+1] || IB_gt_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
+      ib_g[i] = (ib_e[i+1] || IB_shift_to_OB[i+1]) && ib_b;
+      ib_p[i] = ib_b;
+    end
+    ib_v = scan_bwd(ib_g, ib_p);
+    for (int i = 0; i < SV_W; i++) IB_shift_valid[i] = ib_v[i];
+
+    // Heap buffer: command-dependent terms.
+    h_enq_ok      = h_wrt && !h_read && !heap_systolic_full && h_wr_rdy;
+    // Not gated on the readies: that would put the IB_room chain in series with the sort
+    // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
+    h_enq_fwd     = h_wrt && !h_read && !heap_systolic_full && (h_data > heap_OB[1]);
+    h_writing_ib0 = h_enq_ok || (h_wrt && h_read && (h_rd_rdy || heap_systolic_empty));
+
+    for (int i = 0; i < HALF_SIZE - 1; i++) begin
+      heap_IB_shift_to_OB[i] = heap_IB_gt_OB_next[i] && (i > 0 && heap_OB_shift[i-1] && heap_OB_shift_valid[i-1])
+                             && !h_enq_fwd;
+    end
+
+    hib_g[SV_W-1] = hib_e[HALF_SIZE-1] || 1'b0;
+    hib_p[SV_W-1] = 1'b0;
+    for (int i = 0; i < SV_W-1; i++) begin
+      hib_b  = !((heap_IB_gt_OB[i+1] || heap_IB_gt_OB[i]) && !(heap_OB_shift[i] && heap_OB_shift_valid[i]));
+      hib_g[i] = (hib_e[i+1] || heap_IB_shift_to_OB[i+1]) && hib_b;
+      hib_p[i] = hib_b;
+    end
     hib_v = scan_bwd(hib_g, hib_p);
-    for (int i = 0; i < SV_W; i++) begin
-      IB_shift_valid[i]      = ib_v[i];
-      heap_IB_shift_valid[i] = hib_v[i];
-    end
+    for (int i = 0; i < SV_W; i++) heap_IB_shift_valid[i] = hib_v[i];
 
     if (o_read_ready) begin
-      if (output_from_heap_systolic) begin
-        o_data = heap_OB[0];
-      end else begin
-        o_data = OB[0];
-      end
+      o_data = rd_sel;
     end else begin
       o_data = max6(heap_OB[1], heap_IB[0], IB[0], OB[1], OB[0], heap_OB[0]);
     end
