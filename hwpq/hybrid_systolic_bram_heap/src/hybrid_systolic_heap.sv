@@ -253,9 +253,10 @@ module hybrid_systolic_heap (
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      max_idx_q;
   logic                                 max_v_q;
   logic                                 tree_hold, top_moved_any;
-  // An insert sets a top to max(old top, value), and a spilled value never outranks a head the
-  // hybrid serves, so reads ignore a top moved by a spill. Aligned with the tree's o_top_moved.
-  logic [TREE_COUNT-1:0]                spill_moved;
+  // A command moves a tree's top for one cycle, and reads ignore it: max_q still holds the old
+  // top, which bounds what a pull or evict leaves, and an insert adds only a spilled value, which
+  // never outranks a head the hybrid serves. Aligned with the tree's o_top_moved.
+  logic [TREE_COUNT-1:0]                cmd_moved;
   logic                                 top_moved_rd;
   // A pull from a max tree busy with a walk takes its exact top at once and owes the tree a
   // pop, issued once it is idle with the output discarded. The tree's top stays the value taken
@@ -352,7 +353,7 @@ module hybrid_systolic_heap (
     if (!i_RSTn) begin  // Reset
       heap_write  <= 0;
       heap_read   <= 0;
-      spill_moved <= 0;
+      cmd_moved   <= 0;
       owed        <= 0;
       spill_tgt <= 0;
       m_dequeue_pending <= 1'b0;
@@ -373,7 +374,7 @@ module hybrid_systolic_heap (
                             || pop_fire[k];
         owed[k]          <= (pull_fire && !heap_ready[k] && (k == max_node_idx))
                             || (owed[k] && !pop_fire[k]);
-        spill_moved[k]   <= heap_write[k] && !heap_read[k];
+        cmd_moved[k]     <= heap_write[k] || heap_read[k];
       end
 
       spill_tgt <= spill_tgt_next;
@@ -681,7 +682,7 @@ module hybrid_systolic_heap (
 
     // ---- log-depth max tree over tree tops; a later index wins a value-tie ----
     top_moved_any = |heap_top_moved;
-    top_moved_rd  = |(heap_top_moved & ~spill_moved);
+    top_moved_rd  = |(heap_top_moved & ~cmd_moved);
     for (int i = 0; i < TC_P2; i++) begin
       if (i < TREE_COUNT) begin
         t_val[TC_P2+i] = heap_output[i];
@@ -835,8 +836,8 @@ module hybrid_systolic_heap (
     rd_sel = output_from_heap_systolic ? h_head : m_head;
 
     // A tree's top bounds its contents whenever o_top_moved is low, busy or not, so reads wait
-    // only for a top moved by a pull or evict. Pulls and evictions command a tree and also wait
-    // for it to be idle.
+    // only for a top moved other than by a command. Pulls and evictions command a tree and also
+    // wait for it to be idle.
     h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
     m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
     rd_ge_max = !top_moved_rd && (output_from_heap_systolic ? h_ge_max : m_ge_max);
