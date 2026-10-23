@@ -54,6 +54,8 @@ module hybrid_systolic_heap (
   logic [DATA_WIDTH-1:0]        heap_output [TREE_COUNT-1:0];
   logic [TREE_COUNT-1:0]        heap_ready;
   logic [TREE_COUNT-1:0]        heap_top_moved;
+  logic [DATA_WIDTH-1:0]        heap_next [TREE_COUNT-1:0];
+  logic [TREE_COUNT-1:0]        heap_next_ok;
 
   // The spill target is chosen a cycle ahead, so the choice stays off the readiness paths:
   // the first ready, non-full tree after the last target, else the first non-full one, which
@@ -88,7 +90,9 @@ module hybrid_systolic_heap (
         .o_empty(heap_empty[k]),
         .o_data(heap_output[k]),
         .o_ready(heap_ready[k]),
-        .o_top_moved(heap_top_moved[k])
+        .o_top_moved(heap_top_moved[k]),
+        .o_next(heap_next[k]),
+        .o_next_ok(heap_next_ok[k])
       );
     end
   endgenerate
@@ -259,11 +263,12 @@ module hybrid_systolic_heap (
   logic [TREE_COUNT-1:0]                cmd_moved;
   logic                                 top_moved_rd;
   // A pull from a max tree busy with a walk takes its exact top at once and owes the tree a
-  // pop, issued once it is idle with the output discarded. The tree's top stays the value taken
-  // until the pop, so its slot bounds it. While a pop is owed no other pull or evict fires and
-  // no spill targets the tree; its full flag lags by the owed element, which only delays spills.
+  // pop, issued once it is idle with the output discarded. Until the tree takes the pop, its
+  // slot holds the tree's bound on what lies below the top, or the stale top (the value taken)
+  // where it has none. Each tree owes at most one pop; an owing tree takes no pull, evict or
+  // spill, and its full flag lags by the owed element, which only delays spills.
   logic [TREE_COUNT-1:0]                owed, pop_fire;
-  logic                                 owe_ok;
+  logic                                 owe_ok, owe_evict;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire, pull_ok, evict_ok;
@@ -311,11 +316,14 @@ module hybrid_systolic_heap (
 
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
-  // a replace on each side). Without the swap a full heap buffer can hide the maximum.
+  // a replace on each side). Without the swap a full heap buffer can hide the maximum. An
+  // evict from a busy tree owes it the pop and sends the heap head to the spill target instead,
+  // when that tree is ready and no spill takes it.
   assign pull_ok  = max_valid && (max_rdy || owe_ok) && !spill_hits_max && h_wr_rdy
                     && !pull_reserved;
-  assign evict_ok = max_valid && max_rdy && !spill_hits_max
-                    && (heap_systolic_full || pull_reserved) && h_rd_rdy && max_gt_h_head;
+  assign evict_ok = max_valid && (max_rdy || (owe_ok && spill_to_heap_valid && !spill_fire))
+                    && !spill_hits_max && (heap_systolic_full || pull_reserved) && h_rd_rdy
+                    && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
   assign o_write_ready = m_wr_rdy || h_wr_rdy;
@@ -368,13 +376,16 @@ module hybrid_systolic_heap (
       end
     end else begin
       for (int k = 0; k < TREE_COUNT; k++) begin
-        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == spill_tgt));
-        heap_data_sel[k] <= evict_fire && (k == max_node_idx);
-        heap_read[k]     <= ((pull_fire && heap_ready[k]) || evict_fire) && (k == max_node_idx)
+        heap_write[k]    <= (evict_fire && (k == max_node_idx) && heap_ready[k])
+                            || ((spill_fire || owe_evict) && (k == spill_tgt));
+        heap_data_sel[k] <= (evict_fire && (k == max_node_idx) && heap_ready[k])
+                            || (owe_evict && (k == spill_tgt));
+        heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx) && heap_ready[k]
                             || pop_fire[k];
-        owed[k]          <= (pull_fire && !heap_ready[k] && (k == max_node_idx))
-                            || (owed[k] && !pop_fire[k]);
-        cmd_moved[k]     <= heap_write[k] || heap_read[k];
+        owed[k]          <= (pull_fire || evict_fire) && (k == max_node_idx) && !heap_ready[k]
+                            || (owed[k] && !heap_read[k]);
+        // The head an owed evict sends to another tree may outrank what reads can see.
+        cmd_moved[k]     <= heap_read[k] || (heap_write[k] && !heap_data_sel[k]);
       end
 
       spill_tgt <= spill_tgt_next;
@@ -685,8 +696,9 @@ module hybrid_systolic_heap (
     top_moved_rd  = |(heap_top_moved & ~cmd_moved);
     for (int i = 0; i < TC_P2; i++) begin
       if (i < TREE_COUNT) begin
-        t_val[TC_P2+i] = heap_output[i];
-        t_v[TC_P2+i]   = !heap_empty[i] && (heap_output[i] != EMPTY_VAL);
+        t_val[TC_P2+i] = (owed[i] && heap_next_ok[i]) ? heap_next[i] : heap_output[i];
+        t_v[TC_P2+i]   = (owed[i] && heap_next_ok[i]) ? (heap_next[i] != EMPTY_VAL)
+                         : (!heap_empty[i] && (heap_output[i] != EMPTY_VAL));
       end else begin
         t_val[TC_P2+i] = EMPTY_VAL;
         t_v[TC_P2+i]   = 1'b0;
@@ -701,9 +713,9 @@ module hybrid_systolic_heap (
     end
 
     // Pulls and evictions command only the max tree, so only that tree must be idle.
-    tree_hold    = top_moved_any || (|owed) || !heap_ready[max_idx_q];
+    tree_hold    = top_moved_any || owed[max_idx_q] || !heap_ready[max_idx_q];
     // A busy tree's top bounds it once the tree has taken its command and the top has settled.
-    owe_ok       = max_v_q && !top_moved_any && !(|owed)
+    owe_ok       = max_v_q && !top_moved_any && !owed[max_idx_q]
                    && !heap_ready[max_idx_q] && !heap_write[max_idx_q] && !heap_read[max_idx_q];
     pop_fire     = owed & heap_ready;
     max_valid    = max_v_q || tree_hold;
@@ -905,6 +917,7 @@ module hybrid_systolic_heap (
     m_data        = i_data;
     pull_fire     = c_pull[o_read_ready];
     evict_fire    = c_evict[o_read_ready];
+    owe_evict     = evict_fire && !heap_ready[max_node_idx];
     h_wrt         = c_h_wrt[o_read_ready];
     h_read        = c_h_read[o_read_ready];
     h_from_user   = c_h_user[o_read_ready];
