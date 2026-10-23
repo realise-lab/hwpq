@@ -257,6 +257,12 @@ module hybrid_systolic_heap (
   // hybrid serves, so reads ignore a top moved by a spill. Aligned with the tree's o_top_moved.
   logic [TREE_COUNT-1:0]                spill_moved;
   logic                                 top_moved_rd;
+  // A pull from a max tree busy with a walk takes its exact top at once and owes the tree a
+  // pop, issued once it is idle with the output discarded. The tree's top stays the value taken
+  // until the pop, so its slot bounds it. While a pop is owed no other pull or evict fires and
+  // no spill targets the tree; its full flag lags by the owed element, which only delays spills.
+  logic [TREE_COUNT-1:0]                owed, pop_fire;
+  logic                                 owe_ok;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire, pull_ok, evict_ok;
@@ -305,7 +311,8 @@ module hybrid_systolic_heap (
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
   // a replace on each side). Without the swap a full heap buffer can hide the maximum.
-  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy && !pull_reserved;
+  assign pull_ok  = max_valid && (max_rdy || owe_ok) && !spill_hits_max && h_wr_rdy
+                    && !pull_reserved;
   assign evict_ok = max_valid && max_rdy && !spill_hits_max
                     && (heap_systolic_full || pull_reserved) && h_rd_rdy && max_gt_h_head;
 
@@ -346,6 +353,7 @@ module hybrid_systolic_heap (
       heap_write  <= 0;
       heap_read   <= 0;
       spill_moved <= 0;
+      owed        <= 0;
       spill_tgt <= 0;
       m_dequeue_pending <= 1'b0;
       h_dequeue_pending <= 1'b0;
@@ -361,7 +369,10 @@ module hybrid_systolic_heap (
       for (int k = 0; k < TREE_COUNT; k++) begin
         heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == spill_tgt));
         heap_data_sel[k] <= evict_fire && (k == max_node_idx);
-        heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx);
+        heap_read[k]     <= ((pull_fire && heap_ready[k]) || evict_fire) && (k == max_node_idx)
+                            || pop_fire[k];
+        owed[k]          <= (pull_fire && !heap_ready[k] && (k == max_node_idx))
+                            || (owed[k] && !pop_fire[k]);
         spill_moved[k]   <= heap_write[k] && !heap_read[k];
       end
 
@@ -689,7 +700,11 @@ module hybrid_systolic_heap (
     end
 
     // Pulls and evictions command only the max tree, so only that tree must be idle.
-    tree_hold    = top_moved_any || !heap_ready[max_idx_q];
+    tree_hold    = top_moved_any || (|owed) || !heap_ready[max_idx_q];
+    // A busy tree's top bounds it once the tree has taken its command and the top has settled.
+    owe_ok       = max_v_q && !top_moved_any && !(|owed)
+                   && !heap_ready[max_idx_q] && !heap_write[max_idx_q] && !heap_read[max_idx_q];
+    pop_fire     = owed & heap_ready;
     max_valid    = max_v_q || tree_hold;
     max_rdy      = max_v_q && !tree_hold;
     max_node_idx = max_idx_q;
@@ -697,15 +712,16 @@ module hybrid_systolic_heap (
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
-    spill_to_heap_valid = heap_ready[spill_tgt] && !heap_full[spill_tgt];
+    spill_to_heap_valid = heap_ready[spill_tgt] && !heap_full[spill_tgt] && !owed[spill_tgt];
     spill_tgt_next      = spill_tgt;
     spill_found_rdy     = 1'b0;
     for (int d = TREE_COUNT; d >= 1; d--) begin
-      if (!heap_full[(spill_tgt + d) % TREE_COUNT])
+      if (!heap_full[(spill_tgt + d) % TREE_COUNT] && !owed[(spill_tgt + d) % TREE_COUNT])
         spill_tgt_next = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
     end
     for (int d = TREE_COUNT; d >= 1; d--) begin
-      if (heap_ready[(spill_tgt + d) % TREE_COUNT] && !heap_full[(spill_tgt + d) % TREE_COUNT]) begin
+      if (heap_ready[(spill_tgt + d) % TREE_COUNT] && !heap_full[(spill_tgt + d) % TREE_COUNT]
+          && !owed[(spill_tgt + d) % TREE_COUNT]) begin
         spill_tgt_next  = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
         spill_found_rdy = 1'b1;
       end
