@@ -1,7 +1,40 @@
 `default_nettype none
 
+/*******************************************************************************
+  Module Name: systolic_array
+  Date: 2026/06/18
+  Description: A priority queue implementation using a systolic array of an
+               input buffer (IB) and output buffer (OB). New nodes shift
+               through the IB, swapping bubble-sort style with adjacent OB
+               nodes so higher-priority values migrate into the
+               OB; dequeuing the OB head propagates a "bubble" back through
+               the array to refill it. The module reserves MIN_VALUE to
+               represent an invalid entry, which is reflected in the test
+               benches avoiding writing 0.
+  Parameters: QUEUE_SIZE - Maximum number of elements in the priority queue
+              DATA_WIDTH - Bit width of the node's evaluation value (f)
+  Inputs: i_CLK - System clock
+          i_RSTn - Active-low reset signal
+          i_wrt - Enqueue signal
+          i_read - Dequeue signal
+          i_data - Node data input
+  Outputs: o_write_ready - High when the queue has room to accept a write
+           o_read_ready - High when the queue holds data available to read
+           o_data - Node data output (highest priority element)
+  Constraints: Two of QUEUE_SIZE elements are held back as
+               shift-chain margin, so the array holds QUEUE_SIZE-2.
+               Both readies drop, for at most two cycles, while IB[0] cannot
+               vacate. o_read_ready alone drops for the cycle after an accepted
+               read or replace that leaves the queue non-empty; a write is
+               still accepted there.
+*******************************************************************************/
+
+`default_nettype none
+
+// this module cannot use the MIN_VALUE, we treat the MIN_VALUE as an invalid
+
 module systolic_array #(
-    parameter int QUEUE_SIZE = 4,  // Size of the buffers (number of positions)
+    parameter int QUEUE_SIZE = 512,  // Size of the buffers (number of positions)
     parameter int DATA_WIDTH = 16  // Width of the node data (evaluation function value 'f')
 ) (
     input var logic                   i_CLK,
@@ -13,9 +46,10 @@ module systolic_array #(
     input var logic [DATA_WIDTH-1:0]  i_data,  // Node data input
 
     // Output
-    output var logic                  o_full,   // Queue is full
-    output var logic                  o_empty,  // Queue is empty
-    output var logic [DATA_WIDTH-1:0] o_data    // Node data output
+    output var logic [DATA_WIDTH-1:0] o_data,    // Node data output
+    output var logic                  o_write_ready, // High if the array can accept a write
+    output var logic                  o_read_ready
+
 );
 
   // Constant
@@ -32,22 +66,48 @@ module systolic_array #(
   logic                    IB_greater_than_OB_next[HALF_SIZE-1];
   logic                    OB_next_greater_than_OB[HALF_SIZE-1];
 
+  logic                    IB_shift               [HALF_SIZE-1];
+  logic                    IB_shift_valid               [HALF_SIZE-1];
+
+  logic                    OB_shift               [HALF_SIZE-1];
+  logic                    OB_shift_valid         [HALF_SIZE-1];
+
+  logic                    IB_shift_to_OB         [HALF_SIZE-1];
+  logic                    IB_room                [HALF_SIZE-1];
+   logic                   IB_zero_to_OB_one;
+
+  logic                      dequeue_pending;
+  logic     [DATA_WIDTH-1:0] next_ob_forecast;
+
   // Control signals
   int                      size;
   int                      size_next;
   logic                    full;
   logic                    empty;
+  
 
-  assign full  = (size >= QUEUE_SIZE);
+  assign full  = (size >= QUEUE_SIZE - 2);
   assign empty = (size <= 0);
-  assign o_full  = full;
-  assign o_empty = empty;
-  assign o_data  = OB[0];
+  wire enq_ok  = i_wrt && !i_read && !full && o_write_ready;
+  // Not gated on the readies: that would put the IB_room chain in series with the sort
+  // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
+  wire enq_fwd = i_wrt && !i_read && !full && (i_data > OB[1]);
+  // A write is accepted this cycle. The sorting network must not act on a refused
+  // write (inject i_data into IB[0], suppress its clear); gates mirror the datapath.
+  wire writing_ib0 = enq_ok || (i_wrt && i_read && (o_read_ready || empty));
+  // Derived from `full` so the two thresholds cannot drift apart. Gating on a head
+  // bubble is wrong here: the head need not refill on its own, and both readies wedge.
+  // IB[0] can take a write this cycle. Both readies drop without it: replace writes IB[0] too.
+  wire ib0_free = (IB[0] == MIN_VALUE) || IB_room[0];
+  assign o_write_ready = !full && ib0_free;
+  assign o_read_ready = !empty && (o_data != MIN_VALUE) && !dequeue_pending && ib0_free;
 
   // Sequential logic
   always_ff @(posedge i_CLK or negedge i_RSTn) begin
     if (!i_RSTn) begin  // Reset
       size <= 0;
+      dequeue_pending <= 1'b0;
+      next_ob_forecast    <= MIN_VALUE;
       for (int i = 0; i < HALF_SIZE; i++) begin
         IB[i] <= MIN_VALUE;  // initialize IB to MIN_VALUE, since this is a max-queue
         OB[i] <= MIN_VALUE;  // initialize OB to MIN_VALUE, since this is a max-queue
@@ -55,56 +115,157 @@ module systolic_array #(
     end else begin
 
       // Dequeue operation
-      if (i_read && !i_wrt && !empty) begin
+      if (i_read && !i_wrt && !empty && o_read_ready) begin
         OB[0] <= MIN_VALUE;  // pop the head of OB
       end
 
       // Enqueue operation
-      if (i_wrt && !i_read && !full) begin
-        IB[0] <= i_data;  // insert the new node at the head of IB
+      if (enq_ok) begin
+        // shifting OB, so we check i_data with OB[1] instead
+        if (OB_shift[0] && OB_shift_valid[0]) begin
+          if (i_data > OB[1]) begin
+            OB[0] <= i_data;
+          end else begin
+            IB[0] <= i_data;
+          end
+        end else begin
+          if (i_data > OB[0]) begin
+            OB[0] <= i_data;
+            IB[0] <= OB[0];
+          end else begin
+            IB[0] <= i_data;  // insert the new node at the head of IB
+          end
+        end
       end
 
       // Replace operation
-      if (i_wrt && i_read) begin
-        if (full) begin
-          OB[0] <= IB[0];   // replace OB with the head of IB
-          IB[0] <= i_data;  // replace the head of IB
-        end else if (empty) begin
+      if (i_wrt && i_read && (o_read_ready || empty)) begin
+        if (empty) begin
           OB[0] <= i_data;  // insert the new node at the head of OB
         end else begin
-          IB[0] <= i_data;  // replace the head of IB
-          OB[0] <= MIN_VALUE;  // pop the head of OB
+          if ((i_data > OB[1]) && (i_data > IB[1]) && (i_data > IB[0])) begin
+            // we can forward i_data into OB[0]
+            OB[0] <= i_data;
+          end else begin
+            IB[0] <= i_data;  // replace the head of IB
+            OB[0] <= MIN_VALUE;  // pop the head of OB
+          end
         end
       end
 
       // update size
       size <= size_next;
 
+      // forecasting next value
+      dequeue_pending <= i_read && o_read_ready;
+      next_ob_forecast <= (IB[0] < OB[1]) ? OB[1] : IB[0];
+
+      if (IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0]) && !enq_fwd) begin
+        OB[1] <= IB[0];
+        if (!writing_ib0 || (writing_ib0 && i_read && (i_data > OB[1]) && !IB_greater_than_OB_next[0]) || (writing_ib0 && !full && o_write_ready && OB_shift[0] && OB_shift_valid[0] && (i_data > OB[1]))) begin
+          IB[0] <= 0;
+        end
+      end
+
       // Sorting logic
       for (int i = 0; i < HALF_SIZE; i++) begin  // Iterate through each element
         priority case (1'b1)
-          IB_greater_than_OB[i]: begin
-            IB[i] <= OB[i];
-            OB[i] <= IB[i];
+        // if we are inserting into the front of OB, we do not do the shift anymore
+          (i < HALF_SIZE-1) && OB_shift[i] && OB_shift_valid[i]
+          && !(i > 0 && IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0]) && !enq_fwd)
+          && !enq_fwd: begin
+            OB[i] <= OB[i+1]; 
+            if (!(i == 0 && IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0])) && (i == (HALF_SIZE - 2) || !OB_shift_valid[i+1] || !IB_shift_to_OB[i+1] || !OB_shift[i+1] || (OB[i+2] == 0))) OB[i+1] <= MIN_VALUE;
           end
+          default: begin
+            // No action needed
+          end
+        endcase
 
-          OB_next_greater_than_OB[i] && (!(OB_next_greater_than_OB[i+1]) || i == HALF_SIZE - 2) && (!(IB_greater_than_OB[i+1])): begin  // OB[i+1] > OB[i]
-            // Swap OB[i] and OB[i+1]
+        priority case (1'b1)
+          (i < HALF_SIZE-1) && IB_shift[i] && IB_shift_valid[i] &&
+          !(IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0])) &&
+          !(!dequeue_pending && OB_shift[i] && OB_shift_valid[i] && (i < HALF_SIZE - 2) && enq_ok && IB_greater_than_OB_next[i+1])
+          : begin
+            // We slide this value down
+            // if we are pausing OB, and IB 
+            IB[i+1] <= IB[i];
+            if (((i == 0 && !writing_ib0) 
+            || (i > 0 && (!IB_shift_valid[i-1] || (IB_shift_to_OB[i-1] && !enq_fwd))) 
+            || (i == 0 && writing_ib0 && i_read && (i_data > OB[1]) && !IB_greater_than_OB_next[0])
+            || (i > 0 && !IB_shift[i-1] && !IB_greater_than_OB_next[i-1])
+            || (i == 0 && writing_ib0 && !full && o_write_ready && OB_shift[0] && OB_shift_valid[0] && (i_data > OB[1])))
+            && !(i>0 && IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0]) && IB_greater_than_OB_next[i-1]))
+            IB[i] <= MIN_VALUE;
+          end
+          default: begin
+            // No action needed
+          end
+        endcase
+
+        priority case (1'b1)
+          (i < HALF_SIZE-1) && OB_next_greater_than_OB[i] && !OB_shift_valid[i] && !IB_greater_than_OB[i]
+          && (i > 0 && !IB_greater_than_OB_next[i-1]): begin
+            // If we cannot shift, we can swap
             OB[i+1] <= OB[i];
-            OB[i]   <= OB[i+1];
+            OB[i] <= OB[i+1];
           end
 
-          IB_greater_than_OB_next[i] && (IB[i+1] == MIN_VALUE): begin
+          // if we are inserting to the front of OB we want to prevent any IB->OB shifts
+          (i < HALF_SIZE-1) && IB_shift_to_OB[i] 
+          && !(IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0]))
+          && !enq_fwd: begin
+            // if OB is shifting while we want to swap in, we can just swap down instead
+            OB[i] <= IB[i];
+            if (i > 0 && !(IB_shift[i-1] && IB_shift_valid[i-1])) IB[i] <= MIN_VALUE;
+          end
+
+          IB_greater_than_OB[i] && !(i < (HALF_SIZE-1) && OB_shift[i] && OB_shift_valid[i]): begin
+            if (!(enq_ok && (i_data < OB[0]) && (i == 0))) IB[i] <=  OB[i];
+            OB[i] <=  IB[i];
+          end
+
+          (i < HALF_SIZE-1) &&  IB_greater_than_OB_next[i] && (!IB_greater_than_OB[i+1])
+          && ((IB[i+1] == 0) || (i+1 < HALF_SIZE-1 && IB_greater_than_OB_next[i+1]) 
+          || (i+1 < HALF_SIZE-1 &&IB_shift[i+1]))
+          && (IB_shift_valid[i] || (i+1 < HALF_SIZE-1 && IB_shift_valid[i+1]))
+          && !(IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0])): begin
             // Move IB[i] to OB[i+1], and move OB[i+1] to IB[i+1]
             OB[i+1] <= IB[i];
             IB[i+1] <= OB[i+1];
-            IB[i]   <= MIN_VALUE;
+            // if we are also writing this cycle, we need to replace the value with i_data or OB[0] is i_data > OB[0]
+            // unless the value we are replacing with is being forwarded to OB[0]...
+            if (i == 0 && writing_ib0) begin
+              if (i_data > OB[0] && !i_read) begin
+                IB[i] <= OB[0];
+              end else begin
+                IB[i] <= i_data;
+              end
+            end
+            if ((i > 0 && (IB_shift_to_OB[i-1] && !enq_fwd 
+            || (IB_greater_than_OB[i-1] && (i-1 != 0)))) || (i == 0 && !writing_ib0)) begin
+              IB[i] <= MIN_VALUE;
+            end
+            if (i == 0 && i_wrt && i_read && o_read_ready && (i_data > OB[1]) && (i_data > IB[1]) && (i_data > IB[0])) begin
+              IB[i] <= MIN_VALUE;
+            end
+            if ((i > 0) && (IB_shift[i-1] && IB_shift_valid[i-1] && (i > 0) && (IB[i-1] == MIN_VALUE) && !(IB_greater_than_OB[i-1]) && !(IB_greater_than_OB_next[i-1]))) begin
+              IB[i] <= MIN_VALUE;
+            end
           end
 
-          IB_greater_than_IB_next[i] && (!(IB_greater_than_IB_next[i+1]) || i == HALF_SIZE - 2) && (!(IB_greater_than_OB[i+1])): begin  // IB[i] > IB[i+1]
-            // Swap IB[i] and IB[i+1]
+          (i < HALF_SIZE-1) && IB_greater_than_OB_next[i] && !IB_shift_valid[i] && !IB_greater_than_OB[i+1]: begin
+            // If we cannot shift, we can swap
+            IB[i] <= OB[i+1];
+            OB[i+1] <= IB[i];
+          end
+
+          (i < HALF_SIZE-1) && IB_greater_than_IB_next[i] && !IB_shift_valid[i]
+          && ((i == (HALF_SIZE - 2)) || (!IB_greater_than_IB_next[i+1] && !IB_greater_than_OB_next[i+1]))
+          && (!IB_greater_than_OB[i+1]): begin
+            // If we cannot shift, we can swap
+            IB[i] <= IB[i+1];
             IB[i+1] <= IB[i];
-            IB[i]   <= IB[i+1];
           end
 
           default: begin
@@ -117,20 +278,52 @@ module systolic_array #(
 
   // Combinational logic
   always_comb begin
-    // comparsion results
-    for (int i = 0; i < QUEUE_SIZE; i++) begin
-      IB_greater_than_OB[i] = IB[i] > OB[i];
+    o_data = dequeue_pending ? next_ob_forecast : OB[0];
+
+    IB_zero_to_OB_one = IB[0] > OB[2] && IB[0] < OB[1] && IB[0] > IB[1];
+
+    for (int i=0; i<HALF_SIZE-1;i++) begin
+      OB_shift[i] = (OB[i+1] >= IB[i]) && (OB[i+1] >= IB[i+1]) && (OB[i+1] != MIN_VALUE);
+    end 
+    OB_shift_valid[0] = OB[0] == 0;
+    for (int i=1; i<HALF_SIZE-1;i++) begin
+      OB_shift_valid[i] = (OB[i-1] == 0 || OB_shift_valid[i-1]) && OB_shift[i-1];
     end
-    for (int i = 0; i < QUEUE_SIZE - 1; i++) begin
+
+
+    // comparsion results
+    for (int i = 0; i < HALF_SIZE; i++) begin
+      // IB_greater_than_OB should not happen at the front of the array
+      IB_greater_than_OB[i] = (IB[i] > OB[i]);
+    end
+    for (int i = 0; i < HALF_SIZE - 1; i++) begin
       IB_greater_than_OB_next[i] = IB[i] > OB[i+1];
       IB_greater_than_IB_next[i] = IB[i] > IB[i+1];
       OB_next_greater_than_OB[i] = OB[i+1] > OB[i];
+      // Mirror the head-forward suppression of the IB->OB move: IB_shift_valid relies on it.
+      IB_shift_to_OB[i] = IB_greater_than_OB_next[i] && (i > 0 && OB_shift[i-1] && OB_shift_valid[i-1])
+                          && !enq_fwd;
+    end
+
+    for (int i=HALF_SIZE-2; i >= 0; i--) begin
+      IB_shift[i] = (i < (HALF_SIZE-2) && (IB_greater_than_OB_next[i+1] || IB_greater_than_IB_next[i+1])) 
+      || ((IB[i] <= OB[i]) && (IB[i] <= OB[i+1]) && (IB[i] != MIN_VALUE)) 
+      || ((OB[i] == 0) && (i == 0) && (IB[i] <= OB[i+1]))
+      ;
+    end
+    
+    // maybe it should be if it is equal to min_value
+    IB_shift_valid[HALF_SIZE-2] = IB[HALF_SIZE-1] == MIN_VALUE;
+    for (int i=HALF_SIZE-3; i >= 0; i--) begin
+      // we can do shifts if at some point the value ahead of us is 0, otherwise we must swap as there is no room for shifts
+      IB_shift_valid[i] = (IB[i+1] == 0 || IB_shift_valid[i+1] || IB_shift_to_OB[i+1]) 
+      && !((IB_greater_than_OB[i+1] || IB_greater_than_OB[i]) && !(i < (HALF_SIZE-1) && OB_shift[i] && OB_shift_valid[i]));
     end
 
     // compute size_next
-    if (i_wrt && !i_read && !full) begin
+    if (enq_ok) begin
       size_next = size + 1;
-    end else if (!i_wrt && i_read && !empty) begin
+    end else if (!i_wrt && i_read && o_read_ready) begin
       size_next = size - 1;
     end else if (i_wrt && i_read && !full && !empty) begin
       size_next = size;
@@ -142,6 +335,19 @@ module systolic_array #(
       size_next = size;
     end
 
+  end
+
+  // IB_shift_valid without its input-dependent head-forward term, so the readies depend on
+  // state only. An IB->OB move counts only while OB[0] shifts, where a forwarded write
+  // lands in OB[0]; elsewhere IB_room never exceeds IB_shift_valid.
+  always_comb begin
+    IB_room[HALF_SIZE-2] = IB[HALF_SIZE-1] == MIN_VALUE;
+    for (int i=HALF_SIZE-3; i >= 0; i--) begin
+      IB_room[i] = (IB[i+1] == 0 || IB_room[i+1]
+                    || (IB_greater_than_OB_next[i+1] && OB_shift[i] && OB_shift_valid[i]
+                        && OB_shift[0] && OB_shift_valid[0]))
+      && !((IB_greater_than_OB[i+1] || IB_greater_than_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
+    end
   end
 
 endmodule

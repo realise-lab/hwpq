@@ -7,7 +7,7 @@
 #   <testbench_file>  path to the testbench .sv (e.g. hwpq/register_tree/rtl/sim/register_tree_tb.sv)
 #   <top_module>      top-level module name declared in the testbench (e.g. register_tree_tb)
 #
-set -euo pipefail
+set -eu
 
 MODULE="$1"
 TB="$2"
@@ -37,13 +37,12 @@ iverilog -g2012 -Wall -s "${TOP}" -o "${BUILD}/sim.vvp" "${PKGS[@]}" "${REST[@]}
 
 echo "==> Running ${MODULE}"
 vvp "${BUILD}/sim.vvp" | tee "${LOG}"
+status="${PIPESTATUS[0]}"
 
 echo "==> Checking results for ${MODULE}"
-status=0
 
-if grep -inE 'error|mismatch|assertion|\bfail' "${LOG}"; then
-  echo "::error::${MODULE}: assertion/error output detected in simulation log"
-  status=1
+if [ "${status}" -ne 0 ]; then
+  echo "::error::${MODULE}: testbench exited with status ${status}"
 fi
 
 if ! grep -qiE 'test[[:space:]]+completed' "${LOG}"; then

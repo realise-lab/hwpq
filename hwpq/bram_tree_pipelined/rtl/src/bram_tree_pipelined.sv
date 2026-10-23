@@ -1,16 +1,36 @@
+/*******************************************************************************
+  Module Name: bram_tree_pipelined
+  Date: 2026/06/23
+  Description: A pipelined priority queue implementation using a binary max-heap
+               structure stored in block RAM, with the top few levels
+               kept in registers. Supports enqueue, dequeue, and replace
+               operations, trading throughput (one replace every four cycles)
+               for improved scalability over the non-pipelined BRAM tree.
+  Parameters: QUEUE_SIZE - Maximum number of elements in the priority queue
+              DATA_WIDTH - Bit width of data elements
+  Inputs: i_CLK - System clock
+          i_RSTn - Active-low reset signal
+          i_wrt - Write/insert command (enqueue operation)
+          i_read - Read/pop command (dequeue operation)
+          i_data - Input data to be inserted (or used for replace)
+Outputs:    o_write_ready - High when the queue has room to accept a write
+            o_read_ready - High when the queue holds data available to read
+            o_data - Output data from the highest priority element
+*******************************************************************************/
+
 module bram_tree_pipelined #(
     parameter integer QUEUE_SIZE = 7,
     parameter integer DATA_WIDTH = 16
 ) (
-    input  logic                  CLK,
-    input  logic                  RSTn,
+    input  logic                  i_CLK,
+    input  logic                  i_RSTn,
     // Inputs
     input  logic                  i_wrt,    // Write/insert command
     input  logic                  i_read,   // Read/pop command
     input  logic [DATA_WIDTH-1:0] i_data,   // Data to be inserted (or used for replace)
     // Outputs
-    output logic                  o_full,   // High if the heap is full
-    output logic                  o_empty,  // High if the heap is empty
+    output logic                  o_write_ready,   // High if the queue can accept a write
+    output logic                  o_read_ready,  // High if the queue has data to read
     output logic [DATA_WIDTH-1:0] o_data    // Output data (popped value)
 );
 
@@ -97,13 +117,13 @@ module bram_tree_pipelined #(
           .WIDTH(DATA_WIDTH),
           .DEPTH(NODES_NEEDED)
       ) bram_inst (
-          .clka (CLK),
+          .clka (i_CLK),
           .ena  (1'b1),
           .wea  (we_a[i]),
           .addra(addr_a[i]),
           .dia  (din_a[i]),
           .doa  (dout_a[i]),
-          .clkb (CLK),
+          .clkb (i_CLK),
           .enb  (1'b1),
           .web  (we_b[i]),
           .addrb(addr_b[i]),
@@ -130,8 +150,8 @@ module bram_tree_pipelined #(
   //-------------------------------------------------------------------------
   // FSM
   //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : fsm_seq
-    if (!RSTn) begin
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : fsm_seq
+    if (!i_RSTn) begin
       state <= IDLE;
     end else begin
       state <= next_state;
@@ -203,8 +223,8 @@ module bram_tree_pipelined #(
   //-------------------------------------------------------------------------
   // BRAM read&write, heap management
   //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : bram_seq
-    if (!RSTn) begin
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : bram_seq
+    if (!i_RSTn) begin
       parent_lvl <= '0;
       parent_idx <= '0;
       level_0 <= '1;
@@ -377,8 +397,8 @@ module bram_tree_pipelined #(
   //-------------------------------------------------------------------------
   // Queue size counter
   //-------------------------------------------------------------------------
-  always_ff @(posedge CLK or negedge RSTn) begin : queue_size_seq
-    if (!RSTn) begin
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin : queue_size_seq
+    if (!i_RSTn) begin
       queue_size <= 0;
     end else begin
       queue_size <= next_queue_size;
@@ -405,8 +425,8 @@ module bram_tree_pipelined #(
   //-------------------------------------------------------------------------
   // Assignments for status and output.
   //-------------------------------------------------------------------------
-  assign o_full  = (queue_size == QUEUE_SIZE);
-  assign o_empty = (queue_size == 0);
+  assign o_write_ready  = !(queue_size == QUEUE_SIZE);
+  assign o_read_ready = !(queue_size == 0);
   assign o_data  = level_0;
 
 endmodule
