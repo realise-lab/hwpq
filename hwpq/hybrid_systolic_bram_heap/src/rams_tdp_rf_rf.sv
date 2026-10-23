@@ -21,17 +21,19 @@ module rams_tdp_rf_rf #(
     output bram_tree_mem_t dob
 );
   localparam STRUCT_WIDTH = $bits(bram_tree_mem_t);
-  //logic [STRUCT_WIDTH-1:0] ram [DEPTH-1:0];
-  // use this for testing, easier to see values in waveform
-  bram_tree_mem_t ram [DEPTH-1:0];
+  // Flat words: an array of structs infers a separate RAM for each field.
+  logic [STRUCT_WIDTH-1:0] ram [DEPTH-1:0];
 
   initial begin
     int level;
     int node_capacity;
+    bram_tree_mem_t node;
     for (int i = 0; i < DEPTH; i++) begin
       level         = $clog2(i + 2) - 1;
       node_capacity = ((DEPTH + 1) >> level) - 1; 
-      ram[i] = {1'b0, '0, ADDRESS_WIDTH'(node_capacity)};
+      node          = '0;
+      node.capacity = ADDRESS_WIDTH'(node_capacity);
+      ram[i]        = node;
     end
   end
 
