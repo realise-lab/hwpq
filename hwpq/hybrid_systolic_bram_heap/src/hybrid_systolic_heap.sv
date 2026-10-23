@@ -1,6 +1,12 @@
 `default_nettype none
 import bram_tree_pkg::*;
 
+// The tree module: bram_tree_pair (sibling pairs, a level per cycle) or bram_tree. Defined here,
+// not in the package file, since a tool may compile each file as its own unit.
+`ifndef HYBRID_TREE_MODULE
+  `define HYBRID_TREE_MODULE bram_tree_pair
+`endif
+
 // Max-priority queue: larger value = higher priority. A node is just its value; 0 means "empty".
 
 function automatic logic [DATA_WIDTH-1:0] max2(input logic [DATA_WIDTH-1:0] a, input logic [DATA_WIDTH-1:0] b);
@@ -75,7 +81,7 @@ module hybrid_systolic_heap (
 
   generate
     for (genvar k=0; k<TREE_COUNT; k++) begin : g_trees
-      bram_tree heap_inst (
+      `HYBRID_TREE_MODULE heap_inst (
         .i_CLK(i_CLK),
         .i_RSTn(i_RSTn),
         .i_wrt(heap_write[k]),
