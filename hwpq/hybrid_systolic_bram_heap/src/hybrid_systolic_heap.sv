@@ -236,7 +236,14 @@ module hybrid_systolic_heap (
   logic                                 tree_hold;
 
   logic spill_fire, spill_hits_max;
-  logic pull_fire, evict_fire;
+  logic pull_fire, evict_fire, pull_ok, evict_ok;
+
+  // Command-dependent control for each value of o_read_ready, indexed by it.
+  logic [1:0]              c_user_heap, c_m_wrt, c_m_read, c_pull, c_evict, c_h_wrt, c_h_read;
+  logic [1:0]              c_h_user, c_h_gt_ob1, c_m_enq_ok, c_m_enq_fwd, c_m_wr_ib0;
+  logic [1:0]              c_h_enq_ok, c_h_enq_fwd, c_h_wr_ib0;
+  logic [SV_W-1:0]         c_ib_v [2];
+  logic [SV_W-1:0]         c_hib_v [2];
 
   logic [DATA_WIDTH-1:0] heap_rep_data;     // no reset, data only
   logic [DATA_WIDTH-1:0] heap_spill_data;   // no reset, data only
@@ -275,10 +282,9 @@ module hybrid_systolic_heap (
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
   // a replace on each side). Without the swap a full heap buffer can hide the maximum.
-  assign pull_fire  = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
-                      && h_wr_rdy;
-  assign evict_fire = !user_heap && !user_heap_enq && max_valid && max_rdy && !spill_hits_max
-                      && heap_systolic_full && h_rd_rdy && max_gt_h_head;
+  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy;
+  assign evict_ok = max_valid && max_rdy && !spill_hits_max
+                    && heap_systolic_full && h_rd_rdy && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
   assign o_write_ready = m_wr_rdy || h_wr_rdy;
@@ -791,65 +797,87 @@ module hybrid_systolic_heap (
     // still an element, so the queue is not empty until the tree has taken it.
     hybrid_empty = systolic_empty && heap_systolic_empty && (&heap_empty) && !(|heap_write);
     rep_empty = i_wrt && i_read && hybrid_empty && m_wr_rdy;
-    user_heap = i_read && o_read_ready && output_from_heap_systolic;
+    // Every term below depends on o_read_ready, the deepest signal in the module. Each is
+    // computed for both of its values and selected last, so the readies' scans run in parallel
+    // with the decode they gate. Only control is duplicated; the data paths see the selection.
     user_heap_enq = i_wrt && !i_read && !m_wr_rdy && h_wr_rdy;
-    m_wrt  = (i_wrt && !i_read && m_wr_rdy)
-             || (i_wrt && i_read && (o_read_ready || rep_empty) && !output_from_heap_systolic);
-    m_read = i_read && (o_read_ready || rep_empty) && !output_from_heap_systolic;
-    m_data = i_data;
-    h_wrt  = (user_heap && i_wrt) || user_heap_enq || pull_fire || evict_fire;
-    h_read = user_heap || evict_fire;
-    h_from_user = user_heap || user_heap_enq;
-    h_data   = h_from_user ? i_data : max_q;
-    h_gt_ob0 = h_from_user ? (i_data > heap_OB[0]) : (max_q > heap_OB[0]);
-    h_gt_ob1 = h_from_user ? (i_data > heap_OB[1]) : (max_q > heap_OB[1]);
-    h_gt_ib0 = h_from_user ? (i_data > heap_IB[0]) : (max_q > heap_IB[0]);
-    h_gt_ib1 = h_from_user ? (i_data > heap_IB[1]) : (max_q > heap_IB[1]);
-    h_lt_ob0 = h_from_user ? (i_data < heap_OB[0]) : (max_q < heap_OB[0]);
+    for (int r = 0; r < 2; r++) begin
+      c_user_heap[r] = i_read && r[0] && output_from_heap_systolic;
+      c_m_wrt[r]  = (i_wrt && !i_read && m_wr_rdy)
+                    || (i_wrt && i_read && (r[0] || rep_empty) && !output_from_heap_systolic);
+      c_m_read[r] = i_read && (r[0] || rep_empty) && !output_from_heap_systolic;
+      c_pull[r]   = !c_user_heap[r] && !user_heap_enq && pull_ok;
+      c_evict[r]  = !c_user_heap[r] && !user_heap_enq && evict_ok;
+      c_h_wrt[r]  = (c_user_heap[r] && i_wrt) || user_heap_enq || c_pull[r] || c_evict[r];
+      c_h_read[r] = c_user_heap[r] || c_evict[r];
+      c_h_user[r] = c_user_heap[r] || user_heap_enq;
+      c_h_gt_ob1[r] = c_h_user[r] ? (i_data > heap_OB[1]) : (max_q > heap_OB[1]);
 
-    // Main buffer: command-dependent terms.
-    m_enq_ok      = m_wrt && !m_read && !systolic_full && m_wr_rdy;
-    // Not gated on the readies: that would put the IB_room chain in series with the sort
-    // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
-    m_enq_fwd     = m_wrt && !m_read && !systolic_full && (m_data > OB[1]);
-    m_writing_ib0 = m_enq_ok || (m_wrt && m_read && (m_rd_rdy || systolic_empty));
+      // Main buffer: command-dependent terms.
+      c_m_enq_ok[r]  = c_m_wrt[r] && !c_m_read[r] && !systolic_full && m_wr_rdy;
+      // Not gated on the readies: that would put the IB_room chain in series with the sort
+      // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
+      c_m_enq_fwd[r] = c_m_wrt[r] && !c_m_read[r] && !systolic_full && (i_data > OB[1]);
+      c_m_wr_ib0[r]  = c_m_enq_ok[r] || (c_m_wrt[r] && c_m_read[r] && (m_rd_rdy || systolic_empty));
+      ib_g[SV_W-1] = ib_e[HALF_SIZE-1] || spill_fire;
+      ib_p[SV_W-1] = 1'b0;
+      for (int i = 0; i < SV_W-1; i++) begin
+        ib_b    = !((IB_gt_OB[i+1] || IB_gt_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
+        ib_g[i] = (ib_e[i+1] || (IB_gt_OB_next[i+1] && OB_shift[i] && OB_shift_valid[i]
+                                 && !c_m_enq_fwd[r])) && ib_b;
+        ib_p[i] = ib_b;
+      end
+      c_ib_v[r] = scan_bwd(ib_g, ib_p);
 
+      // Heap buffer: command-dependent terms.
+      c_h_enq_ok[r]  = c_h_wrt[r] && !c_h_read[r] && !heap_systolic_full && h_wr_rdy;
+      c_h_enq_fwd[r] = c_h_wrt[r] && !c_h_read[r] && !heap_systolic_full && c_h_gt_ob1[r];
+      c_h_wr_ib0[r]  = c_h_enq_ok[r]
+                       || (c_h_wrt[r] && c_h_read[r] && (h_rd_rdy || heap_systolic_empty));
+      hib_g[SV_W-1] = hib_e[HALF_SIZE-1];
+      hib_p[SV_W-1] = 1'b0;
+      for (int i = 0; i < SV_W-1; i++) begin
+        hib_b    = !((heap_IB_gt_OB[i+1] || heap_IB_gt_OB[i])
+                     && !(heap_OB_shift[i] && heap_OB_shift_valid[i]));
+        hib_g[i] = (hib_e[i+1] || (heap_IB_gt_OB_next[i+1] && heap_OB_shift[i]
+                                   && heap_OB_shift_valid[i] && !c_h_enq_fwd[r])) && hib_b;
+        hib_p[i] = hib_b;
+      end
+      c_hib_v[r] = scan_bwd(hib_g, hib_p);
+    end
+
+    user_heap     = c_user_heap[o_read_ready];
+    m_wrt         = c_m_wrt[o_read_ready];
+    m_read        = c_m_read[o_read_ready];
+    m_data        = i_data;
+    pull_fire     = c_pull[o_read_ready];
+    evict_fire    = c_evict[o_read_ready];
+    h_wrt         = c_h_wrt[o_read_ready];
+    h_read        = c_h_read[o_read_ready];
+    h_from_user   = c_h_user[o_read_ready];
+    h_data        = h_from_user ? i_data : max_q;
+    h_gt_ob0      = h_from_user ? (i_data > heap_OB[0]) : (max_q > heap_OB[0]);
+    h_gt_ob1      = c_h_gt_ob1[o_read_ready];
+    h_gt_ib0      = h_from_user ? (i_data > heap_IB[0]) : (max_q > heap_IB[0]);
+    h_gt_ib1      = h_from_user ? (i_data > heap_IB[1]) : (max_q > heap_IB[1]);
+    h_lt_ob0      = h_from_user ? (i_data < heap_OB[0]) : (max_q < heap_OB[0]);
+    m_enq_ok      = c_m_enq_ok[o_read_ready];
+    m_enq_fwd     = c_m_enq_fwd[o_read_ready];
+    m_writing_ib0 = c_m_wr_ib0[o_read_ready];
+    h_enq_ok      = c_h_enq_ok[o_read_ready];
+    h_enq_fwd     = c_h_enq_fwd[o_read_ready];
+    h_writing_ib0 = c_h_wr_ib0[o_read_ready];
     for (int i = 0; i < HALF_SIZE - 1; i++) begin
       IB_shift_to_OB[i] = IB_gt_OB_next[i] && (i > 0 && OB_shift[i-1] && OB_shift_valid[i-1])
-                             && !m_enq_fwd;
+                          && !m_enq_fwd;
+      heap_IB_shift_to_OB[i] = heap_IB_gt_OB_next[i]
+                               && (i > 0 && heap_OB_shift[i-1] && heap_OB_shift_valid[i-1])
+                               && !h_enq_fwd;
     end
-
-    ib_g[SV_W-1] = ib_e[HALF_SIZE-1] || spill_fire;
-    ib_p[SV_W-1] = 1'b0;
-    for (int i = 0; i < SV_W-1; i++) begin
-      ib_b  = !((IB_gt_OB[i+1] || IB_gt_OB[i]) && !(OB_shift[i] && OB_shift_valid[i]));
-      ib_g[i] = (ib_e[i+1] || IB_shift_to_OB[i+1]) && ib_b;
-      ib_p[i] = ib_b;
+    for (int i = 0; i < SV_W; i++) begin
+      IB_shift_valid[i]      = c_ib_v[o_read_ready][i];
+      heap_IB_shift_valid[i] = c_hib_v[o_read_ready][i];
     end
-    ib_v = scan_bwd(ib_g, ib_p);
-    for (int i = 0; i < SV_W; i++) IB_shift_valid[i] = ib_v[i];
-
-    // Heap buffer: command-dependent terms.
-    h_enq_ok      = h_wrt && !h_read && !heap_systolic_full && h_wr_rdy;
-    // Not gated on the readies: that would put the IB_room chain in series with the sort
-    // network. A refused forward only holds the OB shift for a cycle; the writes stay gated.
-    h_enq_fwd     = h_wrt && !h_read && !heap_systolic_full && h_gt_ob1;
-    h_writing_ib0 = h_enq_ok || (h_wrt && h_read && (h_rd_rdy || heap_systolic_empty));
-
-    for (int i = 0; i < HALF_SIZE - 1; i++) begin
-      heap_IB_shift_to_OB[i] = heap_IB_gt_OB_next[i] && (i > 0 && heap_OB_shift[i-1] && heap_OB_shift_valid[i-1])
-                             && !h_enq_fwd;
-    end
-
-    hib_g[SV_W-1] = hib_e[HALF_SIZE-1] || 1'b0;
-    hib_p[SV_W-1] = 1'b0;
-    for (int i = 0; i < SV_W-1; i++) begin
-      hib_b  = !((heap_IB_gt_OB[i+1] || heap_IB_gt_OB[i]) && !(heap_OB_shift[i] && heap_OB_shift_valid[i]));
-      hib_g[i] = (hib_e[i+1] || heap_IB_shift_to_OB[i+1]) && hib_b;
-      hib_p[i] = hib_b;
-    end
-    hib_v = scan_bwd(hib_g, hib_p);
-    for (int i = 0; i < SV_W; i++) heap_IB_shift_valid[i] = hib_v[i];
 
     if (o_read_ready) begin
       o_data = rd_sel;
