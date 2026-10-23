@@ -55,7 +55,11 @@ module hybrid_systolic_heap (
   logic [TREE_COUNT-1:0]        heap_ready;
   logic [TREE_COUNT-1:0]        heap_top_moved;
 
-  logic [BRAM_TREE_ADDR_WIDTH-1:0]        heap_round_robin;
+  // The spill target is chosen a cycle ahead, so the choice stays off the readiness paths:
+  // the first ready, non-full tree after the last target, else the first non-full one, which
+  // the spill then waits on. A tree that only frees up in between costs a cycle.
+  logic [BRAM_TREE_ADDR_WIDTH-1:0]        spill_tgt, spill_tgt_next;
+  logic                                   spill_found_rdy;
 
   logic [GEN_W-1:0]         tree_gen;
   logic                     tree_gen_pending, tree_filling;
@@ -151,6 +155,8 @@ module hybrid_systolic_heap (
 
   logic [HALF_SIZE-1:0] ib_e, ob_e, hib_e, hob_e; // slot is empty (value == 0)
   logic [1:0]           m_empt, h_empt;           // #empty slots, saturating at 3
+  logic                 h_last_write;             // the heap buffer takes exactly one more write
+  logic                 pull_reserved;
   logic                 m_all_empty, h_all_empty;
 
   function automatic logic [1:0] empties_sat(input logic [TOT-1:0] e);
@@ -167,6 +173,19 @@ module hybrid_systolic_heap (
       end
     end
     return lvl[0];
+  endfunction
+
+  function automatic logic more_than_3(input logic [TOT-1:0] e);
+    logic [2:0] lvl [TOTP];
+    logic [3:0] s;
+    for (int i = 0; i < TOTP; i++) lvl[i] = (i < TOT) ? {2'b0, e[i]} : 3'd0;
+    for (int n = TOTP; n > 1; n = n >> 1) begin
+      for (int i = 0; i < n/2; i++) begin
+        s      = {1'b0, lvl[2*i]} + {1'b0, lvl[2*i+1]};
+        lvl[i] = (s > 4'd4) ? 3'd4 : s[2:0];
+      end
+    end
+    return lvl[0] == 3'd4;
   endfunction
 
   function automatic logic [SV_W-1:0] scan_bwd(input logic [SV_W-1:0] g,
@@ -228,12 +247,12 @@ module hybrid_systolic_heap (
   logic                                 max_rdy;
 
   // The max over tree tops is registered from last cycle's values, ignoring readiness. It is
-  // exact unless a tree's top moved since (o_top_moved) or a tree is busy now, and either
-  // makes the max the unknown bound.
+  // exact unless a tree's top moved since (o_top_moved), which holds reads. Pulls and
+  // evictions also wait while the max tree is busy (tree_hold), since they command it.
   logic [DATA_WIDTH-1:0]                max_q;
   logic [BRAM_TREE_ADDR_WIDTH-1:0]      max_idx_q;
   logic                                 max_v_q;
-  logic                                 tree_hold;
+  logic                                 tree_hold, top_moved_any;
 
   logic spill_fire, spill_hits_max;
   logic pull_fire, evict_fire, pull_ok, evict_ok;
@@ -282,9 +301,9 @@ module hybrid_systolic_heap (
   // A tree head moves into the heap buffer when it has room (pull), or swaps with the
   // heap buffer's head when that buffer is full and the tree head outranks it (evict:
   // a replace on each side). Without the swap a full heap buffer can hide the maximum.
-  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy;
+  assign pull_ok  = max_valid && max_rdy && !spill_hits_max && h_wr_rdy && !pull_reserved;
   assign evict_ok = max_valid && max_rdy && !spill_hits_max
-                    && heap_systolic_full && h_rd_rdy && max_gt_h_head;
+                    && (heap_systolic_full || pull_reserved) && h_rd_rdy && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
   assign o_write_ready = m_wr_rdy || h_wr_rdy;
@@ -322,7 +341,7 @@ module hybrid_systolic_heap (
     if (!i_RSTn) begin  // Reset
       heap_write  <= 0;
       heap_read   <= 0;
-      heap_round_robin <= 0;
+      spill_tgt <= 0;
       m_dequeue_pending <= 1'b0;
       h_dequeue_pending <= 1'b0;
       m_forecast <= EMPTY_VAL;
@@ -335,18 +354,12 @@ module hybrid_systolic_heap (
       end
     end else begin
       for (int k = 0; k < TREE_COUNT; k++) begin
-        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == heap_round_robin));
+        heap_write[k]    <= (evict_fire && (k == max_node_idx)) || (spill_fire && (k == spill_tgt));
         heap_data_sel[k] <= evict_fire && (k == max_node_idx);
         heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx);
       end
 
-      if (spill_to_heap) begin
-        if (heap_round_robin == TREE_COUNT - 1) begin
-          heap_round_robin <= 0;
-        end else begin
-          heap_round_robin <= heap_round_robin + 1;
-        end
-      end
+      spill_tgt <= spill_tgt_next;
 
       // Main buffer: systolic_array's sorting network, driven by m_wrt/m_read/m_data.
       if (m_read && !m_wrt && !systolic_empty && m_rd_rdy) begin
@@ -643,17 +656,18 @@ module hybrid_systolic_heap (
     systolic_full       = (m_empt != 2'd3);   // was size >= SIZE-2
     systolic_empty      = m_all_empty;
     heap_systolic_full  = (h_empt != 2'd3);
+    h_last_write        = !heap_systolic_full && !more_than_3({hib_e, hob_e});
+    // While the main buffer is full, the heap buffer's last write slot is the only room a write
+    // can reach at once; a pull would move that room into a tree, so evict in its place.
+    pull_reserved       = systolic_full && h_last_write;
     heap_systolic_empty = h_all_empty;
 
     // ---- log-depth max tree over tree tops; a later index wins a value-tie ----
-    tree_hold = 1'b0;
+    top_moved_any = |heap_top_moved;
     for (int i = 0; i < TC_P2; i++) begin
       if (i < TREE_COUNT) begin
         t_val[TC_P2+i] = heap_output[i];
         t_v[TC_P2+i]   = !heap_empty[i] && (heap_output[i] != EMPTY_VAL);
-        // A busy non-empty tree may hold any value, so it holds reads and pulls.
-        tree_hold      = tree_hold || heap_top_moved[i]
-                         || (!heap_ready[i] && !heap_empty[i]);
       end else begin
         t_val[TC_P2+i] = EMPTY_VAL;
         t_v[TC_P2+i]   = 1'b0;
@@ -667,6 +681,8 @@ module hybrid_systolic_heap (
       t_i[n]   = t_rw ? t_i[2*n+1]   : t_i[2*n];
     end
 
+    // Pulls and evictions command only the max tree, so only that tree must be idle.
+    tree_hold    = top_moved_any || !heap_ready[max_idx_q];
     max_valid    = max_v_q || tree_hold;
     max_rdy      = max_v_q && !tree_hold;
     max_node_idx = max_idx_q;
@@ -674,11 +690,23 @@ module hybrid_systolic_heap (
 
     // ---- spill: registered-only inputs, no dependence on max_node ----
     spill_to_heap       = (!ib_e[HALF_SIZE-1]) && (IB[HALF_SIZE-1] <= OB[HALF_SIZE-1]) && !(&heap_full);
-    spill_to_heap_valid = heap_ready[heap_round_robin] && !heap_full[heap_round_robin];
+    spill_to_heap_valid = heap_ready[spill_tgt] && !heap_full[spill_tgt];
+    spill_tgt_next      = spill_tgt;
+    spill_found_rdy     = 1'b0;
+    for (int d = TREE_COUNT; d >= 1; d--) begin
+      if (!heap_full[(spill_tgt + d) % TREE_COUNT])
+        spill_tgt_next = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+    end
+    for (int d = TREE_COUNT; d >= 1; d--) begin
+      if (heap_ready[(spill_tgt + d) % TREE_COUNT] && !heap_full[(spill_tgt + d) % TREE_COUNT]) begin
+        spill_tgt_next  = BRAM_TREE_ADDR_WIDTH'((spill_tgt + d) % TREE_COUNT);
+        spill_found_rdy = 1'b1;
+      end
+    end
     spill_fire          = spill_to_heap && spill_to_heap_valid;
 
     // if a spill is going into the same heap this cycle, the spill wins and the pull retries next cycle
-    spill_hits_max = spill_fire && (max_node_idx == heap_round_robin);
+    spill_hits_max = spill_fire && (max_node_idx == spill_tgt);
 
 
 
@@ -783,11 +811,11 @@ module hybrid_systolic_heap (
         : (m_dequeue_pending ? (heap_OB[0] > m_forecast) : (heap_OB[0] > OB[0]));
     rd_sel = output_from_heap_systolic ? h_head : m_head;
 
-    // max_node is the unknown bound '1 while tree_hold, and no head can reach it ('1 is reserved).
-    // Pulls and evictions need max_rdy, which excludes tree_hold, so they compare max_q.
+    // A tree's top bounds its contents whenever o_top_moved is low, busy or not, so reads wait
+    // only for a moved top. Pulls and evictions command a tree and also wait for it to be idle.
     h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
     m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
-    rd_ge_max = !tree_hold && (output_from_heap_systolic ? h_ge_max : m_ge_max);
+    rd_ge_max = !top_moved_any && (output_from_heap_systolic ? h_ge_max : m_ge_max);
     max_gt_h_head = h_dequeue_pending ? (max_q > h_forecast) : (max_q > heap_OB[0]);
 
     // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main
