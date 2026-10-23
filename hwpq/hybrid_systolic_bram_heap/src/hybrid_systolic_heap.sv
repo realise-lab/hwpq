@@ -267,8 +267,9 @@ module hybrid_systolic_heap (
   logic                                 max_v_q;
   logic                                 tree_hold, top_moved_any;
   // A command moves a tree's top for one cycle, and reads ignore it: max_q still holds the old
-  // top, which bounds what a pull or evict leaves, and an insert adds only a spilled value, which
-  // never outranks a head the hybrid serves. Aligned with the tree's o_top_moved.
+  // top, which bounds what a pull or evict leaves, a spill adds only a value that never outranks
+  // a head the hybrid serves, and a direct write is checked by value. An owed evict's insert
+  // keeps the hold. Aligned with the tree's o_top_moved.
   logic [TREE_COUNT-1:0]                cmd_moved;
   logic                                 top_moved_rd;
   // A pull from a max tree busy with a walk takes its exact top at once and owes the tree a
@@ -292,6 +293,14 @@ module hybrid_systolic_heap (
   logic [DATA_WIDTH-1:0] heap_rep_data;     // no reset, data only
   logic [DATA_WIDTH-1:0] heap_spill_data;   // no reset, data only
   logic [TREE_COUNT-1:0] heap_data_sel;     // 1 = replace data, 0 = spill data (registered with heap_write)
+  logic [DATA_WIDTH-1:0] heap_user_data;    // no reset, data only
+  logic [TREE_COUNT-1:0] heap_user_sel;     // 1 = a write straight from the input
+  // With both buffers full, a write goes straight to the evict target. Until the max-select sees
+  // it (two cycles), a read's head must outrank it as it does max_q: heap_user_data holds the
+  // write of the last cycle, dw_val2 the one before.
+  logic                  dw_rdy, dw_req, dw_fire, dw_v1, dw_v2;
+  logic [DATA_WIDTH-1:0] dw_val2;
+  logic                  h_ge_dw, m_ge_dw;
 
   // Per-buffer command, readies and head (systolic_array's i_wrt/i_read/i_data,
   // o_write_ready/o_read_ready/o_data).
@@ -319,7 +328,8 @@ module hybrid_systolic_heap (
 
   generate
     for (genvar k = 0; k < TREE_COUNT; k++) begin : g_heap_in
-      assign heap_input[k] = heap_data_sel[k] ? heap_rep_data : heap_spill_data;
+      assign heap_input[k] = heap_user_sel[k] ? heap_user_data
+                           : heap_data_sel[k] ? heap_rep_data : heap_spill_data;
     end
   endgenerate
 
@@ -330,12 +340,14 @@ module hybrid_systolic_heap (
   assign pull_ok  = max_valid && (max_rdy || owe_ok) && !spill_hits_max && h_wr_rdy
                     && !pull_reserved;
   assign evict_ok = max_valid && (max_rdy || (owe_ok && evict_found && heap_ready[evict_tgt]
-                                               && !heap_full[evict_tgt]))
+                                               && !heap_full[evict_tgt] && !dw_req))
                     && !spill_hits_max && (heap_systolic_full || pull_reserved) && h_rd_rdy
                     && max_gt_h_head;
 
   // Room in either buffer takes a write, so one is accepted in the cycle after any read.
-  assign o_write_ready = m_wr_rdy || h_wr_rdy;
+  assign dw_rdy        = evict_found && heap_ready[evict_tgt] && !heap_full[evict_tgt]
+                         && (evict_tgt != max_idx_q);
+  assign o_write_ready = m_wr_rdy || h_wr_rdy || dw_rdy;
   // The head is the larger buffer head, once both buffers and the trees can be compared.
   assign o_read_ready  = (output_from_heap_systolic ? h_rd_rdy : m_rd_rdy)
                          && (systolic_empty || m_rd_rdy) && (heap_systolic_empty || h_rd_rdy)
@@ -350,6 +362,8 @@ module hybrid_systolic_heap (
   always_ff @(posedge i_CLK) begin
     heap_rep_data   <= h_head;
     heap_spill_data <= IB[HALF_SIZE-1];
+    heap_user_data  <= i_data;
+    dw_val2         <= heap_user_data;
   end
 
   // Resets to "no tree holds a value"; every o_top_moved resets high, which holds the first cycle.
@@ -375,6 +389,8 @@ module hybrid_systolic_heap (
       spill_tgt <= 0;
       evict_tgt   <= 0;
       evict_found <= 1'b0;
+      dw_v1       <= 1'b0;
+      dw_v2       <= 1'b0;
       m_dequeue_pending <= 1'b0;
       h_dequeue_pending <= 1'b0;
       m_forecast <= EMPTY_VAL;
@@ -388,7 +404,9 @@ module hybrid_systolic_heap (
     end else begin
       for (int k = 0; k < TREE_COUNT; k++) begin
         heap_write[k]    <= (evict_fire && (k == max_node_idx) && heap_ready[k])
-                            || (spill_fire && (k == spill_tgt)) || (owe_evict && (k == evict_tgt));
+                            || (spill_fire && (k == spill_tgt))
+                            || ((owe_evict || dw_fire) && (k == evict_tgt));
+        heap_user_sel[k] <= dw_fire && (k == evict_tgt);
         heap_data_sel[k] <= (evict_fire && (k == max_node_idx) && heap_ready[k])
                             || (owe_evict && (k == evict_tgt));
         heap_read[k]     <= (pull_fire || evict_fire) && (k == max_node_idx) && heap_ready[k]
@@ -402,6 +420,8 @@ module hybrid_systolic_heap (
       spill_tgt <= spill_tgt_next;
       evict_tgt   <= evict_tgt_next;
       evict_found <= evict_found_next;
+      dw_v1       <= dw_fire;
+      dw_v2       <= dw_v1;
 
       // Main buffer: systolic_array's sorting network, driven by m_wrt/m_read/m_data.
       if (m_read && !m_wrt && !systolic_empty && m_rd_rdy) begin
@@ -875,7 +895,14 @@ module hybrid_systolic_heap (
     // wait for it to be idle.
     h_ge_max  = h_dequeue_pending ? (h_forecast >= max_q) : (heap_OB[0] >= max_q);
     m_ge_max  = m_dequeue_pending ? (m_forecast >= max_q) : (OB[0] >= max_q);
-    rd_ge_max = !top_moved_rd && (output_from_heap_systolic ? h_ge_max : m_ge_max);
+    h_ge_dw   = h_dequeue_pending
+                ? ((!dw_v1 || h_forecast >= heap_user_data) && (!dw_v2 || h_forecast >= dw_val2))
+                : ((!dw_v1 || heap_OB[0] >= heap_user_data) && (!dw_v2 || heap_OB[0] >= dw_val2));
+    m_ge_dw   = m_dequeue_pending
+                ? ((!dw_v1 || m_forecast >= heap_user_data) && (!dw_v2 || m_forecast >= dw_val2))
+                : ((!dw_v1 || OB[0] >= heap_user_data) && (!dw_v2 || OB[0] >= dw_val2));
+    rd_ge_max = !top_moved_rd && (output_from_heap_systolic ? h_ge_max && h_ge_dw
+                                                            : m_ge_max && m_ge_dw);
     max_gt_h_head = h_dequeue_pending ? (max_q > h_forecast) : (max_q > heap_OB[0]);
 
     // Command routing: enqueue goes to the main buffer, or to the heap buffer while the main
@@ -889,6 +916,8 @@ module hybrid_systolic_heap (
     // computed for both of its values and selected last, so the readies' scans run in parallel
     // with the decode they gate. Only control is duplicated; the data paths see the selection.
     user_heap_enq = i_wrt && !i_read && !m_wr_rdy && h_wr_rdy;
+    dw_req        = i_wrt && !i_read && !m_wr_rdy && !h_wr_rdy;
+    dw_fire       = dw_req && dw_rdy;
     for (int r = 0; r < 2; r++) begin
       c_user_heap[r] = i_read && r[0] && output_from_heap_systolic;
       c_m_wrt[r]  = (i_wrt && !i_read && m_wr_rdy)
