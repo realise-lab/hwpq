@@ -63,7 +63,7 @@ proc report_region_slack {file} {
 
 # Package first: the other files import it.
 read_verilog -sv [file join $src hybrid_typedef.sv]
-foreach f {rams_tdp_rf_rf.sv bram_tree.sv hybrid_systolic_heap.sv} {
+foreach f {rams_tdp_rf_rf.sv bram_tree.sv bram_tree_pair.sv hybrid_systolic_heap.sv} {
   read_verilog -sv [file join $src $f]
 }
 

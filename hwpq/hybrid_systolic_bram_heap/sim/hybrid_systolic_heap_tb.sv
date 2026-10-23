@@ -1,7 +1,7 @@
 `default_nettype none
 import bram_tree_pkg::*;
 
-// vcs -sverilog -full64 hwpq/hwpq/hybrid_systolic_bram_heap/src/hybrid_typedef.sv hwpq/hwpq/hybrid_systolic_bram_heap/sim/hybrid_systolic_heap_tb.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/rams_tdp_rf_rf.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/bram_tree.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/hybrid_systolic_heap.sv -o simv
+// vcs -sverilog -full64 hwpq/hwpq/hybrid_systolic_bram_heap/src/hybrid_typedef.sv hwpq/hwpq/hybrid_systolic_bram_heap/sim/hybrid_systolic_heap_tb.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/rams_tdp_rf_rf.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/bram_tree.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/bram_tree_pair.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/hybrid_systolic_heap.sv -o simv
 
 // vcs -sverilog -full64 hwpq/hwpq/hybrid_systolic_bram_heap/src/hybrid_typedef.sv hwpq/hwpq/bram_tree/rtl/sim/bram_tree_tb.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/rams_tdp_rf_rf.sv hwpq/hwpq/hybrid_systolic_bram_heap/src/bram_tree.sv 
 
