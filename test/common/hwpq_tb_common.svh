@@ -20,6 +20,17 @@
       is what the readies are checked against. systolic_array reserves two slots
       as shift-chain margin, so its shim sets QUEUE_SIZE-2.
 
+    `define TB_READ_RECOVERY 1
+      Defaults to 0. Set 1 for a DUT that drops only o_read_ready for the cycle after
+      an accepted read or replace. Reads wait it out; test_read_recovery writes in it.
+
+    `define TB_INDEPENDENT_READIES 1
+      Defaults to 0. Set 1 for a DUT whose readies stall independently: either may
+      drop while the other stays high, for a bounded time. A high ready must still
+      be honest (read => data, write => room) and a refused command inert. The body
+      then waits for the readies to match the model instead of waiting for settled,
+      and replace waits on o_read_ready, or on o_write_ready when the model is empty.
+
     `define TB_CHECK_INTERNAL <task_call>;
       Defaults to nothing. A statement invoked at every settled point, for a shim
       that can reach inside its DUT: the tree shims check the heap invariant by
@@ -59,9 +70,17 @@
 
 // Elements the DUT will actually hold. QUEUE_SIZE everywhere except
 // systolic_array, whose `full` is (size >= QUEUE_SIZE - 2): the two reserved
-// slots are the shift chain's margin, and one is provably not enough.
+// slots are the shift chain's margin.
 `ifndef TB_CAPACITY
   `define TB_CAPACITY QUEUE_SIZE
+`endif
+
+`ifndef TB_READ_RECOVERY
+  `define TB_READ_RECOVERY 0
+`endif
+
+`ifndef TB_INDEPENDENT_READIES
+  `define TB_INDEPENDENT_READIES 0
 `endif
 
 // Optional white-box check, invoked at every settled point. Expands to nothing
@@ -100,11 +119,10 @@ logic [DATA_WIDTH-1:0] o_data_prev;
 
 // Payload alphabet.
 //
-// $urandom_range(1, 1023) over a 16-bit payload means ties essentially never
-// occur, so the comparators are least tested exactly where ordering and
-// tie-breaking bugs live. The proofs run at DATA_WIDTH=2 (two legal values
-// once both sentinels are reserved), where every comparison is a tie. This
-// narrows the stimulus to 1..3 for one phase to force duplicates.
+// Values span the full width, mixing three shapes so every comparator bit decides some
+// ordering: fully random, small (1..1023), and a fixed high prefix with random low bits.
+// Wide random values almost never tie, so one phase narrows the stimulus to 1..3 to force
+// duplicates; the proofs run at DATA_WIDTH=2, where every comparison is a tie.
 //
 // Both reserved values stay off the alphabet either way: '0 is the empty marker
 // and the dequeue mechanism, '1 is the max-priority placeholder, and both are
@@ -112,8 +130,15 @@ logic [DATA_WIDTH-1:0] o_data_prev;
 bit narrow_alphabet = 0;
 
 function automatic logic [DATA_WIDTH-1:0] rand_value();
-  return narrow_alphabet ? DATA_WIDTH'($urandom_range(1, 3))
-                         : DATA_WIDTH'($urandom_range(1, 1023));
+  logic [DATA_WIDTH-1:0] v;
+  if (narrow_alphabet) return DATA_WIDTH'($urandom_range(1, 3));
+  for (int i = 0; i < DATA_WIDTH; i++) v[i] = $urandom_range(0, 1);
+  case ($urandom_range(0, 2))
+    0: ;
+    1: v = DATA_WIDTH'($urandom_range(1, 1023));
+    default: v = ({(DATA_WIDTH + 3) / 4{4'b1010}} & ~DATA_WIDTH'(1023)) | (v & DATA_WIDTH'(1023));
+  endcase
+  return (v == '0 || v == '1) ? DATA_WIDTH'(1) : v;
 endfunction
 
 logic [DATA_WIDTH-1:0] random_value;
@@ -137,9 +162,36 @@ always @(posedge i_CLK) if (i_RSTn) cycle <= cycle + 1;
 // Quiescence polling
 localparam int SETTLE_TIMEOUT = 10000;
 
+// The readies say exactly what the model holds. Under TB_INDEPENDENT_READIES this,
+// not settled, is the quiescent point: each ready may stall alone, so neither one
+// being high says the other is accurate.
+function automatic bit readies_exact();
+  return (o_read_ready == (ref_queue_size != 0)) &&
+         (!`TB_TRACKS_FULL || o_write_ready == (ref_queue_size != `TB_CAPACITY));
+endfunction
+
+// A stalled ready is allowed; a high one that the model contradicts is not.
+task automatic check_readies_honest(input string where);
+  assert (!(o_read_ready && ref_queue_size == 0))
+  else begin error_count++; $error("Readies (%s): o_read_ready high on an empty model", where); end
+  assert (!(`TB_TRACKS_FULL && o_write_ready && ref_queue_size == `TB_CAPACITY))
+  else begin error_count++; $error("Readies (%s): o_write_ready high on a full model", where); end
+endtask
+
 task automatic poll_settled();
   int guard;
   guard = 0;
+  if (`TB_INDEPENDENT_READIES && fill_complete) begin
+    while (!readies_exact()) begin
+      check_readies_honest("stalled");
+      @(negedge i_CLK);
+      guard++;
+      if (guard > SETTLE_TIMEOUT) begin
+        $fatal(1, "poll_settled: readies never matched the model after %0d cycles (o_write_ready=%0b o_read_ready=%0b, model %0d of %0d)",
+               SETTLE_TIMEOUT, o_write_ready, o_read_ready, ref_queue_size, `TB_CAPACITY);
+      end
+    end
+  end
   while (!settled) begin
     @(negedge i_CLK);
     guard++;
@@ -148,6 +200,11 @@ task automatic poll_settled();
              SETTLE_TIMEOUT, o_write_ready, o_read_ready);
     end
   end
+endtask
+
+// Call after a read or replace is captured and released.
+task automatic read_recovery();
+  if (`TB_READ_RECOVERY) @(negedge i_CLK);
 endtask
 
 // Cycles/op measurement (pure reporting)
@@ -295,6 +352,7 @@ task automatic dequeue();
     @(posedge i_CLK);
     @(negedge i_CLK);
     clear_cmd();
+    read_recovery();
     poll_settled();
     check_readies("after dequeue");
     if (accepted) record(DEQUEUE, cycle - t0);
@@ -322,6 +380,7 @@ task automatic replace(input logic [DATA_WIDTH-1:0] value);
     @(posedge i_CLK);
     @(negedge i_CLK);
     clear_cmd();
+    read_recovery();
     poll_settled();
     check_readies("after replace");
     record(REPLACE, cycle - t0);
@@ -339,6 +398,7 @@ task automatic replace_init(input logic [DATA_WIDTH-1:0] value);
     @(posedge i_CLK);
     @(negedge i_CLK);
     clear_cmd();
+    read_recovery();
     poll_settled();
   end
 endtask
@@ -532,9 +592,12 @@ task automatic master_op(input operation_t op, input logic [DATA_WIDTH-1:0] valu
     guard = 0;
     ready = 0;
     while (!ready) begin
-      // replace needs neither space nor data, only quiescence
+      // replace needs neither space nor data, only quiescence, unless the readies
+      // stall independently: then it needs a known head, or room when empty
       ready = (op == ENQUEUE) ? o_write_ready :
-              (op == DEQUEUE) ? o_read_ready  : settled;
+              (op == DEQUEUE) ? o_read_ready  :
+              `TB_INDEPENDENT_READIES ? (o_read_ready || (ref_queue_size == 0 && o_write_ready))
+                                      : settled;
       if (!ready) begin
         @(negedge i_CLK);
         guard++;
@@ -547,7 +610,10 @@ task automatic master_op(input operation_t op, input logic [DATA_WIDTH-1:0] valu
     @(posedge i_CLK);  // ready was high at the preceding negedge: transfer here
     @(negedge i_CLK);
     clear_cmd();
-    poll_settled();
+    if (op != ENQUEUE) read_recovery();
+    // The caller updates the model after this returns, so a model-based poll here
+    // would wait on a stale count; the caller polls instead.
+    if (!`TB_INDEPENDENT_READIES) poll_settled();
   end
 endtask
 
@@ -605,6 +671,7 @@ task automatic poke(input logic wrt, input logic read, input logic [DATA_WIDTH-1
     @(posedge i_CLK);
     @(negedge i_CLK);
     clear_cmd();
+    if (read) read_recovery();
     poll_settled();
   end
 endtask
@@ -822,6 +889,26 @@ task automatic test_reset_midstream();
   end
 endtask
 
+// Every other phase refills to capacity after a reset, which rewrites all of a DUT's storage.
+// Here two deep fills sit 16 resets apart with only shallow fills between, so storage written
+// by the first must stay retired across many resets, including any reset counter's wrap.
+task automatic test_reset_shallow();
+  begin
+    $display("\nTest Case 9b: Repeated resets at shallow occupancy");
+    apply_reset();
+    model_reset();
+    for (int i = 0; i < QUEUE_SIZE * 3 / 4; i++) enqueue(rand_value());
+    for (int r = 0; r < 16; r++) begin
+      apply_reset();
+      model_reset();
+      for (int i = 0; i < (QUEUE_SIZE + 3) / 4; i++) enqueue(rand_value());
+      drain_and_compare($sformatf("shallow fill %0d", r));
+    end
+    for (int i = 0; i < QUEUE_SIZE * 3 / 4; i++) enqueue(rand_value());
+    drain_and_compare("deep fill 16 resets after the first");
+  end
+endtask
+
 task automatic test_impolite();
   begin
     $display("\nTest Case 10: Commands the DUT says it will not accept");
@@ -951,6 +1038,7 @@ task automatic test_ready_valid_master();
         end
       endcase
 
+      poll_settled();
       check_readies("after master op");
       if (o_read_ready)
         assert (o_data == ref_queue[0])
@@ -1003,6 +1091,63 @@ task automatic test_drain();
   end
 endtask
 
+// A read (or replace) then an enqueue in the very next cycle. Needs a non-empty
+// model with room for the write.
+task automatic read_then_write(input logic rep, input logic [DATA_WIDTH-1:0] rv,
+                               input logic [DATA_WIDTH-1:0] wv);
+  begin
+    poll_settled();
+    check_readies("before read-then-write");
+    i_wrt  = rep;
+    i_read = 1;
+    i_data = rv;
+    if (rep) begin
+      ref_queue[0] = rv;
+    end else begin
+      for (int i = 0; i < ref_queue_size - 1; i++) ref_queue[i] = ref_queue[i+1];
+      ref_queue[ref_queue_size-1] = '0;
+      ref_queue_size--;
+    end
+    @(posedge i_CLK);
+    @(negedge i_CLK);
+    i_wrt  = 1;
+    i_read = 0;
+    i_data = wv;
+    #1;
+    assert (o_write_ready)
+    else begin error_count++; $error("Read recovery: write refused in the cycle after a read"); end
+    ref_queue[ref_queue_size] = wv;
+    ref_queue_size++;
+    rsort();
+    @(posedge i_CLK);
+    @(negedge i_CLK);
+    clear_cmd();
+    poll_settled();
+    check_readies("after read-then-write");
+    assert (o_data == ref_queue[0])
+    else begin error_count++; $error("Read recovery: head -> expected %d, got %d", ref_queue[0], o_data); end
+  end
+endtask
+
+task automatic test_read_recovery();
+  begin
+    $display("\nRead-recovery Phase: write in the cycle after a read");
+    apply_reset();
+    model_reset();
+    for (int i = 0; i < `TB_CAPACITY / 2; i++) enqueue(rand_value());
+    for (int i = 0; i < 20 * stress_test_iters; i++) begin
+      if (ref_queue_size == 0)
+        enqueue(rand_value());
+      else if ($urandom_range(0, 3) == 0)
+        dequeue();
+      else
+        read_then_write(ref_queue_size != `TB_CAPACITY && $urandom_range(0, 1),
+                        rand_value(), rand_value());
+    end
+    drain_and_compare("read recovery");
+  end
+endtask
+
 initial begin
   i_CLK  = 0;
   i_wrt  = 0;
@@ -1018,6 +1163,8 @@ initial begin
 
   test_reset_midstream();
 
+  if (ENQ_ENA) test_reset_shallow();
+
   test_impolite();
 
   test_narrow_alphabet();
@@ -1025,6 +1172,8 @@ initial begin
   test_ready_valid_master();
 
   test_drain();
+
+  if (`TB_READ_RECOVERY && ENQ_ENA) test_read_recovery();
 
   report_measurements();
 
