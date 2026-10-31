@@ -1,17 +1,14 @@
 `default_nettype none
-// systolic_array shim for the shared testbench body 
-
-// Note: the DUT reserves MIN_VALUE (0) as an invalid sentinel; the shared body's
-// stimulus is $urandom_range(1,1023), so it never drives 0 — required here.
+// systolic_array shim for the shared testbench body
 module systolic_array_tb;
   localparam int QUEUE_SIZE = 16;
   localparam int DATA_WIDTH = 16;
   localparam bit ENQ_ENA    = 1;
 
-  // `full` is (size >= QUEUE_SIZE - 2): two slots are reserved as shift-chain
-  // margin and one is provably not enough. The readies-vs-model check
-  // needs the real number, not QUEUE_SIZE.
+  // `full` is (size >= QUEUE_SIZE - 2): two slots are shift-chain margin.
   `define TB_CAPACITY (QUEUE_SIZE - 2)
+  // o_read_ready alone drops for the cycle after a read.
+  `define TB_READ_RECOVERY 1
 
   `include "hwpq_tb_common.svh"
 
@@ -29,6 +26,5 @@ module systolic_array_tb;
       .o_read_ready(o_read_ready)
   );
 
-  // busy is encoded in the ready signals (head == MIN_VALUE means not ready)
   assign settled = o_write_ready || o_read_ready;
 endmodule
