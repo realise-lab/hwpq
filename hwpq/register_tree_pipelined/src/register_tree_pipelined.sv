@@ -4,8 +4,8 @@
   Module Name: register_tree_pipelined
   Description: A pipelined version of the register tree architecture that
                divides the compare-and-swap logic between clock cycles to
-               reduce combinational path length, at the cost of enqueue
-               taking two cycles to propagate a new entry into place.
+               reduce combinational path length: a sift moves one level per
+               cycle, so every op settles in about TREE_DEPTH cycles.
   Parameters: ENQ_ENA - Enables the enqueue datapath when set
               QUEUE_SIZE - Maximum number of elements in the priority queue
               DATA_WIDTH - Bit width of data elements
@@ -48,9 +48,10 @@ module register_tree_pipelined #(
   //----------------------------------------------------------------------
   localparam int TREE_DEPTH = $clog2(QUEUE_SIZE);  // depth of the tree
   localparam int NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of nodes needed to initialize
-  // Worst-case settle cycles. One level sifted per cycle => uniform bound for
-  // every op (climb or sink): TREE_DEPTH-1 transitions + a parity-slack cycle.
-  localparam int SETTLE_CYCLES = TREE_DEPTH;
+  // Settle cycles after an accept: TREE_DEPTH-1 levels, one per cycle, alternating parity and
+  // starting on an even level. A climb whose leaf parent sits on an odd level (odd TREE_DEPTH)
+  // waits one cycle more.
+  localparam int SETTLE_CYCLES = TREE_DEPTH - int'(TREE_DEPTH % 2 == 0);
   localparam int CNT_W         = $clog2(SETTLE_CYCLES + 1);
 
   //----------------------------------------------------------------------
@@ -291,7 +292,7 @@ module register_tree_pipelined #(
 
   // Data-adaptive alternative (releases earlier, but puts an O(N) cone on the
   // critical path). This module needs the FULL invariant even without enqueue:
-  // it sifts one level-pair/cycle, so root-local reports settled early.
+  // it sifts one level per cycle, so root-local reports settled early.
   
   // this decreased FMax but ultimately increased throughput for some queue sizes
   

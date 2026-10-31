@@ -1,23 +1,12 @@
 // Attaches hwpq_spec and hwpq_tree_aux to register_tree_pipelined
-//
+
 // Port-map explicitly rather than `.*`, and pass every parameter explicitly.
-//
-// Same shape as register_tree: both readies gate on head_valid (:100-101), so
-// HAS_BUSY=1, and head_valid is a countdown flop (:281) rather than a heap
-// scan - so the timer-soundness lemma applies here too, unchanged.
-//
-// The timer bound differs though. register_tree takes the larger of
-// CLIMB_CYCLES and SINK_CYCLES; this design uses one uniform SETTLE_CYCLES =
-// TREE_DEPTH (:48), which is deeper. Reading it from the DUT's own localparam
-// means the difference is picked up automatically instead of being transcribed.
-//
-// ASSUME_FILL_FIRST is wired the same way register_array_bind.sv and
-// register_tree_bind.sv wire it. hwpq_spec.sv:152 guards the assumption on
-// `!ENQ_ENA`, so it is inert in the ENQ_ENA=1 run above and this changes
-// nothing there; it exists for the replace-only build, where the ordering and
-// occupancy asserts reproduce without it. Without the `ifdef the parameter
-// would default to 1 and --ungated would silently leave the assumption ON --
-// green while checking nothing.
+
+// HAS_BUSY: both readies drop together while the settle countdown runs.
+// MAX_SETTLE is taken from the DUT's own SETTLE_CYCLES localparam rather than
+// hardcoded, so it tracks QUEUE_SIZE automatically.
+// HAS_FULL: !o_write_ready means full, not merely busy.
+// ASSUME_FILL_FIRST is inert when ENQ_ENA=1; without the `ifdef, --ungated would leave it on.
 bind register_tree_pipelined hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
@@ -53,13 +42,9 @@ bind register_tree_pipelined hwpq_tree_aux #(
 );
 
 
-// Reset harness: the elaboration top for this module's proofs. The tool
-// holds the declared reset inactive after init; declaring i_init_RSTn keeps
-// the DUT's i_RSTn free for mid-operation resets.
-//
-// It lives in this file rather than its own because bind/ is already the
-// per-module formal glue. The bind above is unaffected: it targets the module
-// TYPE, so it still attaches to u_dut, and property leaf names do not change.
+// Reset harness - the elaboration top for this module's proofs. The tool holds
+// the declared reset inactive after init; declaring i_init_RSTn keeps the DUT's
+// i_RSTn free for mid-operation resets.
 module hwpq_rst_register_tree_pipelined #(
     parameter int QUEUE_SIZE = 7,
     parameter int DATA_WIDTH = 3,

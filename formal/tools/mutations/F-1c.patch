@@ -34,10 +34,10 @@ index 847471c..7439a88 100644
  
    always_ff @(posedge i_CLK or negedge i_RSTn) begin
 diff --git a/hwpq/register_tree/src/register_tree.sv b/hwpq/register_tree/src/register_tree.sv
-index 6733029..ce50a3b 100644
+index 441b51e..3d89120 100644
 --- a/hwpq/register_tree/src/register_tree.sv
 +++ b/hwpq/register_tree/src/register_tree.sv
-@@ -136,7 +136,7 @@ module register_tree #(
+@@ -135,7 +135,7 @@ module register_tree #(
    //
    // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
    // which never seat a placeholder at the head.
@@ -47,13 +47,13 @@ index 6733029..ce50a3b 100644
  
    //----------------------------------------------------------------------
 diff --git a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
-index 6b449ab..9550741 100644
+index 4d8c3e7..7f46f33 100644
 --- a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
 +++ b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
-@@ -121,7 +121,7 @@ module register_tree_pipelined #(
-   //
-   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
-   // which never seat a placeholder at the head.
+@@ -108,7 +108,7 @@ module register_tree_pipelined #(
+   // !empty alone would claim data during the fill phase, before any placeholder is a
+   // real element. ENQ_ENA constant-folds the comparator away in enqueue-capable
+   // builds, which never seat a placeholder at the head.
 -  assign o_read_ready = !empty && head_valid && (ENQ_ENA || o_data != '1);
 +  assign o_read_ready = !empty && head_valid;
    assign o_data = queue[0];
