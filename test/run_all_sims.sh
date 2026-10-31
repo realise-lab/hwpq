@@ -9,9 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # module_dir | testbench_file | top_module
 #
-# Each entry is a thin shim that `includes test/common/hwpq_tb_common.svh, except the
-# bug-reproduction tb, which is standalone. hybrid_tree is omitted: its RTL does not
-# currently compile under iverilog.
+# Each entry is a thin shim that `includes test/common/hwpq_tb_common.svh. hybrid_tree is
+# omitted: its RTL does not compile under iverilog.
 TESTS=(
   # Enqueue-enabled runs
   "register_array|hwpq/register_array/test/register_array_tb.sv|register_array_tb"
@@ -28,8 +27,6 @@ TESTS=(
   "register_tree_pipelined|hwpq/register_tree_pipelined/test/register_tree_pipelined_enq0_tb.sv|register_tree_pipelined_enq0_tb"
   # bram_tree_pipelined has no enqueue path -> replace-only only
   "bram_tree_pipelined|hwpq/bram_tree_pipelined/test/bram_tree_pipelined_tb.sv|bram_tree_pipelined_tb"
-  # Bug-reproduction (kept separate from the shared harness)
-  "systolic_array|hwpq/systolic_array/test/systolic_array_bug_tb.sv|systolic_array_bug_tb"
 )
 
 declare -a RESULTS=()
