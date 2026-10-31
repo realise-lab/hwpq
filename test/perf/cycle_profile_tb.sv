@@ -1,13 +1,14 @@
 // Cycle profiler for one queue on the uniform interface; cycle_profile.sh builds and runs it.
-//   mix (default)  fill to half capacity, then M ops drawn evenly from the commands the build
-//                  takes; prints the cost of each op type and of all ops.
+//   mix (default)  fill to half capacity, then M ops drawn evenly from enqueue, dequeue and
+//                  replace; prints the cost of each op type and of all ops. A replace-only
+//                  build cannot refill after a dequeue, so its mix is M replaces at full.
 //   +stream        fill from empty to capacity, CAP replaces at full, then drain to empty;
 //                  prints the cost of each phase and checks the drain comes out in order.
 // An op's cost is the cycles it is presented, counting the cycle it is accepted in. The master
 // holds each op until its ready is high and presents the next in the following cycle.
 // Ready per op: enqueue o_write_ready, dequeue o_read_ready, replace o_read_ready, or
 // o_write_ready || o_read_ready in a replace-only build. A replace-only build gets no enqueue and
-// fills by replacing its reset fill, so its mix starts full. Only it gets a replace when empty.
+// fills by replacing its reset fill. Only its stream gets a replace when empty.
 //
 // Defines: DUT=<module>; DUT_ENQ_ENA if it takes ENQ_ENA; DUT_NO_PARAMS if sized by defines.
 // Plusargs: +stream; +mono=1 / +mono=-1, each value >= / <= the last, in steps of 0 to STEP;
@@ -103,9 +104,9 @@ module cycle_profile_tb;
     if (c > worst[slot]) worst[slot] = c;
   endtask
 
-  // Any command the build takes, evenly; at a bound, the one that can still go.
+  // Any command, evenly; at a bound, the one that can still go. Replace-only: replace.
   function automatic op_t pick();
-    op_t op = op_t'($urandom_range(ENQ ? 0 : 1, 2));
+    op_t op = ENQ ? op_t'($urandom_range(0, 2)) : REPLACE;
     if (held == 0) return ENQ ? ENQUEUE : REPLACE;
     if (op == ENQUEUE && held == CAP) return REPLACE;
     return op;
