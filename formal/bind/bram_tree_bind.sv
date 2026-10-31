@@ -8,16 +8,14 @@
 // HAS_BUSY=1: both readies are ANDed with fsm_idle, so they drop together while
 // the sift walk runs.
 //
-// MAX_SETTLE=8 is hand-derived, not read from the design: no localparam holds it,
-// so it does not track QUEUE_SIZE. The walk costs roughly two cycles per level
-// plus accept and return (2*TREE_DEPTH+2 = 8 at QUEUE_SIZE=7). Re-derive it when
-// the walk structure or QUEUE_SIZE changes.
+// MAX_SETTLE is the longer of the reset fill (NODES_NEEDED cycles) and a walk (under
+// 2*TREE_DEPTH+1 cycles), from the DUT's own localparams. The fill dominates from QUEUE_SIZE 7.
 bind bram_tree hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (1'b1),
     .HAS_BUSY   (1'b1),
-    .MAX_SETTLE (8),
+    .MAX_SETTLE ((NODES_NEEDED > 2 * TREE_DEPTH + 1) ? NODES_NEEDED : 2 * TREE_DEPTH + 1),
     .HAS_FULL   (1'b1),
 `ifdef HWPQ_UNGATED
     // run.sh --ungated: drop the workaround and reproduce the recorded defect.

@@ -13,16 +13,14 @@
 // a_occ_bounded meaningful. hwpq_bram_aux states what the port does mean
 // (a_wready_is_quiescence) and carries the two covers HAS_FULL=0 drops.
 //
-// MAX_SETTLE=14 is hand-derived, not read from the design: no localparam holds
-// it, so it does not track QUEUE_SIZE. The walk costs four cycles per level plus
-// accept and return (4*TREE_DEPTH+2 = 14 at QUEUE_SIZE=7). Re-derive it when the
-// walk structure or QUEUE_SIZE changes.
+// MAX_SETTLE is the longer of the reset fill (NODES_NEEDED+2 cycles) and a walk
+// (4*TREE_DEPTH+1 cycles), from the DUT's own localparams. Both are tight at QUEUE_SIZE 7.
 bind bram_tree_pipelined hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (1'b0),
     .HAS_BUSY   (1'b1),
-    .MAX_SETTLE (14),
+    .MAX_SETTLE ((NODES_NEEDED + 2 > 4 * TREE_DEPTH + 1) ? NODES_NEEDED + 2 : 4 * TREE_DEPTH + 1),
     .HAS_FULL   (1'b0),
     .CAPACITY   (QUEUE_SIZE),
 `ifdef HWPQ_UNGATED
