@@ -70,12 +70,12 @@ module cycle_profile_tb;
     i_read = op != ENQUEUE;
     i_data = i_wrt ? next_value() : '0;
     cycles = 1;
-    forever begin
-      #1;  // a ready may depend on the command just driven
-      if (ready(op)) break;
+    #1;  // a ready may depend on the command just driven
+    while (!ready(op)) begin
       if (cycles == STUCK) $fatal(1, "%s not accepted in %0d cycles", op.name(), STUCK);
       @(negedge i_CLK);
       cycles++;
+      #1;
     end
     popped = o_data;
     @(negedge i_CLK);
@@ -126,14 +126,14 @@ module cycle_profile_tb;
     do @(negedge i_CLK); while (!(o_write_ready || o_read_ready));  // post-reset initialisation
 
     if (!stream) begin
-      names = '{"enq", "deq", "rep"};
+      names[0] = "enq"; names[1] = "deq"; names[2] = "rep";
       repeat (ENQ ? CAP / 2 : CAP) run_op(fill, c);
       repeat (M) begin
         op = pick();
         measure(int'(op), op);
       end
     end else begin
-      names = '{"fill", "rep", "drain"};
+      names[0] = "fill"; names[1] = "rep"; names[2] = "drain";
       repeat (CAP) measure(0, fill);
       repeat (CAP) measure(1, REPLACE);
       prev = '1;
