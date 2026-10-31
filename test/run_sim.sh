@@ -2,11 +2,12 @@
 #
 # Compile and run a single module's testbench with Icarus Verilog.
 #
-# Usage: test/run_sim.sh <module_dir> <testbench_file> <top_module>
+# Usage: test/run_sim.sh <module_dir> <testbench_file> <top_module> [<compile_flags>]
 #   <module_dir>      name under hwpq/ (e.g. register_tree)
 #   <testbench_file>  path to the testbench .sv, relative to the repo root
 #                     (e.g. hwpq/register_tree/test/register_tree_tb.sv)
 #   <top_module>      top-level module name declared in the testbench (e.g. register_tree_tb)
+#   <compile_flags>   optional extra compiler arguments, word-split (e.g. -DHYBRID_TREE_COUNT=2)
 #
 # Runs from any working directory: paths are resolved against the repo root, not $PWD.
 #
@@ -18,6 +19,7 @@ cd "$(dirname "${SCRIPT_DIR}")"
 MODULE="$1"
 TB="$2"
 TOP="$3"
+read -r -a FLAGS <<< "${4:-}"
 
 SRC_DIR="hwpq/${MODULE}/src"
 # sharing build/${MODULE} would let the runs clobber each other's sim.vvp/sim.log.
@@ -45,7 +47,7 @@ for f in "${ALL_FILES[@]}"; do
 done
 
 echo "==> Compiling ${MODULE} (top: ${TOP})"
-iverilog -g2012 -Wall -I "${SCRIPT_DIR}/common" -s "${TOP}" -o "${BUILD}/sim.vvp" "${PKGS[@]}" "${REST[@]}" "${TB}"
+iverilog -g2012 -Wall -I "${SCRIPT_DIR}/common" -s "${TOP}" -o "${BUILD}/sim.vvp" ${FLAGS[@]+"${FLAGS[@]}"} "${PKGS[@]}" "${REST[@]}" "${TB}"
 
 echo "==> Running ${MODULE}"
 vvp "${BUILD}/sim.vvp" | tee "${LOG}"
