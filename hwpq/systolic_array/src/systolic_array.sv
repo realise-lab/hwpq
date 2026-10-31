@@ -2,15 +2,12 @@
 
 /*******************************************************************************
   Module Name: systolic_array
-  Date: 2026/06/18
   Description: A priority queue implementation using a systolic array of an
                input buffer (IB) and output buffer (OB). New nodes shift
                through the IB, swapping bubble-sort style with adjacent OB
                nodes so higher-priority values migrate into the
                OB; dequeuing the OB head propagates a "bubble" back through
-               the array to refill it. The module reserves MIN_VALUE to
-               represent an invalid entry, which is reflected in the test
-               benches avoiding writing 0.
+               the array to refill it.
   Parameters: QUEUE_SIZE - Maximum number of elements in the priority queue
               DATA_WIDTH - Bit width of the node's evaluation value (f)
   Inputs: i_CLK - System clock
@@ -21,17 +18,14 @@
   Outputs: o_write_ready - High when the queue has room to accept a write
            o_read_ready - High when the queue holds data available to read
            o_data - Node data output (highest priority element)
-  Constraints: Two of QUEUE_SIZE elements are held back as
+  Constraints: MIN_VALUE ('0) is the reserved empty marker, never legal on
+               i_data. Two of QUEUE_SIZE elements are held back as
                shift-chain margin, so the array holds QUEUE_SIZE-2.
                Both readies drop, for at most two cycles, while IB[0] cannot
                vacate. o_read_ready alone drops for the cycle after an accepted
                read or replace that leaves the queue non-empty; a write is
                still accepted there.
 *******************************************************************************/
-
-`default_nettype none
-
-// this module cannot use the MIN_VALUE, we treat the MIN_VALUE as an invalid
 
 module systolic_array #(
     parameter int QUEUE_SIZE = 512,  // Size of the buffers (number of positions)
@@ -188,7 +182,6 @@ module systolic_array #(
           !(!dequeue_pending && OB_shift[i] && OB_shift_valid[i] && (i < HALF_SIZE - 2) && enq_ok && IB_greater_than_OB_next[i+1])
           : begin
             // We slide this value down
-            // if we are pausing OB, and IB 
             IB[i+1] <= IB[i];
             if (((i == 0 && !writing_ib0) 
             || (i > 0 && (!IB_shift_valid[i-1] || (IB_shift_to_OB[i-1] && !enq_fwd))) 
@@ -312,7 +305,6 @@ module systolic_array #(
       ;
     end
     
-    // maybe it should be if it is equal to min_value
     IB_shift_valid[HALF_SIZE-2] = IB[HALF_SIZE-1] == MIN_VALUE;
     for (int i=HALF_SIZE-3; i >= 0; i--) begin
       // we can do shifts if at some point the value ahead of us is 0, otherwise we must swap as there is no room for shifts
