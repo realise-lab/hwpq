@@ -7,7 +7,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# module_dir | testbench_file | top_module
+# module_dir | testbench_file | top_module [| compile_flags]
 #
 # Each entry is a thin shim that `includes test/common/hwpq_tb_common.svh. hybrid_tree is
 # omitted: its RTL does not compile under iverilog.
@@ -27,17 +27,19 @@ TESTS=(
   "register_tree_pipelined|hwpq/register_tree_pipelined/test/register_tree_pipelined_enq0_tb.sv|register_tree_pipelined_enq0_tb"
   # bram_tree_pipelined has no enqueue path -> replace-only only
   "bram_tree_pipelined|hwpq/bram_tree_pipelined/test/bram_tree_pipelined_tb.sv|bram_tree_pipelined_tb"
+  # Sized by defines: the default build is too large for the quadratic reference model
+  "hybrid_systolic_bram_heap|hwpq/hybrid_systolic_bram_heap/test/hybrid_systolic_heap_tb.sv|hybrid_systolic_heap_tb|-DHYBRID_TREE_COUNT=2 -DHYBRID_BRAM_TREE_QUEUE_SIZE=7 -DHYBRID_DATA_WIDTH=16"
 )
 
 declare -a RESULTS=()
 overall_status=0
 
 for entry in "${TESTS[@]}"; do
-  IFS='|' read -r module tb top <<< "$entry"
+  IFS='|' read -r module tb top flags <<< "$entry"
   echo "#############################################################"
   echo "# ${module}  (${tb})"
   echo "#############################################################"
-  if "${SCRIPT_DIR}/run_sim.sh" "${module}" "${tb}" "${top}"; then
+  if "${SCRIPT_DIR}/run_sim.sh" "${module}" "${tb}" "${top}" "${flags}"; then
     RESULTS+=("PASS  ${module}  ${tb}")
   else
     RESULTS+=("FAIL  ${module}  ${tb}")
