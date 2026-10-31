@@ -20,6 +20,7 @@ TESTS=(
   "register_tree_pipelined|hwpq/register_tree_pipelined/test/register_tree_pipelined_tb.sv|register_tree_pipelined_tb"
   "systolic_array|hwpq/systolic_array/test/systolic_array_tb.sv|systolic_array_tb"
   "bram_tree|hwpq/bram_tree/test/bram_tree_tb.sv|bram_tree_tb"
+  "bram_tree_pair|hwpq/bram_tree_pair/test/bram_tree_pair_tb.sv|bram_tree_pair_tb"
   # Replace-only (ENQ_ENA=0) runs: second sim of the same DUT
   "register_array|hwpq/register_array/test/register_array_enq0_tb.sv|register_array_enq0_tb"
   "register_array_pipelined|hwpq/register_array_pipelined/test/register_array_pipelined_enq0_tb.sv|register_array_pipelined_enq0_tb"
