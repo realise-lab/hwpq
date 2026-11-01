@@ -66,26 +66,7 @@ module hwpq_spec #(
     // differs: it splits the array into an input and an output buffer and must
     // keep two slots free for its shift network to move at all, so its real
     // capacity is QUEUE_SIZE-2.
-    parameter int CAPACITY = QUEUE_SIZE,
-
-    // Assume the caller only enqueues when o_write_ready is high.
-    //
-    // The occupancy and ordering models reconstruct "the DUT accepted this
-    // command" from the matching ready. That is EXACT for the register designs,
-    // which gate acceptance on the ready they advertise - but it is a premise
-    // about the DUT, not a fact about the interface: a DUT whose accept
-    // threshold and advertised ready threshold differ can accept a command the
-    // spec scores as refused, failing the ordering asserts on a spec bug rather
-    // than an RTL one.
-    //
-    // Setting this restores the premise by constraining the environment instead
-    // of the model: no enqueue unless the queue says it is ready. That is the
-    // convention the simulation harness already follows - hwpq_tb_common.svh
-    // gates enqueue() on o_write_ready.
-    //
-    // The contract, not the story: set it when a DUT accepts writes while
-    // !o_write_ready.
-    parameter bit ASSUME_ENQ_WHEN_WREADY = 1'b0
+    parameter int CAPACITY = QUEUE_SIZE
 ) (
     input var logic                  i_CLK,
     input var logic                  i_RSTn,
@@ -129,13 +110,6 @@ module hwpq_spec #(
     if (HAS_BUSY && NO_CMD_EFF && !INDEPENDENT_READIES) begin : g_no_cmd_while_busy
       am_no_cmd_while_busy : assume property (@(posedge i_CLK) disable iff (!i_RSTn)
           !settled |-> !i_wrt && !i_read);
-    end
-
-    // See the parameter comment: makes the "acceptance == matching ready"
-    // premise true by construction for a DUT that does not honour it.
-    if (ENQ_ENA && ASSUME_ENQ_WHEN_WREADY) begin : g_enq_when_wready
-      am_enq_when_wready : assume property (@(posedge i_CLK) disable iff (!i_RSTn)
-          settled && cmd_enqueue |-> o_write_ready);
     end
 
     // A replace-only build has no enqueue datapath, so a bare write is not a
@@ -187,13 +161,9 @@ module hwpq_spec #(
   generate
     // Needs both: the command has to exist, and !o_write_ready has to actually
     // mean "full" rather than "busy" or the antecedent is unreachable.
-    // The third term: am_enq_when_wready forbids exactly this antecedent, so
-    // emitting the property under it would only leave an UNREACHABLE
-    // precondition cover - the same trap HAS_BUSY guards against above.
     // Under independent readies a low ready can mean busy; the occupancy and
     // ordering models catch an accepted refused command instead.
-    if (ENQ_ENA && HAS_FULL && !ASSUME_ENQ_WHEN_WREADY && !INDEPENDENT_READIES)
-    begin : g_enq_handshake
+    if (ENQ_ENA && HAS_FULL && !INDEPENDENT_READIES) begin : g_enq_handshake
       a_no_enq_when_full : assert property (p_at_next_settle(
           settled && !o_write_ready && cmd_enqueue, !o_write_ready));
     end
@@ -447,6 +417,21 @@ module hwpq_spec #(
 
   c_reaches_empty : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
       settled && !o_read_ready);
+
+  // Commands at the bounds the DUT must refuse or treat specially: without these the
+  // refusal paths could be unreachable, and the occupancy asserts never meet a refused command.
+  generate
+    if (ENQ_ENA && HAS_FULL) begin : g_enq_at_full
+      c_enq_at_full : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+          settled && occ == OCC_W'(CAPACITY) && cmd_enqueue);
+    end
+  endgenerate
+
+  c_deq_at_empty : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+      settled && occ == 0 && cmd_dequeue);
+
+  c_replace_at_empty : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+      settled && occ == 0 && cmd_replace);
 
   // These two guard the tracking mechanism itself. If tv ever gets pinned to a
   // value the queue cannot hold, the count sticks at zero

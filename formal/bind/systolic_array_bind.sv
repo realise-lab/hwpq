@@ -31,11 +31,6 @@
 // it pre-emptively, because a too-large MAX_SETTLE weakens both a_progress and
 // p_at_next_settle without any warning in the table.
 //
-// ASSUME_ENQ_WHEN_WREADY is left at its default of 0, deliberately:
-// o_write_ready and the enqueue path are structurally coupled to the same
-// threshold, so the spec's "acceptance == the matching ready" decode is exact
-// and the proof holds with no assumption about when the caller may write.
-//
 // systolic_array has no ENQ_ENA parameter, since the enqueue datapath is always
 // present, so ENQ_ENA is passed as a literal 1 rather than forwarded.
 bind systolic_array hwpq_spec #(
