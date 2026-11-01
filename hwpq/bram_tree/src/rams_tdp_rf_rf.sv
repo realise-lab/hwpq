@@ -38,20 +38,25 @@ module rams_tdp_rf_rf #(
     end
   end
 
-  // Both write ports drive `ram` from a SINGLE process. Splitting them across two
-  // always blocks, as a vendor RAM template typically does, makes every bit of the
-  // array multiply driven. Simulation is unaffected, because the two ports write
-  // different addresses and the non-blocking assignments land on different
-  // elements, but a formal tool has to resolve the drivers instead and writes
-  // become unreliably observable in the array: a write to address 0 need not be
-  // there on the next cycle, and every memory-dependent property is proved against
-  // that.
-  //
-  // Merging is sound because bram_tree ties clka and clkb to i_CLK; a genuinely
-  // dual-clock instance would need a different model. The read paths stay
-  // per-port and per-clock, and read-first ordering is preserved: the outputs
-  // still sample `ram` before this cycle's writes land, because every assignment
-  // here is non-blocking.
+  // Synthesis needs each port's write in its own process to infer block RAM; simulation and
+  // formal need one writing process, or every bit of the array is multiply driven. The two
+  // agree unless both ports write one address in a cycle, which no caller does. Every caller
+  // ties clka and clkb together. Reads are read-first: they sample before this cycle's writes.
+`ifdef SYNTHESIS
+  always @(posedge clka) begin
+    if (ena) begin
+      if (wea) ram[addra] <= dia;
+      doa <= ram[addra];
+    end
+  end
+
+  always @(posedge clkb) begin
+    if (enb) begin
+      if (web) ram[addrb] <= dib;
+      dob <= ram[addrb];
+    end
+  end
+`else
   always @(posedge clka) begin
     if (ena && wea) ram[addra] <= dia;
     if (enb && web) ram[addrb] <= dib;
@@ -64,5 +69,6 @@ module rams_tdp_rf_rf #(
   always @(posedge clkb) begin
     if (enb) dob <= ram[addrb];
   end
+`endif
 
 endmodule

@@ -278,7 +278,7 @@ Every memory-dependent property on the module had been proved against that model
 
 The heap violation had been recorded as the most serious thing known about the module and had been scheduled for rework of the sift walk's compare and write-back logic. It does not exist, and neither does the occupancy overflow.
 
-The fix drives the array from a single process. It is a precondition for verifying either BRAM module, and `tools/mutations/SWEEP.tsv` reverts it on both to confirm the harness still refuses a multiply-driven design rather than proving properties about it.
+The fix drives the array from a single process in simulation and formal. Under `SYNTHESIS` each port writes from its own process, which block RAM inference requires: from a single process the memory synthesizes into flip-flops (F-35). The two models agree unless both ports write one address in the same cycle, which no caller does. The single-process model is a precondition for verifying either BRAM module, and `tools/mutations/SWEEP.tsv` reverts it on both to confirm the harness still refuses a multiply-driven design rather than proving properties about it.
 
 #### F-22: the module advertised a dequeue its own decode would discard
 
