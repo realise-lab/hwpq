@@ -100,14 +100,22 @@ if [ "$BASELINE" -eq 0 ]; then
   COMMENT_ONLY_IDS="$(grep -m1 '^#comment-only ' "${MANIFEST}" | cut -d' ' -f2-)"
 fi
 
-# A conflict here means the trim commit and the row's own mutation touch the
-# same lines; report it distinctly rather than let it read as a failure of
-# defect detection.
+# Reverts each trim commit file by file, newest first. A file edited since a trim no longer
+# reverses cleanly and is left at HEAD; a row that needs its old lines then fails as a
+# revert or patch conflict of its own, which is reported distinctly from detection.
 revert_comment_only() {
-  local wt="$1" label="$2"
+  local wt="$1" label="$2" c f skipped=""
   [ -z "$COMMENT_ONLY_IDS" ] && return 0
-  ( cd "$wt" && git revert --no-commit $COMMENT_ONLY_IDS ) >/dev/null 2>&1 \
-    || { echo "  ${label}: comment-only revert conflicts"; return 2; }
+  for c in $COMMENT_ONLY_IDS; do
+    for f in $(cd "$wt" && git diff --name-only "${c}^" "$c"); do
+      if ( cd "$wt" && git diff "${c}^" "$c" -- "$f" | git apply -R --index --check ) >/dev/null 2>&1; then
+        ( cd "$wt" && git diff "${c}^" "$c" -- "$f" | git apply -R --index ) >/dev/null 2>&1
+      else
+        skipped="${skipped} ${f}"
+      fi
+    done
+  done
+  [ -n "$skipped" ] && echo "  ${label}: comment-only trim kept on files edited since:$(tr ' ' '\n' <<<"$skipped" | sort -u | tr '\n' ' ')"
   return 0
 }
 
