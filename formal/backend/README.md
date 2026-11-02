@@ -53,7 +53,9 @@ Prove and classify, called by `verdict.tcl`:
 
 `type` is `assert` or `cover`. `statuses` is a list of spellings to match, so a
 rename in one tool release cannot silently drop a whole failure category.
-`kind` is currently only `multiple_driven`.
+`kind` is `multiple_driven` or `blackbox`: signals with more than one driver, and instances
+whose outputs the tool leaves free, including operators it black-boxes on its own. A backend
+should disable automatic black-boxing at elaboration.
 
 Property names must be the full dotted path ending in the property's own name
 (`...u_spec.a_no_loss`). `verdict.tcl` matches expected counterexamples on the
@@ -69,7 +71,7 @@ an empty list.**
 list as a fact about the design. Conflating the two lets a multiple-driver
 query that silently returns nothing read as "this design is clean", with every
 property that then fails against invented memory contents escalated as a
-design defect. If your tool cannot answer `design_info multiple_driven`, raise
+design defect. If your tool cannot answer a `design_info` kind, raise
 an error — do not return `{}`.
 
 `backend::assumption_status` is the one exception: `verdict.tcl` catches its

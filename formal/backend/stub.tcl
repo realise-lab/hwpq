@@ -7,6 +7,7 @@
 # Driven by:
 #   STUB_TABLE         dict: "type {t} status {s}" -> list of property names
 #   STUB_MD            list returned by design_info multiple_driven   Default {}
+#   STUB_BB            list returned by design_info blackbox          Default {}
 #   STUB_ELAB_ERRORS   integer returned by elab_errors                Default 0
 #
 # What this does NOT validate: the real filter syntax and status spellings,
@@ -42,8 +43,9 @@ namespace eval backend {
     }
 
     proc design_info {kind} {
-        global STUB_MD
-        if {[info exists STUB_MD]} { return $STUB_MD }
+        global STUB_MD STUB_BB
+        if {$kind eq "multiple_driven" && [info exists STUB_MD]} { return $STUB_MD }
+        if {$kind eq "blackbox" && [info exists STUB_BB]} { return $STUB_BB }
         return {}
     }
 

@@ -90,6 +90,31 @@ proc hwpq_multiple_driven_gate {} {
     exit 1
 }
 
+# hwpq_blackbox_gate - refuse to prove against a design with black-boxed logic, whose outputs
+# are free. Tools black-box some operators on their own, such as a modulus by a constant that
+# is not a power of two; a backend must disable that at elaboration.
+proc hwpq_blackbox_gate {} {
+    puts "\n=== black-box check ============================================"
+    if {[catch {set bb [backend::design_info blackbox]} err]} {
+        puts "FORMAL ERROR: backend::design_info blackbox failed"
+        puts "FORMAL ERROR: $err"
+        exit 2
+    }
+    if {[llength $bb] == 0} {
+        puts "    none - all logic is modelled."
+        return
+    }
+    puts "    BLACK-BOXED INSTANCES ([llength $bb]):"
+    foreach inst $bb { puts "        $inst" }
+    puts ""
+    puts "    Their outputs are free. Do not prove, do not report, and do not"
+    puts "    treat a counterexample from such a run as a design defect."
+    puts ""
+    puts "    RESULT: FAIL"
+    puts ""
+    exit 1
+}
+
 # hwpq_elab_gate - stop if a build step failed.
 #
 # drive.tcl calls this after analyze and after elaborate, not only from
@@ -128,8 +153,8 @@ proc hwpq_group {label items} {
 #   0  every assert proven (or an expected cex fired); every cover reachable
 #   1  a real proof failure - unexpected cex, missing expected cex,
 #      undetermined, unreachable cover, bounded-only with ALLOW_BOUNDED=0, an
-#      elaboration error, or a multiply-driven design (both checked BEFORE
-#      proving)
+#      elaboration error, a multiply-driven design or black-boxed logic (all
+#      checked BEFORE proving)
 #   2  the script itself could not run
 
 proc hwpq_prove_and_exit {} {
@@ -139,6 +164,7 @@ proc hwpq_prove_and_exit {} {
     # proved against, only proved something about. Exits 1 on its own if dirty.
     hwpq_elab_gate
     hwpq_multiple_driven_gate
+    hwpq_blackbox_gate
 
     # assumption sanity
     puts "\n=== assumption check ==========================================="

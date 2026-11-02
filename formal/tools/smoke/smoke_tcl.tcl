@@ -139,4 +139,13 @@ set all_ok [expr {$all_ok & [run_case "elaboration failure stops the run" 1 "
     $common
     proc backend::property_list {type statuses} { error {queried a model that was never built} }" {^\s*ELABORATION FAILED:}]}]
 
+# 12. a black-boxed instance -> 1, without proving. Its outputs are free, so a clean
+#     property table means nothing.
+set all_ok [expr {$all_ok & [run_case "black-boxed design rejected" 1 "
+    set STUB_BB {mod_8 mod_14}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {proven}} {a1 a2} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {BLACK-BOXED INSTANCES}]}]
+
 exit [expr {$all_ok ? 0 : 1}]
