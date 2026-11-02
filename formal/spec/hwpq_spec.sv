@@ -213,6 +213,17 @@ module hwpq_spec #(
   wire acc_deq = settled && cmd_dequeue && o_read_ready;
   wire acc_rep = cmd_replace && rep_ready;
 
+  // Consecutive cycles with no accepted command, saturating. A queue that has been quiet for
+  // MAX_SETTLE cycles must have finished its work; a stream of commands may delay that.
+  localparam int QW = $clog2(MAX_SETTLE + 1) + 1;
+  logic [QW-1:0] quiet_cnt;
+  always_ff @(posedge i_CLK or negedge i_RSTn) begin
+    if (!i_RSTn) quiet_cnt <= '0;
+    else if (acc_enq || acc_deq || acc_rep) quiet_cnt <= '0;
+    else if (quiet_cnt < QW'(MAX_SETTLE)) quiet_cnt <= quiet_cnt + QW'(1);
+  end
+  wire quiet = quiet_cnt == QW'(MAX_SETTLE);
+
   // Does the head hold a real element, as opposed to a padding '0 or one of the
   // all-ones placeholders an ENQ_ENA=0 build resets into. Both sentinels are
   // excluded from the payload alphabet, so this one predicate covers every
@@ -270,8 +281,7 @@ module hwpq_spec #(
       settled |-> occ <= OCC_W'(CAPACITY));
 
   // Settled readies are exact at every settled cycle. Independent readies are honest
-  // when high, and a stalled one rises within MAX_SETTLE: nothing drains the queue while
-  // o_read_ready is low, and nothing fills it while o_write_ready is low.
+  // when high, and exact once the caller has been quiet for MAX_SETTLE cycles.
   generate
     if (!INDEPENDENT_READIES) begin : g_occ_exact
       a_occ_empty_agrees : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
@@ -286,14 +296,14 @@ module hwpq_spec #(
           fill_scope && o_read_ready |-> occ != 0);
 
       a_read_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          fill_scope && occ != 0 |-> ##[0:MAX_SETTLE] o_read_ready);
+          quiet && fill_scope && occ != 0 |-> o_read_ready);
 
       if (HAS_FULL) begin : g_occ_full
         a_write_ready_honest : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
             o_write_ready |-> occ != OCC_W'(CAPACITY));
 
         a_write_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-            occ != OCC_W'(CAPACITY) |-> ##[0:MAX_SETTLE] o_write_ready);
+            quiet && occ != OCC_W'(CAPACITY) |-> o_write_ready);
       end
     end
   endgenerate
@@ -365,7 +375,7 @@ module hwpq_spec #(
           settled && fill_scope && cnt > 0 |-> o_read_ready);
     end else begin : g_no_loss_live
       a_no_loss : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          fill_scope && cnt > 0 |-> ##[0:MAX_SETTLE] o_read_ready);
+          quiet && fill_scope && cnt > 0 |-> o_read_ready);
     end
   endgenerate
 
@@ -440,6 +450,10 @@ module hwpq_spec #(
 
   c_tracked_two : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
       settled && cnt > 1);
+
+  // The tracked value is resident once the caller has been quiet: a_no_loss can fire.
+  c_quiet_tracked : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+      quiet && cnt > 0);
 
 endmodule
 
