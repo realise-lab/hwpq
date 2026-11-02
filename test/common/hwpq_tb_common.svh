@@ -24,13 +24,6 @@
       Defaults to 0. Set 1 for a DUT that drops only o_read_ready for the cycle after
       an accepted read or replace. Reads wait it out; test_read_recovery writes in it.
 
-    `define TB_INDEPENDENT_READIES 1
-      Defaults to 0. Set 1 for a DUT whose readies stall independently: either may
-      drop while the other stays high, for a bounded time. A high ready must still
-      be honest (read => data, write => room) and a refused command inert. The body
-      then waits for the readies to match the model instead of waiting for settled,
-      and replace waits on o_read_ready, or on o_write_ready when the model is empty.
-
     `define TB_CHECK_INTERNAL <task_call>;
       Defaults to nothing. A statement invoked at every settled point, for a shim
       that can reach inside its DUT: the tree shims check the heap invariant by
@@ -57,9 +50,11 @@
   KEY INVARIANTS:
     - Drive stimulus and poll `settled` on the NEGEDGE. Sampling in the same timestep
       as the posedge reads stale state before the DUT's non-blocking updates propagate       
-    - settled == !busy. Gate everything on it, not on either ready alone:
-      replace needs neither space nor data, only quiescence, so gating it on
-      o_write_ready breaks the ENQ_ENA=0 modules
+    - The readies stall independently: either may drop alone while the DUT is busy. A high
+      ready is honest (read => data, write => room) and a refused command inert. Each
+      operation waits until the readies match the model; an ENQ_ENA=0 queue still filling
+      waits for settled instead. Replace waits on o_read_ready, or on o_write_ready when
+      the model is empty; an ENQ_ENA=0 build takes it on either ready
     - o_data == '0 holds only when EMPTY AND NOT BUSY. Mid-settle o_data is stale,
       so the zero-check is guarded by if (o_read_ready). 
 */
@@ -77,10 +72,6 @@
 
 `ifndef TB_READ_RECOVERY
   `define TB_READ_RECOVERY 0
-`endif
-
-`ifndef TB_INDEPENDENT_READIES
-  `define TB_INDEPENDENT_READIES 0
 `endif
 
 // Optional white-box check, invoked at every settled point. Expands to nothing
@@ -162,9 +153,8 @@ always @(posedge i_CLK) if (i_RSTn) cycle <= cycle + 1;
 // Quiescence polling
 localparam int SETTLE_TIMEOUT = 10000;
 
-// The readies say exactly what the model holds. Under TB_INDEPENDENT_READIES this,
-// not settled, is the quiescent point: each ready may stall alone, so neither one
-// being high says the other is accurate.
+// The readies say exactly what the model holds. This, not settled, is the quiescent point:
+// each ready may stall alone, so neither one being high says the other is accurate.
 function automatic bit readies_exact();
   return (o_read_ready == (ref_queue_size != 0)) &&
          (!`TB_TRACKS_FULL || o_write_ready == (ref_queue_size != `TB_CAPACITY));
@@ -181,7 +171,7 @@ endtask
 task automatic poll_settled();
   int guard;
   guard = 0;
-  if (`TB_INDEPENDENT_READIES && fill_complete) begin
+  if (fill_complete) begin
     while (!readies_exact()) begin
       check_readies_honest("stalled");
       @(negedge i_CLK);
@@ -290,7 +280,7 @@ task automatic check_readies(input string where);
   end
 endtask
 
-//  Stimulus tasks, gated on settled
+//  Stimulus tasks, each issued at a quiet point
 
 task automatic enqueue(input logic [DATA_WIDTH-1:0] value);
   int  t0;
@@ -592,12 +582,11 @@ task automatic master_op(input operation_t op, input logic [DATA_WIDTH-1:0] valu
     guard = 0;
     ready = 0;
     while (!ready) begin
-      // replace needs neither space nor data, only quiescence, unless the readies
-      // stall independently: then it needs a known head, or room when empty
+      // replace needs a known head, or room when empty; a replace-only build takes it on
+      // either ready
       ready = (op == ENQUEUE) ? o_write_ready :
               (op == DEQUEUE) ? o_read_ready  :
-              `TB_INDEPENDENT_READIES ? (o_read_ready || (ref_queue_size == 0 && o_write_ready))
-                                      : settled;
+              ENQ_ENA ? (o_read_ready || (ref_queue_size == 0 && o_write_ready)) : settled;
       if (!ready) begin
         @(negedge i_CLK);
         guard++;
@@ -613,7 +602,6 @@ task automatic master_op(input operation_t op, input logic [DATA_WIDTH-1:0] valu
     if (op != ENQUEUE) read_recovery();
     // The caller updates the model after this returns, so a model-based poll here
     // would wait on a stale count; the caller polls instead.
-    if (!`TB_INDEPENDENT_READIES) poll_settled();
   end
 endtask
 
