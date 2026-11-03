@@ -35,17 +35,6 @@ module hwpq_spec #(
     // Upper bound, in cycles, on how long the DUT may stay unsettled
     parameter int MAX_SETTLE = 1,
 
-    // Applies am_no_cmd_while_busy, which hides any bug needing a command
-    // mid-operation. run.sh --ungated forces it off.
-    parameter bit NO_CMD_WHILE_BUSY = 1,
-
-    // Do the readies stall independently. 0: both drop while busy, and a high one
-    // means the DUT is quiescent and both are exact. 1: either may drop alone for at
-    // most MAX_SETTLE cycles; a high ready must be honest and a refused command inert.
-    // Replace then needs o_read_ready, or o_write_ready on an empty queue; a
-    // replace-only build takes it on either ready.
-    parameter bit INDEPENDENT_READIES = 0,
-
     // Assume a replace-only queue is filled before anything is read from it -
     // the initialisation convention its callers are expected to follow. Hides
     // bugs that need a read during fill; set 0 for an ungated run that
@@ -83,8 +72,7 @@ module hwpq_spec #(
   // the sequential designs drop both. Same wire the simulation harness uses
   wire settled = o_write_ready || o_read_ready;
 
-  // Command decode, straight off {i_wrt, i_read}. `replace` deliberately needs
-  // NEITHER ready - only quiescence - so it is never gated on one.
+  // Command decode, straight off {i_wrt, i_read}.
   wire cmd_enqueue = i_wrt && !i_read;
   wire cmd_dequeue = !i_wrt && i_read;
   wire cmd_replace = i_wrt && i_read;
@@ -96,22 +84,7 @@ module hwpq_spec #(
   am_payload_legal : assume property (@(posedge i_CLK) disable iff (!i_RSTn)
       i_data != '0 && i_data != '1);
 
-`ifdef HWPQ_UNGATED
-  localparam bit NO_CMD_EFF = 1'b0;
-`else
-  localparam bit NO_CMD_EFF = NO_CMD_WHILE_BUSY;
-`endif
-
   generate
-    // Guarded on HAS_BUSY as well as the parameter: with no busy state the
-    // antecedent is unsatisfiable, so this constrains nothing and only leaves
-    // an UNREACHABLE precondition cover behind. Independent readies take
-    // commands at any time.
-    if (HAS_BUSY && NO_CMD_EFF && !INDEPENDENT_READIES) begin : g_no_cmd_while_busy
-      am_no_cmd_while_busy : assume property (@(posedge i_CLK) disable iff (!i_RSTn)
-          !settled |-> !i_wrt && !i_read);
-    end
-
     // A replace-only build has no enqueue datapath, so a bare write is not a
     // command it has. Keeps the reachable command set honest.
     if (!ENQ_ENA) begin : g_replace_only
@@ -138,41 +111,12 @@ module hwpq_spec #(
 
   // Progress and handshake
 
-  // "At the first settled cycle at or after the next one, `cond` holds."
-  // Collapses back to |=> when `settled` is constant, so do NOT fork it per HAS_BUSY.
-  property p_at_next_settle(trigger, cond);
-    @(posedge i_CLK) disable iff (!i_RSTn)
-    trigger |=> (!settled)[*0:MAX_SETTLE] ##1 (settled && cond);
-  endproperty
-
   // PROGRESS: the DUT always returns to a commandable state within MAX_SETTLE.
   // Only meaningful with a busy state
   generate
     if (HAS_BUSY) begin : g_progress
       a_progress : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
           !settled |-> ##[1:MAX_SETTLE] settled);
-    end
-  endgenerate
-
-  // A refused command has no effect: the ready does not flip. The replace
-  // command is excluded by construction: cmd_replace never appears in either
-  // trigger below, since replace needs no ready and is never refused on these
-  // grounds.
-  generate
-    // Needs both: the command has to exist, and !o_write_ready has to actually
-    // mean "full" rather than "busy" or the antecedent is unreachable.
-    // Under independent readies a low ready can mean busy; the occupancy and
-    // ordering models catch an accepted refused command instead.
-    if (ENQ_ENA && HAS_FULL && !INDEPENDENT_READIES) begin : g_enq_handshake
-      a_no_enq_when_full : assert property (p_at_next_settle(
-          settled && !o_write_ready && cmd_enqueue, !o_write_ready));
-    end
-  endgenerate
-
-  generate
-    if (!INDEPENDENT_READIES) begin : g_deq_handshake
-      a_no_deq_when_empty : assert property (p_at_next_settle(
-          settled && !o_read_ready && cmd_dequeue, !o_read_ready));
     end
   endgenerate
 
@@ -197,8 +141,10 @@ module hwpq_spec #(
   // Accepted commands
 
   // The DUTs gate acceptance internally on the matching ready, so the same
-  // decode reconstructs it from outside. With settled readies `replace` needs
-  // neither ready, only quiescence. Everything below counts on these and nothing else.
+  // decode reconstructs it from outside. Either ready may drop alone while the DUT is busy, and
+  // a refused command must have no effect. Replace needs o_read_ready, or o_write_ready on an
+  // empty queue; a replace-only build takes it on either ready. Everything below counts on
+  // these and nothing else.
 
   // One bit of headroom past CAPACITY so over-acceptance is observable
   // instead of wrapping around into a legal-looking value.
@@ -206,8 +152,7 @@ module hwpq_spec #(
 
   logic [OCC_W-1:0] occ, occ_next;
 
-  wire rep_ready = !INDEPENDENT_READIES ? settled :
-                   ENQ_ENA ? (o_read_ready || (occ == 0 && o_write_ready)) : settled;
+  wire rep_ready = ENQ_ENA ? (o_read_ready || (occ == 0 && o_write_ready)) : settled;
 
   wire acc_enq = settled && ENQ_ENA && cmd_enqueue && o_write_ready;
   wire acc_deq = settled && cmd_dequeue && o_read_ready;
@@ -257,11 +202,8 @@ module hwpq_spec #(
   logic filled_once;
   always_ff @(posedge i_CLK or negedge i_RSTn) begin
     if (!i_RSTn) filled_once <= 1'b0;
-    // Defined on occ when !o_write_ready can mean busy rather than full, so it does
-    // not fire on ordinary quiescence.
-    else if (settled && ((HAS_FULL && !INDEPENDENT_READIES) ? !o_write_ready
-                                                           : (occ >= OCC_W'(CAPACITY))))
-      filled_once <= 1'b1;
+    // Defined on occ because !o_write_ready can mean busy rather than full.
+    else if (occ >= OCC_W'(CAPACITY)) filled_once <= 1'b1;
   end
 
   generate
@@ -280,31 +222,21 @@ module hwpq_spec #(
   a_occ_bounded : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
       settled |-> occ <= OCC_W'(CAPACITY));
 
-  // Settled readies are exact at every settled cycle. Independent readies are honest
-  // when high, and exact once the caller has been quiet for MAX_SETTLE cycles.
+  // The readies are honest when high, and exact once the caller has been quiet for MAX_SETTLE
+  // cycles.
+  a_read_ready_honest : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      fill_scope && o_read_ready |-> occ != 0);
+
+  a_read_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      quiet && fill_scope && occ != 0 |-> o_read_ready);
+
   generate
-    if (!INDEPENDENT_READIES) begin : g_occ_exact
-      a_occ_empty_agrees : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          settled && fill_scope |-> ((occ == 0) == !o_read_ready));
+    if (HAS_FULL) begin : g_occ_full
+      a_write_ready_honest : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+          o_write_ready |-> occ != OCC_W'(CAPACITY));
 
-      if (HAS_FULL) begin : g_occ_full
-        a_occ_full_agrees : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-            settled |-> ((occ == OCC_W'(CAPACITY)) == !o_write_ready));
-      end
-    end else begin : g_occ_honest
-      a_read_ready_honest : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          fill_scope && o_read_ready |-> occ != 0);
-
-      a_read_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          quiet && fill_scope && occ != 0 |-> o_read_ready);
-
-      if (HAS_FULL) begin : g_occ_full
-        a_write_ready_honest : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-            o_write_ready |-> occ != OCC_W'(CAPACITY));
-
-        a_write_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-            quiet && occ != OCC_W'(CAPACITY) |-> o_write_ready);
-      end
+      a_write_ready_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+          quiet && occ != OCC_W'(CAPACITY) |-> o_write_ready);
     end
   endgenerate
 
@@ -369,15 +301,8 @@ module hwpq_spec #(
   end
 
   // no silent loss: if a copy should be resident, the DUT must not claim empty
-  generate
-    if (!INDEPENDENT_READIES) begin : g_no_loss
-      a_no_loss : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          settled && fill_scope && cnt > 0 |-> o_read_ready);
-    end else begin : g_no_loss_live
-      a_no_loss : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-          quiet && fill_scope && cnt > 0 |-> o_read_ready);
-    end
-  endgenerate
+  a_no_loss : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      quiet && fill_scope && cnt > 0 |-> o_read_ready);
 
   // the head outranks everything resident
   a_head_is_max : assert property (@(posedge i_CLK) disable iff (!i_RSTn)

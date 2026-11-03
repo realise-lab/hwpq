@@ -203,10 +203,10 @@ module hwpq_bram_aux #(
   // Is the DESIGN wrong, or is the spec's model of it wrong?
   // ---------------------------------------------------------------------------
   //
-  // Six portable-spec properties fail together: a_occ_bounded, a_occ_empty_agrees,
-  // a_no_loss, a_head_is_max, a_head_present and a_head_not_placeholder. That is
-  // either one cause or six, and the spec cannot tell which, because everything it
-  // knows comes through the same six ports.
+  // The portable occupancy, a_no_loss, a_head_is_max, a_head_present and
+  // a_head_not_placeholder properties fail together. That is either one cause or
+  // several, and the spec cannot tell which, because everything it knows comes
+  // through the same six ports.
   //
   // Stating the same claims white-box, against the design's own signals,
   // decides which side is wrong: the model or the design.

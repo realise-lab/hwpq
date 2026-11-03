@@ -78,15 +78,16 @@ i_CLK, i_RSTn, i_wrt, i_read, i_data  ->  o_write_ready, o_read_ready, o_data
 
 `10` enqueue (only when `ENQ_ENA=1`), `01` dequeue, `11` replace.
 
-**`settled`.** `o_write_ready || o_read_ready`. An idle queue cannot be both full
-and empty, so at least one ready is high; sequential designs drop both while an
-operation is in flight. Gate on `settled`, never on either ready alone — replace
-needs neither space nor data, only quiescence.
+**Readies.** Each command waits on its own ready: enqueue on `o_write_ready`, dequeue and
+replace on `o_read_ready`. A replace on an empty queue waits on `o_write_ready` and inserts; a
+replace-only build takes a replace on either ready. Either ready
+may drop alone while the DUT is busy, and a refused command has no effect. A high ready is
+honest, and both are exact once the caller has been quiet for `MAX_SETTLE` cycles; a stream
+of commands may hold one low. `settled` (`o_write_ready || o_read_ready`) is low only while
+both are.
 
 **Readies depend on state only.** A ready that is ANDed with `!(i_wrt || i_read)`
-deadlocks a master that holds a command valid until ready, and makes the
-no-command-while-busy assumption self-nullifying, which proves everything
-vacuously.
+deadlocks a master that holds a command valid until ready.
 
 **Reserved sentinels.** `'0` is the empty slot and the dequeue mechanism.
 All-ones is the max-priority placeholder a replace-only build resets into.
@@ -107,10 +108,8 @@ Configuration is entirely through bind parameters:
 | `HAS_BUSY` | do both readies drop mid-operation |
 | `HAS_FULL` | does `!o_write_ready` mean full, or only busy |
 | `CAPACITY` | how many elements the DUT actually holds |
-| `MAX_SETTLE` | worst-case cycles back to a commandable state |
-| `NO_CMD_WHILE_BUSY` | assume no command arrives while busy |
+| `MAX_SETTLE` | worst-case cycles a quiet DUT takes to make both readies exact |
 | `ASSUME_FILL_FIRST` | assume a replace-only queue is filled before any read |
-| `ASSUME_ENQ_WHEN_WREADY` | assume the caller enqueues only when ready is high |
 
 Pass `MAX_SETTLE` from the DUT's own localparam where one exists, so it tracks
 `QUEUE_SIZE`. Where no such localparam exists the value is hand-derived and does
