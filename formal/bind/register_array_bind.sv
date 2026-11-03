@@ -4,13 +4,14 @@
 //
 // register_array folds the whole operation into a combinational sort network in
 // one cycle, and both `full` and `empty` are pure functions of `size`
-// so both readies can never be low together: HAS_BUSY=0, MAX_SETTLE=1
+// so both readies can never be low together, and both are exact the cycle after
+// an accept: HAS_BUSY=0, MAX_SETTLE=0
 bind register_array hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (ENQ_ENA),
     .HAS_BUSY   (1'b0),
-    .MAX_SETTLE (1),
+    .MAX_SETTLE (0),
     .HAS_FULL   (1'b1),
 `ifdef HWPQ_UNGATED
     // run.sh --ungated: drop the workaround and reproduce the recorded defect.

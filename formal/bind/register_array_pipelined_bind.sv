@@ -10,9 +10,8 @@
 //
 // MAX_SETTLE is therefore NOT read from a localparam here, because there is no
 // timer to read: the settle time is however long the compare-exchange network
-// takes to get the two leading elements in order. 2 covers the even/odd phase
-// pair. If a_progress fails, that number is wrong and is the thing to raise -
-// the property is what pins it down.
+// takes to get the two leading elements in order. One cycle does; c_settle_tight
+// shows it is needed and the occupancy asserts that it suffices.
 //
 // ASSUME_FILL_FIRST is wired the same way register_array_bind.sv and
 // register_tree_bind.sv wire it. hwpq_spec.sv:152 guards the assumption on
@@ -26,7 +25,7 @@ bind register_array_pipelined hwpq_spec #(
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (ENQ_ENA),
     .HAS_BUSY   (1'b1),
-    .MAX_SETTLE (2),
+    .MAX_SETTLE (1),
     .HAS_FULL   (1'b1),
 `ifdef HWPQ_UNGATED
     // run.sh --ungated: drop the workaround and reproduce the recorded defect.

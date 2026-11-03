@@ -3,16 +3,15 @@
 // Port-map explicitly rather than `.*`, and pass every parameter explicitly.
 
 // HAS_BUSY: both readies drop together while the settle countdown runs.
-// MAX_SETTLE is taken from the DUT's own SETTLE_MAX localparam rather than
-// hardcoded, so it tracks QUEUE_SIZE automatically. SETTLE_MAX is the larger of
-// CLIMB_CYCLES and SINK_CYCLES.
+// MAX_SETTLE is taken from the DUT's own timer localparams, so it tracks QUEUE_SIZE. A
+// replace-only build never climbs, so its bound is SINK_CYCLES.
 // HAS_FULL: !o_write_ready means full, not merely busy.
 bind register_tree hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (ENQ_ENA),
     .HAS_BUSY   (1'b1),
-    .MAX_SETTLE (SETTLE_MAX),
+    .MAX_SETTLE (ENQ_ENA ? SETTLE_MAX : SINK_CYCLES),
     .HAS_FULL   (1'b1),
 `ifdef HWPQ_UNGATED
     // run.sh --ungated: drop the workaround and reproduce the recorded defect.

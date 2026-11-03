@@ -32,7 +32,8 @@ module hwpq_spec #(
     // 1 = sequential design; `settled` drops while an operation is in flight
     parameter bit HAS_BUSY = 1,
 
-    // Upper bound, in cycles, on how long the DUT may stay unsettled
+    // Quiet cycles after an accepted command until both readies match the model; 0 when they
+    // already match the next cycle. Must be tight: c_settle_tight checks it.
     parameter int MAX_SETTLE = 1,
 
     // Assume a replace-only queue is filled before anything is read from it -
@@ -379,6 +380,17 @@ module hwpq_spec #(
   // The tracked value is resident once the caller has been quiet: a_no_loss can fire.
   c_quiet_tracked : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
       quiet && cnt > 0);
+
+  // MAX_SETTLE is tight: one quiet cycle short of it, the readies can still disagree with the
+  // model. A loose bound leaves this unreachable and fails the run.
+  wire readies_exact = (o_read_ready == (occ != 0)) &&
+                       (!HAS_FULL || o_write_ready == (occ != OCC_W'(CAPACITY)));
+  generate
+    if (MAX_SETTLE > 0) begin : g_settle_tight
+      c_settle_tight : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+          fill_scope && quiet_cnt == QW'(MAX_SETTLE - 1) && !readies_exact);
+    end
+  endgenerate
 
 endmodule
 
