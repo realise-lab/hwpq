@@ -103,6 +103,12 @@ module hybrid_tree_contract #(
   property p_ready_stays;
     @(posedge i_CLK) disable iff (!i_RSTn) live && $past(o_ready) && !cmd && !held |-> o_ready;
   endproperty
+  // A tree with at most one element walks only in the cycle after a command, so it never owes
+  // the caller a pop on its last element.
+  property p_small_ready;
+    @(posedge i_CLK) disable iff (!i_RSTn)
+        live && !$past(cmd) && !cmd && !held && cnt <= CW'(1) |-> o_ready;
+  endproperty
   property p_busy_bounded;
     @(posedge i_CLK) disable iff (!i_RSTn) busy <= BW'(MAX_BUSY);
   endproperty
@@ -121,6 +127,7 @@ module hybrid_tree_contract #(
       a_ready_idle         : assert property (p_ready_idle);
       a_ready_stays        : assert property (p_ready_stays);
       a_busy_bounded       : assert property (p_busy_bounded);
+      a_small_ready        : assert property (p_small_ready);
 
       c_full       : cover property (@(posedge i_CLK) disable iff (!i_RSTn) o_full);
       c_busy_max   : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
@@ -145,6 +152,7 @@ module hybrid_tree_contract #(
       am_ready_idle       : assume property (p_ready_idle);
       am_ready_stays      : assume property (p_ready_stays);
       am_busy_bounded     : assume property (p_busy_bounded);
+      am_small_ready      : assume property (p_small_ready);
     end
   endgenerate
 endmodule
