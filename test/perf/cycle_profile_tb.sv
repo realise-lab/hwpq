@@ -43,15 +43,26 @@ module cycle_profile_tb;
   int mono = 0;
   logic [W-1:0] popped;              // head taken by the last dequeue or replace
 
+  // Draws come from here, not $urandom, so every simulator runs the same sequence.
+  int unsigned rng = 32'h2545_f491;
+  function automatic int unsigned rand32();
+    rng ^= rng << 13;
+    rng ^= rng >> 17;
+    rng ^= rng << 5;
+    return rng;
+  endfunction
+
   // Payloads avoid the reserved '0 and '1.
   localparam logic [W-1:0] TOP = {W{1'b1}} - 1'b1;
   logic [W-1:0] last = {1'b1, {(W - 1){1'b0}}};
   function automatic logic [W-1:0] next_value();
-    int step = $urandom_range(0, STEP);
+    int step = rand32() % (STEP + 1);
+    int unsigned r;
     if (mono > 0)      last = (last > TOP - step) ? TOP : last + step;
     else if (mono < 0) last = (last < 1 + step) ? 1 : last - step;
     else begin
-      last = {4{$urandom}};
+      r = rand32();  // one draw: a call inside a replication may run once or per copy
+      last = {4{r}};
       if (last == 0 || last > TOP) last = 1;
     end
     return last;
@@ -106,7 +117,7 @@ module cycle_profile_tb;
 
   // Any command, evenly; at a bound, the one that can still go. Replace-only: replace.
   function automatic op_t pick();
-    op_t op = ENQ ? op_t'($urandom_range(0, 2)) : REPLACE;
+    op_t op = ENQ ? op_t'(rand32() % 3) : REPLACE;
     if (held == 0) return ENQ ? ENQUEUE : REPLACE;
     if (op == ENQUEUE && held == CAP) return REPLACE;
     return op;
@@ -119,7 +130,7 @@ module cycle_profile_tb;
     logic [W-1:0] prev;
     stream = $test$plusargs("stream");
     fill = ENQ ? ENQUEUE : REPLACE;
-    if ($value$plusargs("seed=%d", seed)) void'($urandom(seed));
+    if ($value$plusargs("seed=%d", seed)) rng ^= seed;
     void'($value$plusargs("mono=%d", mono));
 
     repeat (2) @(posedge i_CLK);
