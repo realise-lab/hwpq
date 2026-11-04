@@ -55,3 +55,6 @@ module hwpq_hybrid_tree_pair (
       && tree_reset.fill_cnt == '0 && tree_reset.fill_level == '0
       && tree_reset.fill_bound == 'd1);
 endmodule
+
+// White-box helpers for this harness.
+bind hwpq_hybrid_tree_pair hwpq_hybrid_tree_aux u_aux (.i_CLK(i_CLK), .i_RSTn(rstn));
