@@ -7,7 +7,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import parsers
 import data_processor as dp
-from config import OUTPUT_DIR
+from config import (OUTPUT_DIR, CYCLE_PROFILE_DIR, CYCLE_PROFILE_NAME, HYBRID_ARCH,
+                    SINGLE_VARIANT)
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
@@ -62,7 +63,7 @@ ARCHITECTURE_STYLES = {
         "display_name": "BRAM Tree"
     },
     "bram_tree_pipelined": {
-        "color": "violet",
+        "color": "purple",
         "marker": "D",
         "display_name": "BRAM Tree Pipelined",
     },
@@ -71,7 +72,47 @@ ARCHITECTURE_STYLES = {
         "marker": "d", 
         "display_name": "Hybrid Tree"
     },
+    "bram_tree_pair": {
+        "color": "violet",
+        "marker": "P",
+        "display_name": "BRAM Tree Pair",
+    },
+    HYBRID_ARCH: {
+        "color": "darkorange",
+        "marker": "*",
+        "display_name": "Hybrid Systolic BRAM Heap (total capacity)",
+    },
 }
+
+# Architectures with no enqueue datapath.
+NO_ENQUEUE = {"bram_tree_pipelined", "hybrid_tree"}
+# Architectures that use block RAM.
+BRAM_ARCHS = {"hybrid_tree", "bram_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
+
+
+def plot_keys(arch_dir, enq):
+    """The plot key of an architecture's enqueue_<enq> results."""
+    if arch_dir in SINGLE_VARIANT:
+        return arch_dir
+    return f"{arch_dir}_enq_{'enabled' if enq else 'disabled'}"
+
+
+def load_cycle_costs(arch_dirs, profile_dir=CYCLE_PROFILE_DIR):
+    """
+    Measured costs for every profiled architecture, {plot key: {x: costs}}, with x the queue size
+    the synthesis results are keyed by: total capacity for the hybrid.
+    """
+    costs = {}
+    for arch_dir in arch_dirs:
+        profiles = parsers.load_cycle_profiles(profile_dir, arch_dir, CYCLE_PROFILE_NAME)
+        for enq, by_size in sorted(profiles.items()):
+            key = plot_keys(arch_dir, enq)
+            costs[key] = {
+                (header["capacity"] if arch_dir == HYBRID_ARCH else qs): c
+                for qs, (header, c) in by_size.items()
+            }
+    return costs
+
 
 
 def get_arch_style(arch_name):
@@ -1077,9 +1118,9 @@ def process_and_plot_all(base_dir, output_dir=None):
                 elif arch_dir == "register_tree_pipelined":
                     all_data["register_tree_pipelined_enq_disabled"] = enq_disabled_data
                     all_data["register_tree_pipelined_enq_enabled"] = enq_enabled_data
-                elif arch_dir == "systolic_array":
-                    # Systolic array doesn't have enqueue variants in the same way
-                    all_data["systolic_array"] = enq_enabled_data  # Systolic array always enables enqueue
+                elif arch_dir in SINGLE_VARIANT:
+                    # Built without ENQ_ENA: both directories hold the same build.
+                    all_data[arch_dir] = enq_enabled_data
                 else:
                     # Generic handling for other architectures with enqueue variants
                     all_data[f"{arch_dir.lower()}_enq_disabled"] = enq_disabled_data
@@ -1094,6 +1135,10 @@ def process_and_plot_all(base_dir, output_dir=None):
 
                 # Store data for comparison
                 all_data[arch_dir] = data_dict
+
+    if HYBRID_ARCH in all_data:
+        all_data[HYBRID_ARCH] = {m["capacity"]: m for m in all_data[HYBRID_ARCH].values()}
+    dp.set_cycle_costs(load_cycle_costs(os.listdir(base_dir)))
 
     # Create individual plots if we have data for multiple architectures
     if len(all_data) > 1:
@@ -1138,7 +1183,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         
         # Generate individual plots for BRAM utilization (only for BRAM-based architectures)
         fig, ax = plt.subplots(figsize=(30, 10))
-        bram_archs = {k: v for k, v in all_data.items() if k in ['hybrid_tree', 'bram_tree', 'bram_tree_pipelined']}
+        bram_archs = {k: v for k, v in all_data.items() if k in BRAM_ARCHS}
         for arch_name, data_dict in bram_archs.items():
             plot_bram_utilization_vs_queue_size(ax, data_dict, arch_name=arch_name)
         ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
@@ -1175,7 +1220,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         for operation in operations:
             # Filter architectures that support this operation
             if operation == "enqueue":
-                valid_archs = {k: v for k, v in all_data.items() if "enq_disabled" not in k and not ("bram_tree" in k or "hybrid_tree" in k)}
+                valid_archs = {k: v for k, v in all_data.items() if "enq_disabled" not in k and k not in NO_ENQUEUE}
             else:
                 valid_archs = all_data
                 
