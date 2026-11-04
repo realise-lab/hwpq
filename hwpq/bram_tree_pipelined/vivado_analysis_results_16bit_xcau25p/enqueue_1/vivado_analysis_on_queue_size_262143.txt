@@ -1,0 +1,5 @@
+Analysis for QUEUE_SIZE = 262143, ENQ_ENA = 1
+
+Synthesis: 54s
+
+Not completed after two attempts

@@ -1,0 +1,43 @@
+Analysis for QUEUE_SIZE = 262143, ENQ_ENA = 1
+
+Synthesis: 25s
+
+Frequency: 100 MHz -> Implementation: 3m 3s -> 183s
+Frequency: 100 MHz -> Power: 0.567 W
+Frequency: 100 MHz -> CLB LUTs Used: 2457
+Frequency: 100 MHz -> CLB LUTs Util%: 1.74 %
+Frequency: 100 MHz -> CLB Registers Used: 251
+Frequency: 100 MHz -> CLB Registers Util%: 0.09 %
+Frequency: 100 MHz -> BRAM Util: 252
+Frequency: 100 MHz -> BRAM Util%: 84.00 %
+Frequency: 100 MHz -> WNS: 0.186 ns
+Frequency: 100 MHz -> Achieved Frequency: 101.895 MHz
+
+
+Frequency: 150 MHz -> Implementation: 4m 28s -> 268s
+Frequency: 150 MHz -> Power: 0.623 W
+Frequency: 150 MHz -> CLB LUTs Used: 2534
+Frequency: 150 MHz -> CLB LUTs Util%: 1.80 %
+Frequency: 150 MHz -> CLB Registers Used: 251
+Frequency: 150 MHz -> CLB Registers Util%: 0.09 %
+Frequency: 150 MHz -> BRAM Util: 252
+Frequency: 150 MHz -> BRAM Util%: 84.00 %
+Frequency: 150 MHz -> WNS: -2.411 ns
+Frequency: 150 MHz -> Achieved Frequency: 110.160 MHz
+
+
+WNS exceeded -1 ns, finished
+
+Frequency: 125 MHz -> Implementation: 4m 49s -> 289s
+Frequency: 125 MHz -> Power: 0.595 W
+Frequency: 125 MHz -> CLB LUTs Used: 2532
+Frequency: 125 MHz -> CLB LUTs Util%: 1.80 %
+Frequency: 125 MHz -> CLB Registers Used: 251
+Frequency: 125 MHz -> CLB Registers Util%: 0.09 %
+Frequency: 125 MHz -> BRAM Util: 252
+Frequency: 125 MHz -> BRAM Util%: 84.00 %
+Frequency: 125 MHz -> WNS: -0.796 ns
+Frequency: 125 MHz -> Achieved Frequency: 113.688 MHz
+
+
+Analysis completed for ENQ_ENA=1, QUEUE_SIZE=262143

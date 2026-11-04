@@ -1,30 +1,43 @@
 Analysis for QUEUE_SIZE = 1024, ENQ_ENA = 1
 
-Frequency: 100 MHz -> Synthesis: 2m 18s -> 138s
-Frequency: 100 MHz -> Implementation: 31m 35s -> 1895s
-Frequency: 100 MHz -> Power: 1.935 W
-Frequency: 100 MHz -> CLB LUTs Used: 55469
-Frequency: 100 MHz -> CLB LUTs Util%: 39.34 %
+Synthesis: 135s
+
+Frequency: 100 MHz -> Implementation: 23m 43s -> 1423s
+Frequency: 100 MHz -> Power: 1.934 W
+Frequency: 100 MHz -> CLB LUTs Used: 57388
+Frequency: 100 MHz -> CLB LUTs Util%: 40.70 %
 Frequency: 100 MHz -> CLB Registers Used: 16396
 Frequency: 100 MHz -> CLB Registers Util%: 5.81 %
 Frequency: 100 MHz -> BRAM Util: 0
 Frequency: 100 MHz -> BRAM Util%: 0.00 %
-Frequency: 100 MHz -> WNS: 0.308 ns
-Frequency: 100 MHz -> Achieved Frequency: 103.178 MHz
+Frequency: 100 MHz -> WNS: 0.035 ns
+Frequency: 100 MHz -> Achieved Frequency: 100.351 MHz
 
 
-Frequency: 150 MHz -> Synthesis: 1m 56s -> 116s
-Frequency: 150 MHz -> Implementation: 38m 13s -> 2293s
-Frequency: 150 MHz -> Power: 2.828 W
-Frequency: 150 MHz -> CLB LUTs Used: 58587
-Frequency: 150 MHz -> CLB LUTs Util%: 41.55 %
+Frequency: 150 MHz -> Implementation: 66m 38s -> 3998s
+Frequency: 150 MHz -> Power: 2.780 W
+Frequency: 150 MHz -> CLB LUTs Used: 57776
+Frequency: 150 MHz -> CLB LUTs Util%: 40.98 %
 Frequency: 150 MHz -> CLB Registers Used: 16396
 Frequency: 150 MHz -> CLB Registers Util%: 5.81 %
 Frequency: 150 MHz -> BRAM Util: 0
 Frequency: 150 MHz -> BRAM Util%: 0.00 %
-Frequency: 150 MHz -> WNS: -2.027 ns
-Frequency: 150 MHz -> Achieved Frequency: 115.026 MHz
+Frequency: 150 MHz -> WNS: -2.062 ns
+Frequency: 150 MHz -> Achieved Frequency: 114.565 MHz
 
 
 WNS exceeded -1 ns, finished
 
+Frequency: 125 MHz -> Implementation: 60m 24s -> 3624s
+Frequency: 125 MHz -> Power: 2.423 W
+Frequency: 125 MHz -> CLB LUTs Used: 57397
+Frequency: 125 MHz -> CLB LUTs Util%: 40.71 %
+Frequency: 125 MHz -> CLB Registers Used: 16396
+Frequency: 125 MHz -> CLB Registers Util%: 5.81 %
+Frequency: 125 MHz -> BRAM Util: 0
+Frequency: 125 MHz -> BRAM Util%: 0.00 %
+Frequency: 125 MHz -> WNS: -0.582 ns
+Frequency: 125 MHz -> Achieved Frequency: 116.523 MHz
+
+
+Analysis completed for ENQ_ENA=1, QUEUE_SIZE=1024

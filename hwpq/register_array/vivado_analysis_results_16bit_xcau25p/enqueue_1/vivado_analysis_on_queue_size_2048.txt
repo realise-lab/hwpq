@@ -1,0 +1,6 @@
+Analysis for QUEUE_SIZE = 2048, ENQ_ENA = 1
+
+Synthesis: 375s
+
+Killed: no progress for 7200s
+Not completed after two attempts

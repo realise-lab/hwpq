@@ -1,0 +1,7 @@
+# systolic_array queue_size=128 capacity=126 enqueue=1 data_width=16
+mix uniform all=1.446 enq=1.000 enq_max=2 deq=1.665 deq_max=2 rep=1.670 rep_max=2
+mix nondecreasing all=1.444 enq=1.001 enq_max=2 deq=1.661 deq_max=2 rep=1.668 rep_max=2
+mix nonincreasing all=1.446 enq=1.002 enq_max=2 deq=1.663 deq_max=2 rep=1.670 rep_max=2
+stream uniform fill=1.000 fill_max=1 rep=1.992 rep_max=2 drain=2.000 drain_max=2
+stream nondecreasing fill=1.000 fill_max=1 rep=1.992 rep_max=2 drain=2.000 drain_max=2
+stream nonincreasing fill=1.000 fill_max=1 rep=1.992 rep_max=2 drain=2.000 drain_max=2

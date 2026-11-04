@@ -1,0 +1,7 @@
+# register_array queue_size=2048 capacity=2048 enqueue=1 data_width=16
+mix uniform all=1.000 enq=1.000 enq_max=1 deq=1.000 deq_max=1 rep=1.000 rep_max=1
+mix nondecreasing all=1.000 enq=1.000 enq_max=1 deq=1.000 deq_max=1 rep=1.000 rep_max=1
+mix nonincreasing all=1.000 enq=1.000 enq_max=1 deq=1.000 deq_max=1 rep=1.000 rep_max=1
+stream uniform fill=1.000 fill_max=1 rep=1.000 rep_max=1 drain=1.000 drain_max=1
+stream nondecreasing fill=1.000 fill_max=1 rep=1.000 rep_max=1 drain=1.000 drain_max=1
+stream nonincreasing fill=1.000 fill_max=1 rep=1.000 rep_max=1 drain=1.000 drain_max=1
