@@ -46,6 +46,17 @@ close_project -quiet -delete
 
 # Recursively read all Verilog files under the src directory
 set sv_files [glob -nocomplain -directory $sv_file_path -types f *.sv *.v]
+# The hybrid is sized by macros rather than generics; QUEUE_SIZE is the node count of each of its
+# hybrid_trees trees, and its result file records the total capacity. Its package is read first.
+set hybrid [string equal $architecture_name hybrid_systolic_bram_heap]
+set hybrid_trees 16
+set hybrid_systolic 16
+if {$hybrid} {
+  set sv_files {}
+  foreach f {hybrid_typedef.sv rams_tdp_rf_rf.sv bram_tree.sv bram_tree_pair.sv hybrid_systolic_heap.sv} {
+    lappend sv_files [file join $sv_file_path $f]
+  }
+}
 foreach file $sv_files {
     puts "\nReading Verilog file: $file\n"
     read_verilog -sv $file
@@ -56,7 +67,12 @@ set log_file "${log_dir}/vivado_analysis_on_queue_size_${queue_size}.txt"
 
 # Initialize or clear log file
 set fileId [open $log_file "w"]
-puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}\n"
+if {$hybrid} {
+  set capacity [expr {$hybrid_trees * $queue_size + 2 * ($hybrid_systolic - 2)}]
+  puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}, CAPACITY = ${capacity}\n"
+} else {
+  puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}\n"
+}
 close $fileId
 
 # Now iterate through clock frequencies for this specific ENQ_ENA and QUEUE_SIZE combination
@@ -75,7 +91,15 @@ foreach clock_freq $clock_freq_values {
   set synth_start_time [clock seconds]
 
   # NOTE - Run synthesis - Adjust the top module name accordingly
-  synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+  if {$hybrid} {
+    synth_design -top hybrid_systolic_heap -part $running_device -flatten_hierarchy full \
+      -verilog_define HYBRID_DATA_WIDTH=$data_width \
+      -verilog_define HYBRID_BRAM_TREE_QUEUE_SIZE=$queue_size \
+      -verilog_define HYBRID_TREE_COUNT=$hybrid_trees \
+      -verilog_define HYBRID_SYSTOLIC_QUEUE_SIZE=$hybrid_systolic
+  } else {
+    synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+  }
 
   # Record end time for synthesis
   set synth_end_time [clock seconds]

@@ -21,14 +21,21 @@ ENQ_ENA_VALUES=(0 1)
 
 # Define sweep range of queue size based on architecture name
 # tip 0 - if you want to increase the upper bound, try it in Vivado first to see if it's even possible
-if [[ "$ARCHITECTURE_NAME" == *"tree"* ]]; then
+if [[ "$ARCHITECTURE_NAME" == "hybrid_systolic_bram_heap" ]]; then
+  # Node count of each tree; the hybrid has no ENQ_ENA.
+  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047)
+  ENQ_ENA_VALUES=(1)
+elif [[ "$ARCHITECTURE_NAME" == *"tree"* ]]; then
   QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047)
   echo "Architecture name '$ARCHITECTURE_NAME' contains 'tree'. Using odd queue sizes."
+elif [[ "$ARCHITECTURE_NAME" == "systolic_array" ]]; then
+  # QUEUE_SIZE 4 deadlocks: each half of the shift network needs three slots.
+  QUEUE_SIZE_VALUES=(8 16 32 64 128 256 512 1024 2048)
 elif [[ "$ARCHITECTURE_NAME" == *"array"* ]]; then
   QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048)
   echo "Architecture name '$ARCHITECTURE_NAME' contains 'array'. Using even queue sizes."
 else
-  echo "Error: Architecture name '$ARCHITECTURE_NAME' must contain either 'tree' or 'array'."
+  echo "Error: Architecture name '$ARCHITECTURE_NAME' must contain 'tree' or 'array', or be hybrid_systolic_bram_heap."
   exit 1
 fi
 
