@@ -6,7 +6,7 @@ Findings keep their original `F-n` numbers. They label rows in the regression ma
 
 ## 1. Summary
 
-Eight of the library's ten architectures are proven against a shared, interface-only specification that binds to each of them unchanged. `hybrid_tree` does not compile under the open-source toolchain and is out of scope, and `hybrid_systolic_bram_heap` has no proof configuration. The eight are covered by fourteen proof configurations, which differ by `ENQ_ENA` build and, for `systolic_array`, by white-box addendum. All fourteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
+Nine of the library's ten architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The tenth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The nine are covered by sixteen proof configurations, which differ by `ENQ_ENA` build, by white-box addendum for `systolic_array`, and by proof half for `hybrid_systolic_bram_heap`. All sixteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
 
 The design as it stood when verification began does not. Run against the current harness, the pre-verification RTL at `af089e5` gives:
 
@@ -582,6 +582,7 @@ Assumptions currently in force, each of which is a region the proofs do not cove
 - CH-1, reserved values. `i_data` in `{'0, '1}` is assumed away as a scoping decision. Behaviour when those values are driven is characterised in appendix A and is outside the library's supported input range.
 - CH-3, parametric generality. The proofs hold at the geometries listed in section 6 and at no others.
 - CH-4, fill before read. The replace-only builds are constrained to fill the queue before reading from it. This is the disposition of F-1 rather than a temporary scope, and all four replace-only register modules have their ungated run.
+- CH-7, hybrid power-up values. The tool leaves register initial values free, so the hybrid proof pins the power-up state of the tree reset sequencer, which the bitstream loads on the FPGA. Later resets stay unconstrained.
 
 CH-2 is closed: no configuration assumes the caller is quiet while the DUT is busy. A refused command must have no effect, and each ready must be exact once the caller has been quiet for `MAX_SETTLE` cycles; a continuous stream may hold a ready low. CH-5 is closed, by F-7. CH-6 is retired on both BRAM modules, and is the only hole this effort closed by fixing the design rather than by scoping a property: the reset fill sequencers added under F-25 and F-29 establish the memory contents from arbitrary power-up state, so the assumption that had pinned them stopped being load-bearing and was deleted. Both BRAM modules now prove with their memories entirely free, which is stronger than the assumption ever permitted.
 
@@ -605,7 +606,7 @@ The two manifests carry aligned column positions deliberately, so that one drive
 
 Limits on what any of this claims:
 
-- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; and `QUEUE_SIZE=7, DATA_WIDTH=2` for the three BRAM modules.
+- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; `QUEUE_SIZE=7, DATA_WIDTH=2` for the three BRAM modules; and three trees of seven nodes with six-entry buffers at `DATA_WIDTH=3` for `hybrid_systolic_bram_heap`.
 - Formal analysis here is two-state. It cannot model X propagation, which is why the F-23 question had to be settled by simulation and synthesis instead.
 - The claims are relative to the shared specification and its addenda. F-32 is the measured demonstration that this matters: a module can satisfy the entire portable interface specification while its internal accounting is wrong.
 - The baseline measures the design as it stood when verification began, once a common interface existed, and not the design as originally written. The uniform six-port interface arrived at `e7c20ad` and is part of this work.

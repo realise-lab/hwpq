@@ -1,8 +1,8 @@
 # Formal verification suite for HWPQ
 
 One interface-only specification binds unchanged to every architecture in the
-library, so adding a design to the suite costs two short files. Eight
-architectures are proved across fourteen configurations.
+library, so adding a design to the suite costs two short files. Nine
+architectures are proved across sixteen configurations.
 
 This document is the manual: how to run the suite, what a module must do to be
 provable by it, and how to add one. What the suite found, and the justification
@@ -16,6 +16,11 @@ command is accepted only when the matching ready is high, occupancy tracks the
 commands actually accepted, the head is the maximum resident element, and no
 element is lost or duplicated. White-box addenda add per-module claims the
 interface cannot see.
+
+The hybrid is proved in two halves that share `spec/hybrid_tree_contract.sv`.
+`hybrid_tree_pair` proves its pair tree meets the contract, and
+`hybrid_systolic_heap_standin` proves the hybrid over stand-in trees that assume it.
+Both run at the same tree size, so together they cover the whole design.
 
 It does not prove throughput, timing, area, or anything about `hybrid_tree`,
 which is outside both the simulation suite and formal scope. Proofs run at small
