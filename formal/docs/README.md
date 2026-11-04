@@ -60,7 +60,7 @@ Everything a run generates goes to
 | `bind/*.sv` | per-module bind plus reset harness |
 | `spec/hwpq_spec.sv` | the portable specification |
 | `spec/hwpq_*_aux.sv` | white-box addenda |
-| `backend/` | the eleven-proc backend contract |
+| `backend/` | the thirteen-proc backend contract |
 | `tools/regress.sh` | mutation sweep and baseline driver |
 | `tools/smoke.sh` | licence-free harness check |
 
@@ -127,7 +127,9 @@ everything vacuously with a fully green table.
    tool holds the declared reset inactive after init, so declaring a separate
    init reset keeps the DUT's `i_RSTn` free for mid-operation resets.
 2. Write `config/<module>.cfg`. Keys: `source`, `top`, `param`, `clock`,
-   `reset`, `module`, `allow_bounded`, `expect_cex`, `expect_cex_ungated`.
+   `reset`, `module`, `allow_bounded`, `expect_cex`, `expect_cex_ungated`, and
+   `helper` for a stage of white-box asserts to prove first and then assume;
+   stages run in config order.
 3. Run `--selftest`, then the proof.
 4. If the module keeps internal state the interface does not determine, add a
    white-box addendum and a second bind.

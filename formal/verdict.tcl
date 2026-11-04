@@ -11,6 +11,8 @@
 #   HWPQ_EXPECT_CEX      list of assert leaf-names that are SUPPOSED to fail.
 #                        A listed property that proves is a FAILURE; one that
 #                        produces a cex is a PASS.                     Default {}
+#   HWPQ_HELPERS         stages of assert leaf-names, proven in order and each then assumed
+#                        while the rest is proven.                    Default {}
 #
 # VERSION SENSITIVITY:
 #   Property-table filter syntax and status spellings shift between tool
@@ -25,6 +27,7 @@ if {![info exists HWPQ_MODULE]} {
 }
 if {![info exists HWPQ_ALLOW_BOUNDED]} { set HWPQ_ALLOW_BOUNDED 0 }
 if {![info exists HWPQ_EXPECT_CEX]}    { set HWPQ_EXPECT_CEX    {} }
+if {![info exists HWPQ_HELPERS]}       { set HWPQ_HELPERS       {} }
 
 
 # hwpq_plist - query the property table, hard-failing on a query error.
@@ -142,6 +145,60 @@ proc hwpq_elab_gate {} {
     }
 }
 
+# hwpq_prove_helpers - prove each stage of helper asserts, then assume it before the next;
+# exits 1 unless every one proves. Each name must match an assert, so a misspelt helper cannot
+# drop out unnoticed. A later stage may need an earlier one assumed to close.
+proc hwpq_prove_helpers {stages} {
+    if {[llength $stages] == 0} { return }
+    puts "\n=== helpers ===================================================="
+    foreach stage $stages { hwpq_prove_stage $stage }
+}
+
+proc hwpq_prove_stage {helpers} {
+    # A helper is open (not yet proved, by any spelling), already proven, or refuted. Only the
+    # open ones are proved here; a refuted one fails the stage before anything is proved.
+    set open    [concat [hwpq_plist assert {unprocessed}] \
+                        [hwpq_plist assert {undetermined unknown bounded_proven bounded}]]
+    set done    [hwpq_plist assert {proven}]
+    set refuted [hwpq_plist assert {cex error}]
+    set props {}
+    set assume {}
+    set failed {}
+    foreach want $helpers {
+        set hit 0
+        foreach p [lsort -unique [concat $open $done $refuted]] {
+            if {[hwpq_leaf $p] ne $want} { continue }
+            set hit 1
+            if {[lsearch -exact $refuted $p] >= 0} {
+                lappend failed $p
+            } elseif {[lsearch -exact $done $p] >= 0} {
+                lappend assume $p
+            } else {
+                lappend props $p
+            }
+        }
+        if {!$hit} {
+            puts "FORMAL ERROR: helper '$want' names no assert in the model"
+            exit 2
+        }
+    }
+    if {[llength $failed] == 0 && [llength $props] > 0} {
+        backend::prove_list $props
+        set proven [hwpq_plist assert {proven}]
+        foreach p $props {
+            if {[lsearch -exact $proven $p] < 0} { lappend failed $p } else { lappend assume $p }
+        }
+    }
+    if {[llength $failed] > 0} {
+        hwpq_group "helpers NOT proven" $failed
+        puts "    A helper is assumed only once proven; nothing else was proved."
+        puts "\n    RESULT: FAIL\n"
+        exit 1
+    }
+    puts "    [llength $assume] helper asserts proven; assuming them."
+    backend::assume_proven $assume
+}
+
 proc hwpq_group {label items} {
     if {[llength $items] == 0} { return }
     puts "    $label ([llength $items]):"
@@ -151,14 +208,14 @@ proc hwpq_group {label items} {
 # hwpq_prove_and_exit - prove everything, print a verdict, exit 0/1/2.
 #
 #   0  every assert proven (or an expected cex fired); every cover reachable
-#   1  a real proof failure - unexpected cex, missing expected cex,
-#      undetermined, unreachable cover, bounded-only with ALLOW_BOUNDED=0, an
-#      elaboration error, a multiply-driven design or black-boxed logic (all
-#      checked BEFORE proving)
+#   1  a real proof failure - unexpected cex, missing expected cex, a helper
+#      not proven, undetermined, unreachable cover, bounded-only with
+#      ALLOW_BOUNDED=0, an elaboration error, a multiply-driven design or
+#      black-boxed logic (all checked BEFORE proving)
 #   2  the script itself could not run
 
 proc hwpq_prove_and_exit {} {
-    global HWPQ_MODULE HWPQ_ALLOW_BOUNDED HWPQ_EXPECT_CEX
+    global HWPQ_MODULE HWPQ_ALLOW_BOUNDED HWPQ_EXPECT_CEX HWPQ_HELPERS
 
     # Model sanity BEFORE proof effort: a multiply-driven design cannot be
     # proved against, only proved something about. Exits 1 on its own if dirty.
@@ -172,6 +229,8 @@ proc hwpq_prove_and_exit {} {
         puts "    NOTE: assumption conflict check unavailable here ($err)"
         puts "    NOTE: falling back on the cover set to detect vacuity."
     }
+
+    hwpq_prove_helpers $HWPQ_HELPERS
 
     # prove
     puts "\n=== prove ======================================================"

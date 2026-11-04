@@ -26,6 +26,14 @@ namespace eval backend {
 
     proc elab_errors {} { return 0 }
 
+    proc prove_list {props} {
+        puts "prove helpers (stopping here: dryrun)"
+        foreach p $props { puts "    helper $p" }
+        exit 0
+    }
+
+    proc assume_proven {props} {}
+
     proc prove_all {} {
         puts "prove (stopping here: dryrun)"
         exit 0

@@ -148,4 +148,59 @@ set all_ok [expr {$all_ok & [run_case "black-boxed design rejected" 1 "
         {type {cover} status {covered proven}} {c1}\]
     $common" {BLACK-BOXED INSTANCES}]}]
 
+# 13. helpers proven first, then assumed -> 0
+set all_ok [expr {$all_ok & [run_case "proven helper assumed" 0 "
+    set HWPQ_HELPERS {a_h}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {<task>::dut.u_aux.a_h a1} \
+        {type {assert} status {proven}} {<task>::dut.u_aux.a_h a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {helper asserts proven; assuming them}]}]
+
+# 14. a helper that does not prove -> 1, before the rest is proved
+set all_ok [expr {$all_ok & [run_case "unproven helper rejected" 1 "
+    set HWPQ_HELPERS {a_h}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {<task>::dut.u_aux.a_h a1} \
+        {type {assert} status {proven}} {a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {helpers NOT proven}]}]
+
+# 15. a helper naming no assert -> 2
+set all_ok [expr {$all_ok & [run_case "unknown helper is a hard error" 2 "
+    set HWPQ_HELPERS {a_typo}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {a1} \
+        {type {assert} status {proven}} {a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {names no assert}]}]
+
+# 16. each helper line is its own stage, proven and assumed in order -> 0
+set all_ok [expr {$all_ok & [run_case "helper stages run in order" 0 "
+    set HWPQ_HELPERS {{a_h a_g} a_k}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {<task>::dut.u_aux.a_h <task>::dut.u_aux.a_g <task>::dut.u_aux.a_k a1} \
+        {type {assert} status {proven}} {<task>::dut.u_aux.a_h <task>::dut.u_aux.a_g <task>::dut.u_aux.a_k a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {1 helper asserts proven}]}]
+
+# 17. a helper an earlier stage already proved is assumed without proving it again -> 0
+set all_ok [expr {$all_ok & [run_case "already-proven helper assumed" 0 "
+    set HWPQ_HELPERS {a_h}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {a1} \
+        {type {assert} status {proven}} {<task>::dut.u_aux.a_h a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {1 helper asserts proven; assuming them}]}]
+
+# 18. a refuted helper is reported as not proven, not as an unknown name -> 1
+set all_ok [expr {$all_ok & [run_case "refuted helper rejected" 1 "
+    set HWPQ_HELPERS {a_h}
+    set STUB_TABLE \[dict create \
+        {type {assert} status {unprocessed}} {a1} \
+        {type {assert} status {cex error}} {<task>::dut.u_aux.a_h} \
+        {type {assert} status {proven}} {a1} \
+        {type {cover} status {covered proven}} {c1}\]
+    $common" {helpers NOT proven}]}]
+
 exit [expr {$all_ok ? 0 : 1}]

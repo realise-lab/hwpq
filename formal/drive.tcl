@@ -45,11 +45,13 @@ if {![file exists $backend_file]} {
 source $backend_file
 
 # ---- parse the config -------------------------------------------------------
-# Every key may appear at most once except `source` and `param`. An unknown key
-# is a hard error: a typo must not silently drop a parameter and quietly change
-# what is proven.
+# Every key may appear at most once except `source`, `param` and `helper`. An
+# unknown key is a hard error: a typo must not silently drop a parameter and
+# quietly change what is proven. Each `helper` line is a stage of asserts, named
+# by leaf; stages are proven in order, each assumed once proven, before the table.
 set cfg_sources {}
 set cfg_params  {}
+set cfg_helpers {}
 set cfg(top)                 ""
 set cfg(clock)               ""
 set cfg(reset)               ""
@@ -71,6 +73,7 @@ foreach line [split [read $fh] "\n"] {
     switch -exact -- $key {
         source  { lappend cfg_sources $val }
         param   { lappend cfg_params [lindex $val 0] [lindex $val 1] }
+        helper  { lappend cfg_helpers $val }
         top - clock - reset - module - allow_bounded -
         expect_cex - expect_cex_ungated - expect_cex_selftest {
             if {[info exists seen($key)]} {
@@ -105,6 +108,7 @@ if {[llength $cfg_sources] == 0} {
 # Loaded BEFORE the build so the elaboration gate is available between steps.
 set HWPQ_MODULE        $cfg(module)
 set HWPQ_ALLOW_BOUNDED $cfg(allow_bounded)
+set HWPQ_HELPERS       $cfg_helpers
 if {$HWPQ_UNGATED} {
     set HWPQ_EXPECT_CEX $cfg(expect_cex_ungated)
 } elseif {$HWPQ_SELFTEST && $cfg(expect_cex_selftest) ne ""} {

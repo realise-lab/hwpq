@@ -33,6 +33,10 @@ namespace eval backend {
 
     proc prove_all {} {}
 
+    proc prove_list {props} {}
+
+    proc assume_proven {props} {}
+
     proc property_list {type statuses} {
         global STUB_TABLE
         set filter "type \{$type\} status \{$statuses\}"

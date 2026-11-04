@@ -1,7 +1,7 @@
 # The formal backend contract
 
 `formal/verdict.tcl` and `formal/drive.tcl` contain no tool-specific commands.
-Everything that talks to a formal tool goes through eleven procs in the
+Everything that talks to a formal tool goes through thirteen procs in the
 `backend::` namespace, defined by one file per tool:
 
     formal/backend/<name>.tcl     the Tcl procs, sourced inside the tool
@@ -46,13 +46,18 @@ Prove and classify, called by `verdict.tcl`:
 |---|---|---|
 | `backend::elab_errors` | — | integer count of elaboration errors |
 | `backend::prove_all` | — | — |
+| `backend::prove_list` | `props` | — |
+| `backend::assume_proven` | `props` | — |
 | `backend::property_list` | `type statuses` | list of property names |
 | `backend::design_info` | `kind` | list; `{}` means clean |
 | `backend::assumption_status` | — | — (error if unsupported) |
 | `backend::report` | `outdir name` | — |
 
 `type` is `assert` or `cover`. `statuses` is a list of spellings to match, so a
-rename in one tool release cannot silently drop a whole failure category.
+rename in one tool release cannot silently drop a whole failure category; an assert not yet
+proved must match `unprocessed` or, once a proof has run, `undetermined`.
+`props` is a list of full property names. `assume_proven` makes proven asserts assumptions for
+every later proof, and they still report as proven asserts.
 `kind` is `multiple_driven` or `blackbox`: signals with more than one driver, and instances
 whose outputs the tool leaves free, including operators it black-boxes on its own. A backend
 should disable automatic black-boxing at elaboration.
@@ -80,7 +85,7 @@ set.
 
 ## Adding a backend
 
-Copy `stub.tcl` and `stub.sh`, and implement the eleven procs against your tool.
+Copy `stub.tcl` and `stub.sh`, and implement the thirteen procs against your tool.
 The shell half defines three functions:
 
     backend_available            0 if the tool is runnable here
