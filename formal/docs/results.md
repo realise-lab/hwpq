@@ -84,6 +84,8 @@ The read side reopens before the write side. After a dequeue or replace the root
 
 ### 2.2 `systolic_array`
 
+`systolic_array` is a second implementation of the architecture. It proves all three configurations below with no expected counterexample, gated and ungated. The findings in this section concern the first implementation, and none applies to the current one.
+
 Proven at `QUEUE_SIZE=8, DATA_WIDTH=3` across three configurations: the black-box specification, and two white-box addenda written to isolate specific questions. Four findings, of which one prevented the module from being verified at all and one is the most serious defect in the effort.
 
 Its usable capacity is `QUEUE_SIZE-2`, a shift-chain margin measured under F-9 rather than assumed. This is a live design fact, and both the testbench shim (`TB_CAPACITY`) and the bind (`CAPACITY`) carry it.

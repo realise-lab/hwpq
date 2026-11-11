@@ -46,7 +46,6 @@ module systolic_array #(
 
 );
 
-  // Constant
   localparam int MIN_VALUE = 0;  // Represents the minimum value for a max-queue
   localparam int HALF_SIZE = QUEUE_SIZE / 2;
 
@@ -61,7 +60,7 @@ module systolic_array #(
   logic                    OB_next_greater_than_OB[HALF_SIZE-1];
 
   logic                    IB_shift               [HALF_SIZE-1];
-  logic                    IB_shift_valid               [HALF_SIZE-1];
+  logic                    IB_shift_valid         [HALF_SIZE-1];
 
   logic                    OB_shift               [HALF_SIZE-1];
   logic                    OB_shift_valid         [HALF_SIZE-1];
@@ -89,10 +88,10 @@ module systolic_array #(
   // A write is accepted this cycle. The sorting network must not act on a refused
   // write (inject i_data into IB[0], suppress its clear); gates mirror the datapath.
   wire writing_ib0 = enq_ok || (i_wrt && i_read && (o_read_ready || empty));
-  // Derived from `full` so the two thresholds cannot drift apart. Gating on a head
-  // bubble is wrong here: the head need not refill on its own, and both readies wedge.
   // IB[0] can take a write this cycle. Both readies drop without it: replace writes IB[0] too.
   wire ib0_free = (IB[0] == MIN_VALUE) || IB_room[0];
+  // Derived from `full` so the two thresholds cannot drift apart. Gating on a head
+  // bubble is wrong here: the head need not refill on its own, and both readies wedge.
   assign o_write_ready = !full && ib0_free;
   assign o_read_ready = !empty && (o_data != MIN_VALUE) && !dequeue_pending && ib0_free;
 
@@ -172,7 +171,6 @@ module systolic_array #(
             if (!(i == 0 && IB_zero_to_OB_one && (OB_shift_valid[0] && OB_shift[0])) && (i == (HALF_SIZE - 2) || !OB_shift_valid[i+1] || !IB_shift_to_OB[i+1] || !OB_shift[i+1] || (OB[i+2] == 0))) OB[i+1] <= MIN_VALUE;
           end
           default: begin
-            // No action needed
           end
         endcase
 
@@ -192,7 +190,6 @@ module systolic_array #(
             IB[i] <= MIN_VALUE;
           end
           default: begin
-            // No action needed
           end
         endcase
 
@@ -262,7 +259,6 @@ module systolic_array #(
           end
 
           default: begin
-            // No action needed
           end
         endcase
       end
