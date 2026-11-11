@@ -44,7 +44,7 @@ RESULTS_DIR="$PROJECT_ROOT/hwpq/${ARCHITECTURE_NAME}/vivado_analysis_results_16b
 SYNTH_SCRIPT="$PROJECT_ROOT/vivado-synthesis_tcl/synth_design_param_sweep_parallel.tcl"
 
 # NOTE - Set the maximum number of parallel jobs - change accordingly
-MAX_PARALLEL=2
+MAX_PARALLEL=4
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)

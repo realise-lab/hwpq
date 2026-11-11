@@ -19,7 +19,7 @@ set queue_size [lindex $argv 3]
 set running_device xcau25p-ffvb676-1-e
 
 # NOTE - Set the number of threads to use
-set_param general.maxThreads 16
+set_param general.maxThreads 4
 
 # NOTE - File paths - change accordingly for design under test - use absolute path
 # Get the current script directory and navigate to project root
