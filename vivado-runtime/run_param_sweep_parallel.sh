@@ -45,6 +45,8 @@ SYNTH_SCRIPT="$PROJECT_ROOT/vivado-synthesis_tcl/synth_design_param_sweep_parall
 
 # NOTE - Set the maximum number of parallel jobs - change accordingly
 MAX_PARALLEL=4
+# A job whose result file has not grown for this long is killed; the longest step on record is 40 min.
+STALL_SECONDS=7200
 
 # Create a temporary directory for job tracking
 JOB_TRACK_DIR=$(mktemp -d)
@@ -64,10 +66,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Function to mark a job as running; the job file holds the Vivado PID
+# Function to mark a job as running; the job file holds the Vivado PID and its result file
 start_job() {
   local job_name=$1
-  echo "$2" > "$JOB_TRACK_DIR/$job_name"
+  echo "$2 $3" > "$JOB_TRACK_DIR/$job_name"
 }
 
 # Function to mark a job as completed
@@ -97,10 +99,18 @@ list_running_jobs() {
   done
 }
 
-# A job is over once its Vivado process exits, whether it finished, failed or crashed
+# A job is over once its Vivado process exits, whether it finished, failed or crashed. A stalled
+# job is killed with its process group (each job runs under setsid).
 job_is_completed() {
-  local job_name=$1
-  ! kill -0 "$(cat "$JOB_TRACK_DIR/$job_name")" 2>/dev/null
+  local job_name=$1 pid result
+  read -r pid result < "$JOB_TRACK_DIR/$job_name"
+  kill -0 "$pid" 2>/dev/null || return 0
+  if [ -f "$result" ] && [ $(( $(date +%s) - $(stat -c %Y "$result") )) -gt "$STALL_SECONDS" ]; then
+    kill -- "-$pid" 2>/dev/null
+    echo "Killed: no progress for ${STALL_SECONDS}s" >> "$result"
+    return 0
+  fi
+  return 1
 }
 
 # Function to print current job status
@@ -167,71 +177,84 @@ wait_for_job() {
   done
 }
 
-# Process all parameter combinations
-for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
-  for queue_size in "${QUEUE_SIZE_VALUES[@]}"; do
-    job_name="ENQ${enq_ena}_QS${queue_size}"
-    log_file="parallel_logs/vivado_${job_name}.log"
-    result_file="${RESULTS_DIR}/enqueue_${enq_ena}/vivado_analysis_on_queue_size_${queue_size}.txt"
+# Two passes: the second reruns only jobs whose result lacks the completion line, i.e. one retry
+# after a crash or a stall.
+for attempt in 1 2; do
+  # Process all parameter combinations
+  for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
+    for queue_size in "${QUEUE_SIZE_VALUES[@]}"; do
+      job_name="ENQ${enq_ena}_QS${queue_size}"
+      log_file="parallel_logs/vivado_${ARCHITECTURE_NAME}_${job_name}.log"
+      result_file="${RESULTS_DIR}/enqueue_${enq_ena}/vivado_analysis_on_queue_size_${queue_size}.txt"
     
-    # Check if job is already running
-    if is_job_running "$job_name"; then
-      echo "WARNING: Job $job_name is already running. Skipping duplicate."
-      echo " "
-      continue
-    fi
+      # Check if job is already running
+      if is_job_running "$job_name"; then
+        echo "WARNING: Job $job_name is already running. Skipping duplicate."
+        echo " "
+        continue
+      fi
     
-    # Check if the result file already exists and contains results
-    if [ -f "$result_file" ] && grep -q "Analysis completed for ENQ" "$result_file"; then
-      echo "Job $job_name already completed (result file exists). Skipping."
-      echo " "
-      continue
-    fi
+      # Check if the result file already exists and contains results
+      if [ -f "$result_file" ] && grep -q "Analysis completed for ENQ" "$result_file"; then
+        echo "Job $job_name already completed (result file exists). Skipping."
+        echo " "
+        continue
+      fi
     
-    # Wait until we can start a new job
-    while ! can_start_job; do
-      echo "Maximum parallel jobs ($MAX_PARALLEL) running. Waiting for a job slot..."
+      # Wait until we can start a new job
+      while ! can_start_job; do
+        echo "Maximum parallel jobs ($MAX_PARALLEL) running. Waiting for a job slot..."
+        echo " "
+        wait_for_job
+      done
+    
+      echo "Starting Vivado job for ${job_name}..."
+      setsid vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $ARCHITECTURE_NAME $enq_ena 16 $queue_size > "$log_file" 2>&1 &
+    
+      # Mark job as running
+      start_job "$job_name" $! "$result_file"
+    
+      echo "Started job for ${job_name}"
+      echo "Currently running jobs: $(get_running_jobs_count) of $MAX_PARALLEL"
       echo " "
-      wait_for_job
+      print_job_status
+    
+      # Small delay to prevent overwhelming the system
+      sleep 2
     done
-    
-    echo "Starting Vivado job for ${job_name}..."
-    vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $ARCHITECTURE_NAME $enq_ena 16 $queue_size > "$log_file" 2>&1 &
-    
-    # Mark job as running
-    start_job "$job_name" $!
-    
-    echo "Started job for ${job_name}"
-    echo "Currently running jobs: $(get_running_jobs_count) of $MAX_PARALLEL"
-    echo " "
-    print_job_status
-    
-    # Small delay to prevent overwhelming the system
-    sleep 2
+  done
+
+  # Wait for all remaining jobs to complete
+  echo "Waiting for all remaining jobs to complete..."
+  while [ "$(get_running_jobs_count)" -gt 0 ]; do
+    for job_file in "$JOB_TRACK_DIR"/*; do
+      if [ -f "$job_file" ]; then
+        job_name=$(basename "$job_file")
+        if job_is_completed "$job_name"; then
+          echo "Job $job_name has completed"
+          echo " "
+          complete_job "$job_name"
+        fi
+      fi
+    done
+    sleep 10
+  
+    # local remaining=$(get_running_jobs_count)
+    # if [ "$remaining" -gt 0 ]; then
+    #   echo "Still waiting for $remaining jobs to complete..."
+    #   print_job_status
+    #   sleep 30
+    # fi
   done
 done
 
-# Wait for all remaining jobs to complete
-echo "Waiting for all remaining jobs to complete..."
-while [ "$(get_running_jobs_count)" -gt 0 ]; do
-  for job_file in "$JOB_TRACK_DIR"/*; do
-    if [ -f "$job_file" ]; then
-      job_name=$(basename "$job_file")
-      if job_is_completed "$job_name"; then
-        echo "Job $job_name has completed"
-        echo " "
-        complete_job "$job_name"
-      fi
+for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
+  for queue_size in "${QUEUE_SIZE_VALUES[@]}"; do
+    result_file="${RESULTS_DIR}/enqueue_${enq_ena}/vivado_analysis_on_queue_size_${queue_size}.txt"
+    if [ -f "$result_file" ] && ! grep -q "Analysis completed for ENQ" "$result_file"; then
+      echo "Not completed after two attempts" >> "$result_file"
     fi
   done
-  sleep 10
-  
-  # local remaining=$(get_running_jobs_count)
-  # if [ "$remaining" -gt 0 ]; then
-  #   echo "Still waiting for $remaining jobs to complete..."
-  #   print_job_status
-  #   sleep 30
-  # fi
 done
 
 echo "All parameter sweep jobs have completed successfully!"
