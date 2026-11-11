@@ -27,12 +27,14 @@ if [[ "$ARCHITECTURE_NAME" == "hybrid_systolic_bram_heap" ]]; then
   ENQ_ENA_VALUES=(1)
 elif [[ "$ARCHITECTURE_NAME" == "bram_tree"* ]]; then
   QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287)
+  ENQ_ENA_VALUES=(1)  # no ENQ_ENA parameter: one build
 elif [[ "$ARCHITECTURE_NAME" == *"tree"* ]]; then
   QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095)
   echo "Architecture name '$ARCHITECTURE_NAME' contains 'tree'. Using odd queue sizes."
 elif [[ "$ARCHITECTURE_NAME" == "systolic_array" ]]; then
   # QUEUE_SIZE 4 deadlocks: each half of the shift network needs three slots.
   QUEUE_SIZE_VALUES=(8 16 32 64 128 256 512 1024 2048)
+  ENQ_ENA_VALUES=(1)  # no ENQ_ENA parameter: one build
 elif [[ "$ARCHITECTURE_NAME" == "register_array_pipelined" ]]; then
   QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048 4096)
 elif [[ "$ARCHITECTURE_NAME" == *"array"* ]]; then
