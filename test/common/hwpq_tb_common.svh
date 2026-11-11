@@ -232,16 +232,14 @@ endtask
 
 //  Reference-model helpers
 
+// Insertion sort: linear when one element is out of place, as after every single command.
 task automatic rsort();  // descending: ref_queue[0] is the max (head)
-  logic [DATA_WIDTH-1:0] temp_val;
-  for (int i = 0; i < ref_queue_size; i++) begin
-    for (int j = i + 1; j < ref_queue_size; j++) begin
-      if (ref_queue[i] < ref_queue[j]) begin
-        temp_val      = ref_queue[i];
-        ref_queue[i]  = ref_queue[j];
-        ref_queue[j]  = temp_val;
-      end
-    end
+  logic [DATA_WIDTH-1:0] v;
+  int j;
+  for (int i = 1; i < ref_queue_size; i++) begin
+    v = ref_queue[i];
+    for (j = i - 1; j >= 0 && ref_queue[j] < v; j--) ref_queue[j+1] = ref_queue[j];
+    ref_queue[j+1] = v;
   end
 endtask
 

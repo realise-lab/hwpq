@@ -481,6 +481,8 @@ Two checks are honest about their limits, and the commit messages say so rather 
 
 No new RTL defect was found by any of these eight. That is the expected outcome rather than a disappointment: every defect in this class had already been found and fixed under proof. The changes close the gap going forward, on a suite that runs on every push while the proof tool does not.
 
+The suite holds every DUT to the same ready contract as the specification. Either ready may stall alone, so a check runs once both readies agree with the reference model rather than at `settled`: a high ready the model contradicts fails, a stalled one does not. Three stimulus phases reach states the others cannot: payloads that span the full data width, an enqueue in the cycle after a read, and deep fills separated by many resets with only shallow fills between them.
+
 ## 4. Retracted findings
 
 Three findings reported as defects did not survive measurement. In two cases the fix is retained anyway, and the reasoning for retaining it is given, because a retained fix in a library whose purpose is comparing area is not free.
