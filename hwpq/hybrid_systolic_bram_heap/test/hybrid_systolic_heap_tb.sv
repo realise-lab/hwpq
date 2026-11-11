@@ -1,8 +1,8 @@
 `default_nettype none
 // hybrid_systolic_heap shim for the shared testbench body.
-// Sized by bram_tree_pkg; compile a small model, e.g.
-//   -DHYBRID_TREE_COUNT=2 -DHYBRID_BRAM_TREE_QUEUE_SIZE=7
-// The reference model is quadratic in QUEUE_SIZE, so the default build is too large to run.
+// Sized by bram_tree_pkg; compile a smaller model, e.g.
+//   -DHYBRID_TREE_COUNT=11 -DHYBRID_BRAM_TREE_QUEUE_SIZE=31
+// The default build is too large to simulate.
 
 module hybrid_systolic_heap_tb;
   // Every tree full plus each systolic buffer at its full threshold (two slots of shift margin).

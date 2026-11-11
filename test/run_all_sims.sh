@@ -27,8 +27,9 @@ TESTS=(
   "register_tree_pipelined|hwpq/register_tree_pipelined/test/register_tree_pipelined_enq0_tb.sv|register_tree_pipelined_enq0_tb"
   # bram_tree_pipelined has no enqueue path -> replace-only only
   "bram_tree_pipelined|hwpq/bram_tree_pipelined/test/bram_tree_pipelined_tb.sv|bram_tree_pipelined_tb"
-  # Sized by defines: the default build is too large for the quadratic reference model
-  "hybrid_systolic_bram_heap|hwpq/hybrid_systolic_bram_heap/test/hybrid_systolic_heap_tb.sv|hybrid_systolic_heap_tb|-DHYBRID_TREE_COUNT=2 -DHYBRID_BRAM_TREE_QUEUE_SIZE=7 -DHYBRID_DATA_WIDTH=16"
+  # Sized by defines: the default build is too large to simulate. A tree count that is not a
+  # power of two exercises the rotation's modular wrap and the max tree's padded leaves.
+  "hybrid_systolic_bram_heap|hwpq/hybrid_systolic_bram_heap/test/hybrid_systolic_heap_tb.sv|hybrid_systolic_heap_tb|-DHYBRID_TREE_COUNT=11 -DHYBRID_BRAM_TREE_QUEUE_SIZE=31 -DHYBRID_DATA_WIDTH=16"
 )
 
 declare -a RESULTS=()
