@@ -74,6 +74,8 @@ def parse_metrics(file_path):
 
     # Find the maximum achieved freqency and the given frequency for that
     given_frequencies, achieved_frequencies = parse_achieved_frequencies(file_path)
+    if not achieved_frequencies:
+        return None  # The build never completed a target, e.g. it does not fit the device.
     max_freq = np.max(achieved_frequencies)
     max_freq_index = achieved_frequencies.index(max_freq)
     max_freq_given = given_frequencies[max_freq_index]
@@ -320,6 +322,9 @@ def _process_files(log_dir):
 
             # Get other metrics
             metrics = parse_metrics(file_path)
+            if metrics is None:
+                print(f"No achieved frequency, skipped: {file_path}")
+                continue
 
             # Store metrics in dictionary
             data_dict[queue_size] = metrics
