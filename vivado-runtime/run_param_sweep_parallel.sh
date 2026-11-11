@@ -23,14 +23,18 @@ ENQ_ENA_VALUES=(0 1)
 # tip 0 - if you want to increase the upper bound, try it in Vivado first to see if it's even possible
 if [[ "$ARCHITECTURE_NAME" == "hybrid_systolic_bram_heap" ]]; then
   # Node count of each tree; the hybrid has no ENQ_ENA.
-  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047)
+  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287)
   ENQ_ENA_VALUES=(1)
+elif [[ "$ARCHITECTURE_NAME" == "bram_tree"* ]]; then
+  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095 8191 16383 32767 65535 131071 262143 524287)
 elif [[ "$ARCHITECTURE_NAME" == *"tree"* ]]; then
-  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047)
+  QUEUE_SIZE_VALUES=(3 7 15 31 63 127 255 511 1023 2047 4095)
   echo "Architecture name '$ARCHITECTURE_NAME' contains 'tree'. Using odd queue sizes."
 elif [[ "$ARCHITECTURE_NAME" == "systolic_array" ]]; then
   # QUEUE_SIZE 4 deadlocks: each half of the shift network needs three slots.
   QUEUE_SIZE_VALUES=(8 16 32 64 128 256 512 1024 2048)
+elif [[ "$ARCHITECTURE_NAME" == "register_array_pipelined" ]]; then
+  QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048 4096)
 elif [[ "$ARCHITECTURE_NAME" == *"array"* ]]; then
   QUEUE_SIZE_VALUES=(4 8 16 32 64 128 256 512 1024 2048)
   echo "Architecture name '$ARCHITECTURE_NAME' contains 'array'. Using even queue sizes."
