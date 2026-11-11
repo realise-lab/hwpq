@@ -290,12 +290,10 @@ def process_directory(log_dir):
     """
     # Check if this directory has enqueue_0/enqueue_1 subdirectories
     contents = os.listdir(log_dir)
-    if ("enqueue_0" in contents) != ("enqueue_1" in contents):
-        return _process_files(os.path.join(log_dir, "enqueue_1" if "enqueue_1" in contents else "enqueue_0"))
-    if "enqueue_0" in contents and "enqueue_1" in contents:
-        # Process both subdirectories
-        enqueue_disabled_data = _process_files(os.path.join(log_dir, "enqueue_0"))
-        enqueue_enabled_data = _process_files(os.path.join(log_dir, "enqueue_1"))
+    if "enqueue_0" in contents or "enqueue_1" in contents:
+        # A build not swept (yet) has no directory and comes back empty.
+        enqueue_disabled_data = _process_files(os.path.join(log_dir, "enqueue_0")) if "enqueue_0" in contents else {}
+        enqueue_enabled_data = _process_files(os.path.join(log_dir, "enqueue_1")) if "enqueue_1" in contents else {}
         return (enqueue_disabled_data, enqueue_enabled_data)
     else:
         # Process files in the main directory

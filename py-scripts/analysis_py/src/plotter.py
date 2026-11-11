@@ -1101,7 +1101,7 @@ def process_and_plot_all(base_dir, output_dir=None):
                 enq_disabled_data, enq_enabled_data = result
                 
                 # Skip if no data
-                if not enq_disabled_data or not enq_enabled_data:
+                if not enq_disabled_data and not enq_enabled_data:
                     print(f"No data found in {log_dir}")
                     continue
                 
@@ -1119,8 +1119,8 @@ def process_and_plot_all(base_dir, output_dir=None):
                     all_data["register_tree_pipelined_enq_disabled"] = enq_disabled_data
                     all_data["register_tree_pipelined_enq_enabled"] = enq_enabled_data
                 elif arch_dir in SINGLE_VARIANT:
-                    # Built without ENQ_ENA: both directories hold the same build.
-                    all_data[arch_dir] = enq_enabled_data
+                    # Built without ENQ_ENA: either directory holds the one build.
+                    all_data[arch_dir] = enq_enabled_data or enq_disabled_data
                 else:
                     # Generic handling for other architectures with enqueue variants
                     all_data[f"{arch_dir.lower()}_enq_disabled"] = enq_disabled_data
@@ -1135,6 +1135,9 @@ def process_and_plot_all(base_dir, output_dir=None):
 
                 # Store data for comparison
                 all_data[arch_dir] = data_dict
+
+    # A build with no results yet has nothing to plot.
+    all_data = {k: v for k, v in all_data.items() if v}
 
     if HYBRID_ARCH in all_data:
         all_data[HYBRID_ARCH] = {m["capacity"]: m for m in all_data[HYBRID_ARCH].values()}
