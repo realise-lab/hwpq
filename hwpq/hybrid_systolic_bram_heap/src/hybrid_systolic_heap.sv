@@ -1006,3 +1006,5 @@ module hybrid_systolic_heap (
   end
 
 endmodule
+
+`default_nettype wire
