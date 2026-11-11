@@ -76,9 +76,15 @@ Extending the gate to `bram_tree_pipelined` produced a standing rule. Gating the
 
 ### 2.2 `systolic_array`
 
-Proven at `QUEUE_SIZE=8, DATA_WIDTH=3` across three configurations: the black-box specification, and two white-box addenda written to isolate specific questions. Three findings, of which one prevented the module from being verified at all and one is the most serious defect in the effort.
+Proven at `QUEUE_SIZE=8, DATA_WIDTH=3` across three configurations: the black-box specification, and two white-box addenda written to isolate specific questions. Four findings, of which one prevented the module from being verified at all and one is the most serious defect in the effort.
 
 Its usable capacity is `QUEUE_SIZE-2`, a shift-chain margin measured under F-9 rather than assumed. This is a live design fact, and both the testbench shim (`TB_CAPACITY`) and the bind (`CAPACITY`) carry it.
+
+#### F-34: the module acts on commands issued while it is busy
+
+`7b9f413` records it. Not fixed in this module.
+
+The dequeue arm gates on `!empty` and the write arm on `!full`, not on the readies. A dequeue or a write issued during the two-cycle shift is acted on mid-shift, and occupancy and ordering break together. No configuration assumes the caller is quiet while the DUT is busy, so the black-box configuration records nine expected counterexamples: `a_progress`, `a_occ_bounded`, both ready honesty and liveness asserts, `a_no_loss`, `a_head_is_max` and `a_head_present`. Every other configuration is inert while busy.
 
 #### F-6: the module did not elaborate under the tool, due to out-of-range array reads
 
@@ -562,11 +568,10 @@ Nothing below blocks the results in sections 2 and 3. Each is a stated limit or 
 Assumptions currently in force, each of which is a region the proofs do not cover:
 
 - CH-1, reserved values. `i_data` in `{'0, '1}` is assumed away as a scoping decision. Behaviour when those values are driven is characterised in appendix A and is outside the library's supported input range.
-- CH-2, no command while busy. Any defect requiring a command to arrive mid-operation is unreachable while this holds. Each module has a second, ungated run, which is how the assumption is checked rather than trusted.
 - CH-3, parametric generality. The proofs hold at the geometries listed in section 6 and at no others.
 - CH-4, fill before read. The replace-only builds are constrained to fill the queue before reading from it. This is the disposition of F-1 rather than a temporary scope, and all four replace-only register modules have their ungated run.
 
-CH-5 is closed, by F-7. CH-6 is retired on both BRAM modules, and is the only hole this effort closed by fixing the design rather than by scoping a property: the reset fill sequencers added under F-25 and F-29 establish the memory contents from arbitrary power-up state, so the assumption that had pinned them stopped being load-bearing and was deleted. Both BRAM modules now prove with their memories entirely free, which is stronger than the assumption ever permitted.
+CH-2 is closed: no configuration assumes the caller is quiet while the DUT is busy. A refused command must have no effect, and each ready must be exact once the caller has been quiet for `MAX_SETTLE` cycles; a continuous stream may hold a ready low. CH-5 is closed, by F-7. CH-6 is retired on both BRAM modules, and is the only hole this effort closed by fixing the design rather than by scoping a property: the reset fill sequencers added under F-25 and F-29 establish the memory contents from arbitrary power-up state, so the assumption that had pinned them stopped being load-bearing and was deleted. Both BRAM modules now prove with their memories entirely free, which is stronger than the assumption ever permitted.
 
 Remaining gaps:
 

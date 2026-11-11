@@ -32,8 +32,8 @@ module hwpq_spec #(
     // 1 = sequential design; `settled` drops while an operation is in flight
     parameter bit HAS_BUSY = 1,
 
-    // Quiet cycles after an accepted command until both readies match the model; 0 when they
-    // already match the next cycle. Must be tight: c_settle_tight checks it.
+    // Quiet cycles after reset or an accepted command until both readies match the model; 0
+    // when they already match the next cycle. Must be tight: c_settle_tight checks it.
     parameter int MAX_SETTLE = 1,
 
     // Assume a replace-only queue is filled before anything is read from it -
@@ -105,8 +105,6 @@ module hwpq_spec #(
           settled && o_read_ready |-> o_data != '1);
     end
 
-    // The initialisation convention, as an assumption: do not read from a
-    // replace-only queue until it has been filled once.
   endgenerate
 
 
