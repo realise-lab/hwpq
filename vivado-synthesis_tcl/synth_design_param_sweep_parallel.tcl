@@ -75,8 +75,30 @@ if {$hybrid} {
 }
 close $fileId
 
-# Now iterate through clock frequencies for this specific ENQ_ENA and QUEUE_SIZE combination
-foreach clock_freq $clock_freq_values {
+# Synthesis precedes the clock constraint, so its netlist is the same for every target: synthesize
+# once and implement each target from the checkpoint.
+set synth_start_time [clock seconds]
+# NOTE - Run synthesis - Adjust the top module name accordingly
+if {$hybrid} {
+  synth_design -top hybrid_systolic_heap -part $running_device -flatten_hierarchy full \
+    -verilog_define HYBRID_DATA_WIDTH=$data_width \
+    -verilog_define HYBRID_BRAM_TREE_QUEUE_SIZE=$queue_size \
+    -verilog_define HYBRID_TREE_COUNT=$hybrid_trees \
+    -verilog_define HYBRID_SYSTOLIC_QUEUE_SIZE=$hybrid_systolic
+} else {
+  synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+}
+set synth_duration [expr {[clock seconds] - $synth_start_time}]
+set synth_dcp [file join [pwd] "synth_${architecture_name}_enq${enq_ena}_qs${queue_size}.dcp"]
+write_checkpoint -force $synth_dcp
+close_design
+set fileId [open $log_file "a+"]
+puts $fileId "Synthesis: ${synth_duration}s\n"
+close $fileId
+
+# Implements the checkpoint at one clock target, appends its results, and returns the WNS.
+proc implement_at {clock_freq} {
+  global synth_dcp log_file enq_ena queue_size
   # Calculate the clock period in ns
   set clock_period [expr {1000.0 / $clock_freq}]
 
@@ -87,32 +109,7 @@ foreach clock_freq $clock_freq_values {
   puts "  Clock Frequency = ${clock_freq} MHz (period = ${clock_period} ns)"
   puts "==========================================================\n"
 
-  # Record start time for synthesis
-  set synth_start_time [clock seconds]
-
-  # NOTE - Run synthesis - Adjust the top module name accordingly
-  if {$hybrid} {
-    synth_design -top hybrid_systolic_heap -part $running_device -flatten_hierarchy full \
-      -verilog_define HYBRID_DATA_WIDTH=$data_width \
-      -verilog_define HYBRID_BRAM_TREE_QUEUE_SIZE=$queue_size \
-      -verilog_define HYBRID_TREE_COUNT=$hybrid_trees \
-      -verilog_define HYBRID_SYSTOLIC_QUEUE_SIZE=$hybrid_systolic
-  } else {
-    synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
-  }
-
-  # Record end time for synthesis
-  set synth_end_time [clock seconds]
-
-  # Calculate the synthesis duration
-  set synth_duration [expr $synth_end_time - $synth_start_time]
-  if {$synth_duration > 60} {
-    set minutes [expr int($synth_duration / 60)]
-    set seconds [expr $synth_duration % 60]
-    set synth_duration_str "${minutes}m ${seconds}s"
-  } else {
-    set synth_duration_str "${synth_duration}s"
-  }
+  open_checkpoint $synth_dcp
 
   # Create a system clock with the specified frequency
   create_clock -period $clock_period [get_ports i_CLK] -name sys_clk
@@ -194,7 +191,6 @@ foreach clock_freq $clock_freq_values {
   set fileId [open $log_file "a+"]
 
   # Print the results in the same format as vivado_analysis_cycled.tcl
-  puts $fileId "Frequency: ${clock_freq} MHz -> Synthesis: ${synth_duration_str} -> ${synth_duration}s"
   puts $fileId "Frequency: ${clock_freq} MHz -> Implementation: ${impl_duration_str} -> ${impl_duration}s"
   if {$match} {
     puts $fileId "Frequency: ${clock_freq} MHz -> Power: ${total_on_chip_power} W"
@@ -216,16 +212,21 @@ foreach clock_freq $clock_freq_values {
   puts $fileId "Frequency: ${clock_freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
   puts $fileId "\n"
 
-  # Break the frequency loop if WNS is less than -1 ns
-  if {$wns < -1.0} {
+  close $fileId
+  close_design -quiet
+  return $wns
+}
+
+foreach clock_freq $clock_freq_values {
+  # Stop once WNS is below -1 ns
+  if {[implement_at $clock_freq] < -1.0} {
+    set fileId [open $log_file "a+"]
     puts $fileId "WNS exceeded -1 ns, finished\n"
     close $fileId
     break
   }
-
-  close $fileId
-  close_design -quiet
 }
+file delete -force $synth_dcp
 
 # Close the project to clean up
 close_project -delete -quiet
