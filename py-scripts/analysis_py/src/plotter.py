@@ -7,8 +7,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import parsers
 import data_processor as dp
-from config import (OUTPUT_DIR, CYCLE_PROFILE_DIR, CYCLE_PROFILE_NAME, HYBRID_ARCH,
-                    SINGLE_VARIANT)
+from config import (OUTPUT_DIR, CYCLE_PROFILE_DIR, CYCLE_PROFILE_NAME, HYBRID_ARCH, SINGLE_VARIANT,
+                    EXCLUDED_ARCHS)
 
 # Define consistent architecture styles
 ARCHITECTURE_STYLES = {
@@ -1072,7 +1072,7 @@ def process_and_plot_all(base_dir, output_dir=None):
         arch_path = os.path.join(base_dir, arch_dir)
 
         # Skip if not a directory or doesn't contain vivado_analysis_results
-        if not os.path.isdir(arch_path):
+        if not os.path.isdir(arch_path) or arch_dir in EXCLUDED_ARCHS:
             continue
         
         # NOTE - Only process xcau25p architectures - you can change "xcau25p" to different FPGA device

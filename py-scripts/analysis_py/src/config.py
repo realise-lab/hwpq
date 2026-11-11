@@ -19,6 +19,8 @@ HYBRID_ARCH = "hybrid_systolic_bram_heap"
 
 # Architectures built without ENQ_ENA: one variant, whichever enqueue_<n> directory holds it.
 SINGLE_VARIANT = {"systolic_array", "bram_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
+# Not plotted: its results predate the current RTL and it has no cycle profile.
+EXCLUDED_ARCHS = {"hybrid_tree"}
 
 # Cycles-per-op fallbacks as throughput factors (ops per cycle), used where no profile exists.
 PERFORMANCE_FACTORS = {
