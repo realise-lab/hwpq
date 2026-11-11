@@ -50,10 +50,9 @@ module register_tree #(
   //----------------------------------------------------------------------
   localparam int TREE_DEPTH = $clog2(QUEUE_SIZE);  // depth of the tree
   localparam int NODES_NEEDED = (1 << TREE_DEPTH) - 1;  // number of nodes needed to initialize
-  // Worst-case settle cycles: enqueue climbs (~TREE_DEPTH/2, two levels/cycle),
-  // dequeue/replace sink and finish in one cycle
-  localparam int CLIMB_CYCLES = (TREE_DEPTH + 2) / 2;
-  localparam int SINK_CYCLES  = 1;
+  // A full sink or climb at two levels per cycle; enqueue's empty-leaf search needs it.
+  localparam int CLIMB_CYCLES = (TREE_DEPTH + 1) / 2;
+  localparam int SINK_CYCLES  = TREE_DEPTH / 2;
   localparam int SETTLE_MAX   = (CLIMB_CYCLES > SINK_CYCLES) ? CLIMB_CYCLES : SINK_CYCLES;
   localparam int CNT_W        = $clog2(SETTLE_MAX + 1);
 
@@ -137,47 +136,50 @@ module register_tree #(
     for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
       if (lvl % 2 == 0 && lvl < TREE_DEPTH - 1) begin
         for (int i = 0; i < NODES_NEEDED; i++) begin
-          // Get parent and children
-          parent = even_phase_queue[i];
-          left_child = (2*i+1 < NODES_NEEDED) ? even_phase_queue[2*i+1] : '0;
-          right_child = (2*i+2 < NODES_NEEDED) ? even_phase_queue[2*i+2] : '0;
+          // Constant bound for iverilog; the guard keeps each pass to its own level.
+          if (i >= (1 << lvl) - 1 && i < (1 << (lvl + 1)) - 1) begin
+            // Get parent and children
+            parent = even_phase_queue[i];
+            left_child = (2*i+1 < NODES_NEEDED) ? even_phase_queue[2*i+1] : '0;
+            right_child = (2*i+2 < NODES_NEEDED) ? even_phase_queue[2*i+2] : '0;
           
-          // Compare logic
-          left_greater_than_right = (left_child > right_child);
-          parent_less_than_left = (parent < left_child);
-          parent_less_than_right = (parent < right_child);
+            // Compare logic
+            left_greater_than_right = (left_child > right_child);
+            parent_less_than_left = (parent < left_child);
+            parent_less_than_right = (parent < right_child);
           
-          if (left_greater_than_right && parent_less_than_left) begin
-            new_parent = left_child;
-          end else if (!left_greater_than_right && parent_less_than_right) begin
-            new_parent = right_child;
-          end else begin
-            new_parent = parent;
-          end
+            if (left_greater_than_right && parent_less_than_left) begin
+              new_parent = left_child;
+            end else if (!left_greater_than_right && parent_less_than_right) begin
+              new_parent = right_child;
+            end else begin
+              new_parent = parent;
+            end
             
-          if (left_greater_than_right && parent_less_than_left) begin
-            new_left = parent;
-          end else begin
-            new_left = left_child;
-          end
+            if (left_greater_than_right && parent_less_than_left) begin
+              new_left = parent;
+            end else begin
+              new_left = left_child;
+            end
             
-          if (!left_greater_than_right && parent_less_than_right) begin
-            new_right = parent;
-          end else begin
-            new_right = right_child;
-          end
+            if (!left_greater_than_right && parent_less_than_right) begin
+              new_right = parent;
+            end else begin
+              new_right = right_child;
+            end
           
-          // Update queue with new values
-          even_phase_queue[i] = new_parent;
-          if (2*i+1 < NODES_NEEDED) begin 
-            even_phase_queue[2*i+1] = new_left;
-          end else begin
-            // No left child
-          end
-          if (2*i+2 < NODES_NEEDED) begin
-            even_phase_queue[2*i+2] = new_right;
-          end else begin
-            // No right child
+            // Update queue with new values
+            even_phase_queue[i] = new_parent;
+            if (2*i+1 < NODES_NEEDED) begin 
+              even_phase_queue[2*i+1] = new_left;
+            end else begin
+              // No left child
+            end
+            if (2*i+2 < NODES_NEEDED) begin
+              even_phase_queue[2*i+2] = new_right;
+            end else begin
+              // No right child
+            end
           end
         end
       end else begin
@@ -193,47 +195,49 @@ module register_tree #(
     for (int lvl = 0; lvl < TREE_DEPTH; lvl++) begin
       if (lvl % 2 == 1 && lvl < TREE_DEPTH - 1) begin
         for (int i = 0; i < NODES_NEEDED; i++) begin
-          // Get parent and children
-          parent = final_swap_result[i];
-          left_child = (2*i+1 < NODES_NEEDED) ? final_swap_result[2*i+1] : '0;
-          right_child = (2*i+2 < NODES_NEEDED) ? final_swap_result[2*i+2] : '0;
+          if (i >= (1 << lvl) - 1 && i < (1 << (lvl + 1)) - 1) begin
+            // Get parent and children
+            parent = final_swap_result[i];
+            left_child = (2*i+1 < NODES_NEEDED) ? final_swap_result[2*i+1] : '0;
+            right_child = (2*i+2 < NODES_NEEDED) ? final_swap_result[2*i+2] : '0;
           
-          // Compare logic
-          left_greater_than_right = (left_child > right_child);
-          parent_less_than_left = (parent < left_child);
-          parent_less_than_right = (parent < right_child);
+            // Compare logic
+            left_greater_than_right = (left_child > right_child);
+            parent_less_than_left = (parent < left_child);
+            parent_less_than_right = (parent < right_child);
           
-          if (left_greater_than_right && parent_less_than_left) begin
-            new_parent = left_child;
-          end else if (!left_greater_than_right && parent_less_than_right) begin
-            new_parent = right_child;
-          end else begin
-            new_parent = parent;
-          end
+            if (left_greater_than_right && parent_less_than_left) begin
+              new_parent = left_child;
+            end else if (!left_greater_than_right && parent_less_than_right) begin
+              new_parent = right_child;
+            end else begin
+              new_parent = parent;
+            end
             
-          if (left_greater_than_right && parent_less_than_left) begin
-            new_left = parent;
-          end else begin
-            new_left = left_child;
-          end
+            if (left_greater_than_right && parent_less_than_left) begin
+              new_left = parent;
+            end else begin
+              new_left = left_child;
+            end
             
-          if (!left_greater_than_right && parent_less_than_right) begin
-            new_right = parent;
-          end else begin
-            new_right = right_child;
-          end
+            if (!left_greater_than_right && parent_less_than_right) begin
+              new_right = parent;
+            end else begin
+              new_right = right_child;
+            end
           
-          // Update queue with new values
-          final_swap_result[i] = new_parent;
-          if (2*i+1 < NODES_NEEDED) begin
-            final_swap_result[2*i+1] = new_left;
-          end else begin
-            // No left child
-          end
-          if (2*i+2 < NODES_NEEDED) begin
-            final_swap_result[2*i+2] = new_right;
-          end else begin
-            // No right child
+            // Update queue with new values
+            final_swap_result[i] = new_parent;
+            if (2*i+1 < NODES_NEEDED) begin
+              final_swap_result[2*i+1] = new_left;
+            end else begin
+              // No left child
+            end
+            if (2*i+2 < NODES_NEEDED) begin
+              final_swap_result[2*i+2] = new_right;
+            end else begin
+              // No right child
+            end
           end
         end
       end else begin
