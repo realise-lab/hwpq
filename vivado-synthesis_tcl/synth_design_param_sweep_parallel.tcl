@@ -217,15 +217,21 @@ proc implement_at {clock_freq} {
   return $wns
 }
 
+set first_miss 0
 foreach clock_freq $clock_freq_values {
+  set wns [implement_at $clock_freq]
+  if {$wns < 0 && $first_miss == 0} { set first_miss $clock_freq }
   # Stop once WNS is below -1 ns
-  if {[implement_at $clock_freq] < -1.0} {
+  if {$wns < -1.0} {
     set fileId [open $log_file "a+"]
     puts $fileId "WNS exceeded -1 ns, finished\n"
     close $fileId
     break
   }
 }
+# One more target halfway into the step where timing first failed, so every size gets an attempt
+# within 25 MHz of its Fmax.
+if {$first_miss > 0} { implement_at [expr {$first_miss - 25}] }
 file delete -force $synth_dcp
 
 # Close the project to clean up
