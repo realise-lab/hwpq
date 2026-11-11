@@ -64,10 +64,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Function to mark a job as running
+# Function to mark a job as running; the job file holds the Vivado PID
 start_job() {
   local job_name=$1
-  touch "$JOB_TRACK_DIR/$job_name"
+  echo "$2" > "$JOB_TRACK_DIR/$job_name"
 }
 
 # Function to mark a job as completed
@@ -97,22 +97,10 @@ list_running_jobs() {
   done
 }
 
-# Function to check if a job has completed by examining its log file
+# A job is over once its Vivado process exits, whether it finished, failed or crashed
 job_is_completed() {
   local job_name=$1
-  local log_file="parallel_logs/vivado_${job_name}.log"
-  
-  # Check if log file exists
-  if [ ! -f "$log_file" ]; then
-    return 1  # Job not completed (log doesn't exist)
-  fi
-  
-  # Check if the log file contains the completion message
-  if grep -q "Analysis completed for ENQ" "$log_file"; then
-    return 0  # Job is complete
-  else
-    return 1  # Job still running
-  fi
+  ! kill -0 "$(cat "$JOB_TRACK_DIR/$job_name")" 2>/dev/null
 }
 
 # Function to print current job status
@@ -211,7 +199,7 @@ for enq_ena in "${ENQ_ENA_VALUES[@]}"; do
     vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $ARCHITECTURE_NAME $enq_ena 16 $queue_size > "$log_file" 2>&1 &
     
     # Mark job as running
-    start_job "$job_name"
+    start_job "$job_name" $!
     
     echo "Started job for ${job_name}"
     echo "Currently running jobs: $(get_running_jobs_count) of $MAX_PARALLEL"
@@ -236,6 +224,7 @@ while [ "$(get_running_jobs_count)" -gt 0 ]; do
       fi
     fi
   done
+  sleep 10
   
   # local remaining=$(get_running_jobs_count)
   # if [ "$remaining" -gt 0 ]; then

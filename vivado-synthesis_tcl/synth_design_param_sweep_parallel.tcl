@@ -231,3 +231,7 @@ foreach clock_freq $clock_freq_values {
 close_project -delete -quiet
 
 puts "\nAnalysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}"
+# The sweep driver skips a build whose result file carries this line.
+set fileId [open $log_file "a+"]
+puts $fileId "Analysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}"
+close $fileId
