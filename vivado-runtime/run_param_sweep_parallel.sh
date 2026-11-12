@@ -215,6 +215,7 @@ for attempt in 1 2; do
       done
     
       echo "Starting Vivado job for ${job_name}..."
+      : > "$result_file"  # the stall check reads its age
       setsid vivado -mode batch -nolog -nojournal -source $SYNTH_SCRIPT -tclargs $ARCHITECTURE_NAME $enq_ena 16 $queue_size > "$log_file" 2>&1 &
     
       # Mark job as running
