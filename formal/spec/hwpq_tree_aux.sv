@@ -1,29 +1,19 @@
 `default_nettype none
-// White-box addendum for the register tree designs.
-//
-// Kept separate from hwpq_spec.sv, which reads only the six interface ports and
-// so binds to every architecture unchanged. This file reaches inside one family,
-// and keeping the two apart stops the portable spec acquiring module-specific
-// dependencies.
-//
-// register_tree derives head_valid from a hand-computed countdown loaded with
-// CLIMB_CYCLES/SINK_CYCLES rather than from a heap scan. The timer is a claim
-// that the head is trustworthy by now, so asserting it against itself proves
-// nothing. Inverting it proves the claim is conservative: whenever the timer
-// says the head is valid, the heap does hold. Simulation can only sample whether
-// the cycle count was large enough; this decides it for every reachable state.
-//
-// `heap_holds` is the design's own definition, taken verbatim from the
-// commented-out detector at register_tree.sv:338-344 - the alternative the
-// author measured against but did not ship.
+// White-box addendum for the register trees: the settle countdowns never release early.
+// Kept apart from hwpq_spec.sv, which reads only the interface and binds to every module.
+// head_valid gates the write side and must imply the full heap order; head_ready gates the
+// read side and must imply that the root outranks every node.
 
 module hwpq_tree_aux #(
     parameter int DATA_WIDTH   = 3,
-    parameter int NODES_NEEDED = 7
+    parameter int NODES_NEEDED = 7,
+    // 1 when the read side can reopen before the full settle; generates c_head_early.
+    parameter bit EARLY_HEAD   = 0
 ) (
     input var logic                  i_CLK,
     input var logic                  i_RSTn,
     input var logic                  head_valid,
+    input var logic                  head_ready,
     input var logic [DATA_WIDTH-1:0] queue      [NODES_NEEDED]
 );
 
@@ -37,11 +27,7 @@ module hwpq_tree_aux #(
     end
   end
 
-  // The weaker claim that actually matters at the interface: the root outranks
-  // everything held. Implied by the full invariant, but worth asserting
-  // separately - if the timer turns out to guarantee the head without
-  // guaranteeing full heap order, that is a materially different result and
-  // this is what distinguishes them.
+  // The root outranks every node: weaker than heap_holds, and all the read side needs.
   logic head_outranks_all;
   always_comb begin : root_dominates
     head_outranks_all = 1'b1;
@@ -50,17 +36,25 @@ module hwpq_tree_aux #(
     end
   end
 
-  // The timer never claims validity before the heap has settled.
   a_timer_is_sound : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
       head_valid |-> heap_holds);
 
   a_timer_head_is_max : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
       head_valid |-> head_outranks_all);
 
-  // Anti-vacuity. If head_valid were stuck low the lemma would prove while
-  // saying nothing at all; if it were stuck high the timer would not exist.
-  c_timer_valid   : cover property (@(posedge i_CLK) disable iff (!i_RSTn) head_valid);
+  a_head_ready_is_max : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      head_ready |-> head_outranks_all);
+
+  // Anti-vacuity: a countdown stuck low proves the asserts while saying nothing.
+  c_timer_valid    : cover property (@(posedge i_CLK) disable iff (!i_RSTn) head_valid);
   c_timer_counting : cover property (@(posedge i_CLK) disable iff (!i_RSTn) !head_valid);
+
+  generate
+    if (EARLY_HEAD) begin : g_early_head
+      c_head_early : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
+          head_ready && !head_valid);
+    end
+  endgenerate
 
 endmodule
 

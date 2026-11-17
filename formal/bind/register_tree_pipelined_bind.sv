@@ -2,7 +2,8 @@
 
 // Port-map explicitly rather than `.*`, and pass every parameter explicitly.
 
-// HAS_BUSY: both readies drop together while the settle countdown runs.
+// HAS_BUSY: the readies drop after a command; the read side returns first, once the root
+// outranks the tree.
 // MAX_SETTLE is taken from the DUT's own SETTLE_CYCLES localparam rather than
 // hardcoded, so it tracks QUEUE_SIZE automatically.
 // HAS_FULL: !o_write_ready means full, not merely busy.
@@ -33,11 +34,13 @@ bind register_tree_pipelined hwpq_spec #(
 
 bind register_tree_pipelined hwpq_tree_aux #(
     .DATA_WIDTH  (DATA_WIDTH),
-    .NODES_NEEDED(NODES_NEEDED)
+    .NODES_NEEDED(NODES_NEEDED),
+    .EARLY_HEAD  (HEAD_CYCLES < SETTLE_CYCLES)
 ) u_aux (
     .i_CLK     (i_CLK),
     .i_RSTn    (i_RSTn),
     .head_valid(head_valid),
+    .head_ready(head_ready),
     .queue     (queue)
 );
 

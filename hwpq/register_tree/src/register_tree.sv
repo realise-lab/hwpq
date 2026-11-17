@@ -54,6 +54,8 @@ module register_tree #(
   localparam int CLIMB_CYCLES = (TREE_DEPTH + 1) / 2;
   localparam int SINK_CYCLES  = TREE_DEPTH / 2;
   localparam int SETTLE_MAX   = (CLIMB_CYCLES > SINK_CYCLES) ? CLIMB_CYCLES : SINK_CYCLES;
+  // After a dequeue or replace the root outranks the tree within one cycle; the sink goes on.
+  localparam int HEAD_CYCLES  = (SINK_CYCLES < 1) ? SINK_CYCLES : 1;
   localparam int CNT_W        = $clog2(SETTLE_MAX + 1);
 
   //----------------------------------------------------------------------
@@ -71,8 +73,10 @@ module register_tree #(
   logic enqueue, dequeue, replace;
   logic head_valid, can_accept;
 
-  // Settle countdown (see the settled-detector section below)
+  // Settle and head countdowns (see the settled-detector section below)
   logic [CNT_W-1:0] settle_cnt, next_settle_cnt;
+  logic [CNT_W-1:0] head_cnt, next_head_cnt;
+  logic head_ready;
 
   // Results of each operation - calculated in parallel
   logic [DATA_WIDTH-1:0] swap_result[NODES_NEEDED];
@@ -109,10 +113,11 @@ module register_tree #(
   // Signals assignments
   //----------------------------------------------------------------------
   // A command is refused unless the queue can honor it (this also gates size).
-  // Enqueue/dequeue gate on full/empty; replace pops-and-pushes so needs neither.
+  // Replace needs a known head, or room when empty; a replace-only build takes either ready.
   assign enqueue = ENQ_ENA && i_wrt && !i_read && o_write_ready;
   assign dequeue = !i_wrt && i_read && o_read_ready;
-  assign replace = i_wrt && i_read && can_accept && head_valid;
+  assign replace = i_wrt && i_read && (ENQ_ENA ? (o_read_ready || (empty && o_write_ready))
+                                               : (o_read_ready || o_write_ready));
   // Size counter signals
   assign empty = (size <= 0);
   assign full = (size >= QUEUE_SIZE);
@@ -121,7 +126,7 @@ module register_tree #(
   // !empty alone would claim data during the fill phase, before any placeholder is a
   // real element. ENQ_ENA constant-folds the comparator away in enqueue-capable
   // builds, which never seat a placeholder at the head.
-  assign o_read_ready  = !empty && head_valid && (ENQ_ENA || o_data != '1);
+  assign o_read_ready  = !empty && head_ready && (ENQ_ENA || o_data != '1);
   assign o_data = queue[0];
 
   //----------------------------------------------------------------------
@@ -311,12 +316,14 @@ module register_tree #(
       end
       size            <= 0;
       settle_cnt      <= '0;  // reset queue is settled
+      head_cnt        <= '0;
     end else begin
       for (int i = 0; i < NODES_NEEDED; i++) begin
         queue[i] <= next_queue[i];
       end
       size            <= next_size;
       settle_cnt      <= next_settle_cnt;
+      head_cnt        <= next_head_cnt;
     end
   end
 
@@ -336,6 +343,19 @@ module register_tree #(
 
   assign head_valid = (settle_cnt == 0);
 
+  // The read side reopens once the root outranks the tree, the write side once all of it has
+  // settled. A command cycle skips that cycle's sift passes; every command reloads both
+  // countdowns, which covers the sift still in flight. An enqueue's climb can reach the root,
+  // so it holds the read side for the whole climb.
+  always_comb begin : calculate_next_head_cnt
+    if (enqueue) next_head_cnt = CLIMB_CYCLES[CNT_W-1:0];
+    else if (dequeue || replace) next_head_cnt = HEAD_CYCLES[CNT_W-1:0];
+    else if (head_cnt != 0) next_head_cnt = head_cnt - 1'b1;
+    else next_head_cnt = '0;
+  end
+
+  assign head_ready = (head_cnt == 0);
+
   // Data-adaptive alternatives (release earlier, but put a cone on the critical
   // path). O(1) root-local is sound only without enqueue (a climber can outrank
   // the root while hidden below it); O(N) invariant covers enqueue too.
@@ -353,8 +373,7 @@ module register_tree #(
   //   end
   //   assign head_valid = !viol;
 
-  // Accepting a command mid-settle would discard the pending heapify (swap_result
-  // is applied only in the default branch), so absorb requires the same quiescence.
+  // An enqueue searches the leaves for an empty slot, which a sink in flight has not reached.
   assign can_accept = head_valid;
 
 endmodule

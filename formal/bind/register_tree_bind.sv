@@ -2,7 +2,8 @@
 
 // Port-map explicitly rather than `.*`, and pass every parameter explicitly.
 
-// HAS_BUSY: both readies drop together while the settle countdown runs.
+// HAS_BUSY: the readies drop after a command; the read side returns first, once the root
+// outranks the tree.
 // MAX_SETTLE is taken from the DUT's own timer localparams, so it tracks QUEUE_SIZE. A
 // replace-only build never climbs, so its bound is SINK_CYCLES.
 // HAS_FULL: !o_write_ready means full, not merely busy.

@@ -6,7 +6,7 @@ module register_tree_pipelined_tb;
   localparam int DATA_WIDTH = 16;
   localparam bit ENQ_ENA    = 1;
 
-  `define TB_CHECK_INTERNAL check_heap();
+  `define TB_CHECK_INTERNAL if (u_dut.head_valid) check_heap();
 
   `include "hwpq_tb_common.svh"
 
@@ -28,11 +28,11 @@ module register_tree_pipelined_tb;
   assign settled = o_write_ready || o_read_ready;
   // The heap invariant, checked by hierarchical reference. `queue` is an
   // implicit binary heap (children of i are 2i+1, 2i+2), and NODES_NEEDED ==
-  // QUEUE_SIZE for the 2^k-1 sizes this module requires. Safe to check at
-  // every settled point: a_timer_is_sound in formal/spec/hwpq_tree_aux.sv
-  // proves head_valid implies heap_holds, so the settle timer never releases
-  // the head before the invariant holds. The port alone cannot see a
-  // violation: a differently shaped heap still returns a plausible o_data.
+  // QUEUE_SIZE for the 2^k-1 sizes this module requires. Checked only once
+  // head_valid: the read side reopens while lower levels still sink, and
+  // a_timer_is_sound in formal/spec/hwpq_tree_aux.sv proves head_valid implies
+  // the invariant. The port alone cannot see a violation: a differently shaped
+  // heap still returns a plausible o_data.
   task automatic check_heap();
     for (int i = 0; i < QUEUE_SIZE; i++) begin
       if (2 * i + 1 < QUEUE_SIZE)

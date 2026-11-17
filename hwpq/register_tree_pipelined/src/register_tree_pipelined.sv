@@ -52,6 +52,8 @@ module register_tree_pipelined #(
   // starting on an even level. A climb whose leaf parent sits on an odd level (odd TREE_DEPTH)
   // waits one cycle more.
   localparam int SETTLE_CYCLES = TREE_DEPTH - int'(TREE_DEPTH % 2 == 0);
+  // After a dequeue or replace the root outranks the tree within two cycles; the sink goes on.
+  localparam int HEAD_CYCLES   = (SETTLE_CYCLES < 2) ? SETTLE_CYCLES : 2;
   localparam int CNT_W         = $clog2(SETTLE_CYCLES + 1);
 
   //----------------------------------------------------------------------
@@ -72,6 +74,8 @@ module register_tree_pipelined #(
   logic head_valid, can_accept;
 
   logic [CNT_W-1:0] settle_cnt, next_settle_cnt;
+  logic [CNT_W-1:0] head_cnt, next_head_cnt;
+  logic head_ready;
 
   int found_empty_index;
 
@@ -93,10 +97,11 @@ module register_tree_pipelined #(
   //----------------------------------------------------------------------
 
   // A command is refused unless the queue can honor it (this also gates size).
-  // Enqueue/dequeue gate on full/empty; replace pops-and-pushes so needs neither.
+  // Replace needs a known head, or room when empty; a replace-only build takes either ready.
   assign enqueue = (ENQ_ENA && i_wrt && !i_read) ? o_write_ready : 1'b0;
   assign dequeue = (!i_wrt && i_read) ? o_read_ready : 1'b0;
-  assign replace = (i_wrt && i_read) ? (can_accept && head_valid) : 1'b0;
+  assign replace = (i_wrt && i_read) ? (ENQ_ENA ? (o_read_ready || (empty && o_write_ready))
+                                                : (o_read_ready || o_write_ready)) : 1'b0;
 
   // full/empty are REGISTERED (see update_registers): flopping the >=QUEUE_SIZE
   // comparator keeps it off the decode path; value is identical every cycle.
@@ -108,7 +113,7 @@ module register_tree_pipelined #(
   // !empty alone would claim data during the fill phase, before any placeholder is a
   // real element. ENQ_ENA constant-folds the comparator away in enqueue-capable
   // builds, which never seat a placeholder at the head.
-  assign o_read_ready = !empty && head_valid && (ENQ_ENA || o_data != '1);
+  assign o_read_ready = !empty && head_ready && (ENQ_ENA || o_data != '1);
   assign o_data = queue[0];
 
   //----------------------------------------------------------------------
@@ -261,6 +266,7 @@ module register_tree_pipelined #(
       size            <= 0;
       even_cycle_flag <= 1'b1;
       settle_cnt      <= '0;  // reset queue is settled
+      head_cnt        <= '0;
       full            <= 1'b0;
       empty           <= 1'b1;  // size resets to 0
     end else begin
@@ -270,6 +276,7 @@ module register_tree_pipelined #(
       size            <= next_size;
       even_cycle_flag <= next_even_cycle_flag;
       settle_cnt      <= next_settle_cnt;
+      head_cnt        <= next_head_cnt;
       full            <= next_full;
       empty           <= next_empty;
     end
@@ -277,7 +284,7 @@ module register_tree_pipelined #(
 
   // Settled detector: uniform settle countdown (see localparams). head_valid is
   // a compare against a counter flop, not an O(N) heap scan, to keep it off the
-  // critical path (that cone failed by ~1ns when flopped)
+  // critical path.
   always_comb begin : calculate_next_settle_cnt
     if (enqueue || dequeue || replace) begin
       next_settle_cnt = SETTLE_CYCLES[CNT_W-1:0];
@@ -290,12 +297,22 @@ module register_tree_pipelined #(
 
   assign head_valid = (settle_cnt == 0);
 
+  // The read side reopens once the root outranks the tree, the write side once all of it has
+  // settled. A command cycle skips that cycle's sift pass and restarts at an even level;
+  // every command reloads both countdowns, which covers the sift still in flight. An
+  // enqueue's climb can reach the root, so it holds the read side for the whole climb.
+  always_comb begin : calculate_next_head_cnt
+    if (enqueue) next_head_cnt = SETTLE_CYCLES[CNT_W-1:0];
+    else if (dequeue || replace) next_head_cnt = HEAD_CYCLES[CNT_W-1:0];
+    else if (head_cnt != 0) next_head_cnt = head_cnt - 1'b1;
+    else next_head_cnt = '0;
+  end
+
+  assign head_ready = (head_cnt == 0);
+
   // Data-adaptive alternative (releases earlier, but puts an O(N) cone on the
   // critical path). This module needs the FULL invariant even without enqueue:
   // it sifts one level per cycle, so root-local reports settled early.
-  
-  // this decreased FMax but ultimately increased throughput for some queue sizes
-  
   //   always_comb begin : heap_invariant_detector
   //     head_valid = 1'b1;
   //     for (int i = 0; i < NODES_NEEDED; i++) begin
@@ -304,8 +321,7 @@ module register_tree_pipelined #(
   //     end
   //   end
 
-  // Accepting a command mid-settle would discard the pending heapify (swap_result
-  // is applied only in the default branch), so absorb requires the same quiescence.
+  // An enqueue searches the leaves for an empty slot, which a sink in flight has not reached.
   assign can_accept = head_valid;
 
 endmodule

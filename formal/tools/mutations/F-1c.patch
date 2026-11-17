@@ -34,28 +34,28 @@ index 847471c..7439a88 100644
  
    always_ff @(posedge i_CLK or negedge i_RSTn) begin
 diff --git a/hwpq/register_tree/src/register_tree.sv b/hwpq/register_tree/src/register_tree.sv
-index 441b51e..3d89120 100644
+index f22356d..1d36e38 100644
 --- a/hwpq/register_tree/src/register_tree.sv
 +++ b/hwpq/register_tree/src/register_tree.sv
-@@ -135,7 +135,7 @@ module register_tree #(
-   //
-   // The ENQ_ENA term constant-folds the comparator away in enqueue-capable builds,
-   // which never seat a placeholder at the head.
--  assign o_read_ready  = !empty && head_valid && (ENQ_ENA || o_data != '1);
-+  assign o_read_ready  = !empty && head_valid;
+@@ -110,7 +110,7 @@ module register_tree #(
+   // !empty alone would claim data during the fill phase, before any placeholder is a
+   // real element. ENQ_ENA constant-folds the comparator away in enqueue-capable
+   // builds, which never seat a placeholder at the head.
+-  assign o_read_ready  = !empty && head_ready && (ENQ_ENA || o_data != '1);
++  assign o_read_ready  = !empty && head_ready;
    assign o_data = queue[0];
  
    //----------------------------------------------------------------------
 diff --git a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
-index 4d8c3e7..7f46f33 100644
+index f3010bf..e7a32ea 100644
 --- a/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
 +++ b/hwpq/register_tree_pipelined/src/register_tree_pipelined.sv
-@@ -108,7 +108,7 @@ module register_tree_pipelined #(
+@@ -113,7 +113,7 @@ module register_tree_pipelined #(
    // !empty alone would claim data during the fill phase, before any placeholder is a
    // real element. ENQ_ENA constant-folds the comparator away in enqueue-capable
    // builds, which never seat a placeholder at the head.
--  assign o_read_ready = !empty && head_valid && (ENQ_ENA || o_data != '1);
-+  assign o_read_ready = !empty && head_valid;
+-  assign o_read_ready = !empty && head_ready && (ENQ_ENA || o_data != '1);
++  assign o_read_ready = !empty && head_ready;
    assign o_data = queue[0];
  
    //----------------------------------------------------------------------

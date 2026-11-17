@@ -30,7 +30,7 @@ Ordered by the number of findings, ascending.
 
 ### 2.1 The register family
 
-`register_array`, `register_array_pipelined`, `register_tree` and `register_tree_pipelined`, in both `ENQ_ENA` builds, at `QUEUE_SIZE=4` and `QUEUE_SIZE=7` respectively with `DATA_WIDTH=3`. These four are the soundest modules in the library. They are clean at baseline in their enqueue-capable builds and carry one finding between them, which is a contract question rather than a defect and was contained rather than repaired.
+`register_array`, `register_array_pipelined`, `register_tree` and `register_tree_pipelined`, in both `ENQ_ENA` builds, at `QUEUE_SIZE=4` and `QUEUE_SIZE=7` respectively with `DATA_WIDTH=3`. These four are the soundest modules in the library. They are clean at baseline in their enqueue-capable builds and carry two findings between them. F-1 is a contract question rather than a defect and was contained rather than repaired. F-37 matches the tree settle timers to the sift.
 
 #### F-1: a replace-only queue advertises data it cannot deliver
 
@@ -73,6 +73,14 @@ Two alternatives were rejected. Resetting to `'0` rather than `'1` does not work
 Containment is the terminal disposition. Reopening F-1 requires a caller that violates the contract and is harmed by the inert result, which would be a new finding.
 
 Extending the gate to `bram_tree_pipelined` produced a standing rule. Gating the port alone would have left `cmd_dequeue` accepting a dequeue that `o_read_ready` no longer advertises, which is F-22 pointing the other way. When a ready is gated, the command it guards is gated in the same commit, or the reason not to is stated.
+
+#### F-37: the tree settle timers
+
+`8ce51aa`, `56869c5`, `24c91e2`.
+
+`register_tree` sifts two levels per cycle, and each sift pass compares only the nodes on its own level, as the architecture is published. A pass over every node chains the whole sink into one cycle's logic. A sink or a climb therefore takes up to `TREE_DEPTH/2` cycles, and `CLIMB_CYCLES` and `SINK_CYCLES` cover it. `register_tree_pipelined` sifts one level per cycle and settles in `TREE_DEPTH - 1` cycles, or `TREE_DEPTH` when a climb's leaf parent sits on an odd level.
+
+The read side reopens before the write side. After a dequeue or replace the root outranks every node within one cycle, or two in the pipelined build, while the sink goes on below it. `o_read_ready` follows that shorter head countdown and `o_write_ready` waits for the full settle. An enqueue's climb can reach the root, so it holds the read side for the whole climb. `hwpq_tree_aux.sv` proves both halves on both modules: the settle countdown implies the full heap invariant, and the head countdown implies the root outranks every node.
 
 ### 2.2 `systolic_array`
 
