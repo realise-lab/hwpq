@@ -6,7 +6,7 @@ Findings keep their original `F-n` numbers. They label rows in the regression ma
 
 ## 1. Summary
 
-Eight of the library's nine architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The ninth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The eight are covered by fourteen proof configurations, which differ by `ENQ_ENA` build and, for `systolic_array`, by white-box addendum. All fourteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
+Eight of the library's ten architectures are proven against a shared, interface-only specification that binds to each of them unchanged. `hybrid_tree` does not compile under the open-source toolchain and is out of scope, and `hybrid_systolic_bram_heap` has no proof configuration. The eight are covered by fourteen proof configurations, which differ by `ENQ_ENA` build and, for `systolic_array`, by white-box addendum. All fourteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
 
 The design as it stood when verification began does not. Run against the current harness, the pre-verification RTL at `af089e5` gives:
 

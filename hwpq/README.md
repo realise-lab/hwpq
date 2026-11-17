@@ -13,6 +13,7 @@
 | BRAM Tree Pipelined      | No                       | $N/A$           | $O(4)$                  |
 | BRAM Tree (Pair)         | No                       | $O(log\ N)$     | $O(log\ N)$             |
 | Hybrid Tree              | No (Working in Progress) | $O(1)$          | $O(1)$                  |
+| Hybrid Systolic BRAM Heap | No                      | $O(1)$          | $O(1)$ to $O(log\ N)$   |
 
 ## Register-based Implementations
 
@@ -51,6 +52,10 @@ A BRAM tree that stores each pair of sibling nodes in one BRAM word, so every st
 ### [Hybrid Tree](./hybrid_tree/README.md)
 
 A combined approach that utilizes both registers and memory elements, attempting to balance the performance advantages of registers with the resource efficiency of memory-based storage.
+
+### [Hybrid Systolic BRAM Heap](./hybrid_systolic_bram_heap/README.md)
+
+Two systolic buffers in front of a bank of pair BRAM-trees. Enqueues complete in one cycle, and spreading spills and pulls across many trees hides their BRAM latency; a dequeue or replace waits only for a tree root that is still settling.
 
 ### [Systolic Array](./systolic_array/README.md)
 

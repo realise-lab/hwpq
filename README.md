@@ -81,6 +81,7 @@ Re-running synthesis is not necessary as all data is already available within ea
       - bram_tree
       - bram_tree_pipelined
       - bram_tree_pair
+      - hybrid_systolic_bram_heap
       - hybrid_tree
 
 4.  Alternatively, if you just want to synthesize an architecture under a specific configurations, you could also run the tcl scipt instead:
@@ -99,6 +100,7 @@ Re-running synthesis is not necessary as all data is already available within ea
       - bram_tree
       - bram_tree_pipelined
       - bram_tree_pair
+      - hybrid_systolic_bram_heap
       - hybrid_tree
 
     - **`<enqueue_on/off>`**: `1` (on) or `0` (off)
@@ -148,6 +150,8 @@ Re-running synthesis is not necessary as all data is already available within ea
 - #### [BRAM Tree Pipelined](hwpq/bram_tree_pipelined/README.md)
 
 - #### [BRAM Tree (Pair)](hwpq/bram_tree_pair/README.md)
+
+- #### [Hybrid Systolic BRAM Heap](hwpq/hybrid_systolic_bram_heap/README.md)
 
 - #### [Hybrid Tree](hwpq/hybrid_tree/README.md)
 
