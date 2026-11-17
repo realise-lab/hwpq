@@ -6,7 +6,7 @@ Findings keep their original `F-n` numbers. They label rows in the regression ma
 
 ## 1. Summary
 
-Seven of the library's eight architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The eighth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The seven are covered by thirteen proof configurations, which differ by `ENQ_ENA` build and, for `systolic_array`, by white-box addendum. All thirteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
+Eight of the library's nine architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The ninth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The eight are covered by fourteen proof configurations, which differ by `ENQ_ENA` build and, for `systolic_array`, by white-box addendum. All fourteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
 
 The design as it stood when verification began does not. Run against the current harness, the pre-verification RTL at `af089e5` gives:
 
@@ -603,7 +603,7 @@ The two manifests carry aligned column positions deliberately, so that one drive
 
 Limits on what any of this claims:
 
-- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; and `QUEUE_SIZE=7, DATA_WIDTH=2` for both BRAM modules.
+- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; and `QUEUE_SIZE=7, DATA_WIDTH=2` for the three BRAM modules.
 - Formal analysis here is two-state. It cannot model X propagation, which is why the F-23 question had to be settled by simulation and synthesis instead.
 - The claims are relative to the shared specification and its addenda. F-32 is the measured demonstration that this matters: a module can satisfy the entire portable interface specification while its internal accounting is wrong.
 - The baseline measures the design as it stood when verification began, once a common interface existed, and not the design as originally written. The uniform six-port interface arrived at `e7c20ad` and is part of this work.

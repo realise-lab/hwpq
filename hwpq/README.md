@@ -9,8 +9,9 @@
 | Register Tree            | Yes                      | $O(log\ N)$     | $O(1)$                  |
 | Register Tree Pipelined  | Yes                      | $O(log\ N)$     | $O(2)$                  |
 | Systolic Array           | Yes                      | $O(1)$          | $O(1)$                  |
-| BRAM Tree                | No                       | $N/A$           | $O(8)$                  |
+| BRAM Tree                | No                       | $O(log\ N)$     | $O(8)$                  |
 | BRAM Tree Pipelined      | No                       | $N/A$           | $O(4)$                  |
+| BRAM Tree (Pair)         | No                       | $O(log\ N)$     | $O(log\ N)$             |
 | Hybrid Tree              | No (Working in Progress) | $O(1)$          | $O(1)$                  |
 
 ## Register-based Implementations
@@ -40,6 +41,10 @@ An implementation that leverages Block RAM (BRAM) for storing queue elements, re
 ### [BRAM Tree Pipelined](./bram_tree_pipelined/README.md)
 
 A pipelined version of the BRAM tree architecture that improves throughput by breaking down one BRAM into mutiples that represent each depth of tree.
+
+### [BRAM Tree (Pair)](./bram_tree_pair/README.md)
+
+A BRAM tree that stores each pair of sibling nodes in one BRAM word, so every step of an operation reads both children at once and moves one level per cycle, in a single simple dual-port BRAM.
 
 ## Hybrid and Advanced Implementations
 
