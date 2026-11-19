@@ -1,0 +1,22 @@
+# F-22 mutation: the port advertised a dequeue the decode would discard
+#
+#   git apply formal/tools/mutations/F-22.patch && formal/run.sh bram_tree_pipelined
+#
+# Expect: 5 cex incl a_read_ready_is_acceptable (15 proven/5 cex)
+#
+# WHY A PATCH AND NOT A REVERT: reverting the fixing commit conflicts; the line
+# was rewritten by later fixes. This re-gates o_read_ready on root_done while
+# the decode still needs sift_done: the same mechanism exactly.
+diff --git a/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv b/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
+index d2928c0..a51230a 100644
+--- a/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
++++ b/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
+@@ -592,7 +592,7 @@ module bram_tree_pipelined #(
+   // Gating on sift_done costs nothing: no command could be accepted inside that
+   // window anyway. The only thing lost is an early data-valid hint, and the
+   // six-port interface gives no way for a caller to consume one.
+-  assign o_read_ready  = !(queue_size == 0) && accept_ok && head_servable;
++  assign o_read_ready  = !(queue_size == 0) && root_done && head_servable;
+   assign o_data  = level_0;
+ 
+ endmodule

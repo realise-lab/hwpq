@@ -8,7 +8,7 @@ This is a pipelined version of the register tree architecture that divides the c
 
 ![register_tree_cycle](../../imgs/register_tree_cycle.png)
 
-In a standard register tree setup, as illustrated in this figure, both dequeue and replace operations complete in a single cycle, while the enqueue operation requires two cycles to propagate the new entry to its correct position.
+In the standard register tree, each cycle sifts two levels. After a dequeue or replace the root outranks every other node within one cycle, so the next read can start while the sink continues below it; a write waits for the sink or climb to reach the bottom of the tree.
 
 ![register_tree_step](../../imgs/register_tree_step.png)
 
@@ -16,7 +16,7 @@ A detailed view of the compare-and-swap operation occurring between cycle 2 and 
 
 ![register_tree_pieplined](../../imgs/register_tree_pipelined.png)
 
-Illustration of how data flows in cycle-based operation after pipelining.
+Illustration of how data flows in cycle-based operation after pipelining. The pipelined tree sifts one level per cycle. Its read side reopens two cycles after a dequeue or replace, and a write waits about one cycle per level.
 
 ## Performance comparison against non-pipelined
 
