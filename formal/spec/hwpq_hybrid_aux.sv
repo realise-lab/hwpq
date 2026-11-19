@@ -1,272 +1,360 @@
-// White-box helper properties for hybrid_systolic_heap over hybrid_tree_standin trees. Bound by
-// hybrid_systolic_heap_bind.sv; reads the hybrid, its stand-ins' contract models and the
-// spec's counts by hierarchical reference, so it binds only alongside both.
+// White-box helpers for hybrid_systolic_heap over hybrid_tree_standin trees, bound by
+// hybrid_systolic_heap_bind.sv. Reads the hybrid, each stand-in's contract model and the spec's
+// tracked value and counts by hierarchical reference, so it binds only in that proof.
+//
+// Terms:
+//   main buffer    IB/OB, the systolic buffer whose tail spills into the trees
+//   heap buffer    heap_IB/heap_OB, the systolic buffer that takes tree tops
+//                  Each buffer is an input half (IB) and an output half (OB); OB[0] is its head.
+//   model          a stand-in tree's contents: its contract's sorted m[] and count
+//   tracked        the spec's symbolic value tv; counting its copies proves the count for every
+//                  value
+//   spill          the main buffer's tail moves into a tree (the spill target)
+//   pull           the largest tree top moves into the heap buffer
+//   evict          the largest tree top swaps with the heap buffer's head
+//   owed pop       a pull or evict from a busy tree takes its top at once and pops it once idle
+//   owed evict     an evict from a busy tree: the heap head goes to the evict target instead
+//   direct write   with both buffers full, a caller's write goes straight to the evict target
+//
+// Sections follow the helper stages in hybrid_systolic_heap_standin.cfg; each stage is proved
+// with the earlier ones assumed.
 module hwpq_hybrid_aux
   import bram_tree_pkg::*;
 (
     input logic i_CLK,
     input logic i_RSTn
 );
-  localparam int H  = SYSTOLIC_QUEUE_SIZE / 2;
-  localparam int TQ = BRAM_TREE_QUEUE_SIZE;
-  localparam int NW = $clog2(2 * SYSTOLIC_QUEUE_SIZE + TREE_COUNT * (TQ + 1) + 1) + 1;
+  localparam int HALF        = SYSTOLIC_QUEUE_SIZE / 2;  // slots in each buffer half
+  localparam int TREE_SIZE   = BRAM_TREE_QUEUE_SIZE;
+  localparam int TREE_IDX_W  = $clog2(TREE_COUNT);
+  localparam int MODEL_CNT_W = $clog2(TREE_SIZE + 1);
+  // Wide enough for every slot of both buffers and every tree, its write in flight included.
+  localparam int CNT_W       = $clog2(2*SYSTOLIC_QUEUE_SIZE + TREE_COUNT*(TREE_SIZE + 1) + 1) + 1;
+  localparam int BUF_CNT_W   = $clog2(SYSTOLIC_QUEUE_SIZE + 1) + 1;
 
-  wire [DATA_WIDTH-1:0] tv = hybrid_systolic_heap.u_spec.tv;
+  // ---- aliases into the hybrid -----------------------------------------------------------------
 
-  // Per tree: copies in its model, plus a write in flight, less a top already taken by a pull or
-  // evict that the tree has yet to pop (a read in flight, or an owed pop).
-  logic [NW-1:0] t_tv [TREE_COUNT];
-  logic [NW-1:0] t_all[TREE_COUNT];
+  wire [DATA_WIDTH-1:0] tracked = hybrid_systolic_heap.u_spec.tv;
+  wire [DATA_WIDTH-1:0] head    = hybrid_systolic_heap.o_data;
+  wire                  read_ready = hybrid_systolic_heap.o_read_ready;
 
-  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree
+  logic [DATA_WIDTH-1:0] main_in [HALF], main_out [HALF], heap_buf_in [HALF], heap_buf_out [HALF];
+  always_comb
+    for (int i = 0; i < HALF; i++) begin
+      main_in[i]      = hybrid_systolic_heap.IB[i];
+      main_out[i]     = hybrid_systolic_heap.OB[i];
+      heap_buf_in[i]  = hybrid_systolic_heap.heap_IB[i];
+      heap_buf_out[i] = hybrid_systolic_heap.heap_OB[i];
+    end
+  wire [DATA_WIDTH-1:0] main_tail = main_in[HALF-1];
+
+  // Each buffer's command, as systolic_array's interface, and its state.
+  wire                  main_write      = hybrid_systolic_heap.m_wrt;
+  wire                  main_read       = hybrid_systolic_heap.m_read;
+  wire [DATA_WIDTH-1:0] main_data       = hybrid_systolic_heap.m_data;
+  wire                  main_read_ready = hybrid_systolic_heap.m_rd_rdy;
+  wire                  main_enqueue_ok = hybrid_systolic_heap.m_enq_ok;
+  wire                  main_empty      = hybrid_systolic_heap.systolic_empty;
+  wire                  main_dequeued   = hybrid_systolic_heap.m_dequeue_pending;  // last cycle
+  wire [DATA_WIDTH-1:0] main_forecast   = hybrid_systolic_heap.m_forecast;  // head after it
+  wire                  heap_buf_write      = hybrid_systolic_heap.h_wrt;
+  wire                  heap_buf_read       = hybrid_systolic_heap.h_read;
+  wire [DATA_WIDTH-1:0] heap_buf_data       = hybrid_systolic_heap.h_data;
+  wire                  heap_buf_read_ready = hybrid_systolic_heap.h_rd_rdy;
+  wire                  heap_buf_enqueue_ok = hybrid_systolic_heap.h_enq_ok;
+  wire                  heap_buf_empty      = hybrid_systolic_heap.heap_systolic_empty;
+  wire                  heap_buf_dequeued   = hybrid_systolic_heap.h_dequeue_pending;
+  wire [DATA_WIDTH-1:0] heap_buf_forecast   = hybrid_systolic_heap.h_forecast;
+  wire [DATA_WIDTH-1:0] heap_buf_head       = hybrid_systolic_heap.h_head;
+
+  // Tree commands issued this cycle, and the registered choice of the largest tree top.
+  wire [TREE_COUNT-1:0]  tree_write = hybrid_systolic_heap.heap_write;
+  wire [TREE_COUNT-1:0]  tree_read  = hybrid_systolic_heap.heap_read;
+  wire [TREE_COUNT-1:0]  tree_ready = hybrid_systolic_heap.heap_ready;
+  wire [TREE_COUNT-1:0]  owed       = hybrid_systolic_heap.owed;
+  logic [DATA_WIDTH-1:0] tree_write_data [TREE_COUNT];
+  always_comb
+    for (int k = 0; k < TREE_COUNT; k++) tree_write_data[k] = hybrid_systolic_heap.heap_input[k];
+  wire [DATA_WIDTH-1:0] max_top       = hybrid_systolic_heap.max_q;
+  wire [TREE_IDX_W-1:0] max_tree      = hybrid_systolic_heap.max_idx_q;  // = max_node_idx
+  wire                  max_valid     = hybrid_systolic_heap.max_v_q;
+  wire                  any_top_moved = hybrid_systolic_heap.top_moved_any;
+
+  wire                  pull         = hybrid_systolic_heap.pull_fire;
+  wire                  evict        = hybrid_systolic_heap.evict_fire;
+  wire                  spill        = hybrid_systolic_heap.spill_fire;
+  wire                  owed_evict   = hybrid_systolic_heap.owe_evict;
+  wire                  direct_write = hybrid_systolic_heap.dw_fire;
+  wire [TREE_IDX_W-1:0] spill_target = hybrid_systolic_heap.spill_tgt;
+  wire [TREE_IDX_W-1:0] evict_target = hybrid_systolic_heap.evict_tgt;
+
+  // Each stand-in tree's model.
+  logic [DATA_WIDTH-1:0]  model     [TREE_COUNT][TREE_SIZE];
+  logic [MODEL_CNT_W-1:0] model_cnt [TREE_COUNT];
+  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_model
     always_comb begin
-      t_tv[k]  = '0;
-      t_all[k] = '0;
-      for (int i = 0; i < TQ; i++) begin
-        t_tv[k]  += NW'(hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i] == tv);
-        t_all[k] += NW'(hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i] != '0);
+      model_cnt[k] = hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt;
+      for (int i = 0; i < TREE_SIZE; i++)
+        model[k][i] = hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i];
+    end
+  end
+
+  // ---- counts ----------------------------------------------------------------------------------
+
+  // Per tree: elements in its model, plus a write in flight, less a top already taken by a pull
+  // or evict that the tree has yet to pop (a read in flight, or an owed pop).
+  logic [CNT_W-1:0] tree_count [TREE_COUNT], tree_tracked [TREE_COUNT];
+  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree_count
+    always_comb begin
+      tree_count[k]   = '0;
+      tree_tracked[k] = '0;
+      for (int i = 0; i < TREE_SIZE; i++) begin
+        tree_count[k]   += CNT_W'(model[k][i] != '0);
+        tree_tracked[k] += CNT_W'(model[k][i] == tracked);
       end
-      if (hybrid_systolic_heap.heap_write[k]) begin
-        t_tv[k]  += NW'(hybrid_systolic_heap.heap_input[k] == tv);
-        t_all[k] += NW'(hybrid_systolic_heap.heap_input[k] != '0);
+      if (tree_write[k]) begin
+        tree_count[k]   += CNT_W'(tree_write_data[k] != '0);
+        tree_tracked[k] += CNT_W'(tree_write_data[k] == tracked);
       end
-      if ((hybrid_systolic_heap.owed[k] || hybrid_systolic_heap.heap_read[k])
-          && hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt != '0) begin
-        t_tv[k]  -= NW'(hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[0] == tv);
-        t_all[k] -= NW'(1);
+      if ((owed[k] || tree_read[k]) && model_cnt[k] != '0) begin
+        tree_count[k]   -= CNT_W'(1);
+        tree_tracked[k] -= CNT_W'(model[k][0] == tracked);
       end
     end
+  end
 
-    // A tree owing a pop takes no write until the pop, so its top stays the value already taken.
+  // Per buffer: elements in its slots.
+  logic [BUF_CNT_W-1:0] main_count, main_tracked, heap_buf_count, heap_buf_tracked;
+  always_comb begin
+    main_count = '0; main_tracked = '0; heap_buf_count = '0; heap_buf_tracked = '0;
+    for (int i = 0; i < HALF; i++) begin
+      main_count       += BUF_CNT_W'(main_in[i] != '0) + BUF_CNT_W'(main_out[i] != '0);
+      main_tracked     += BUF_CNT_W'(main_in[i] == tracked) + BUF_CNT_W'(main_out[i] == tracked);
+      heap_buf_count   += BUF_CNT_W'(heap_buf_in[i] != '0) + BUF_CNT_W'(heap_buf_out[i] != '0);
+      heap_buf_tracked += BUF_CNT_W'(heap_buf_in[i] == tracked)
+                          + BUF_CNT_W'(heap_buf_out[i] == tracked);
+    end
+  end
+
+  // Whole queue: both buffers and every tree.
+  logic [CNT_W-1:0] queue_count, queue_tracked;
+  always_comb begin
+    queue_count   = '0;
+    queue_tracked = '0;
+    for (int i = 0; i < HALF; i++) begin
+      queue_count   += CNT_W'(main_in[i] != '0) + CNT_W'(main_out[i] != '0)
+                       + CNT_W'(heap_buf_in[i] != '0) + CNT_W'(heap_buf_out[i] != '0);
+      queue_tracked += CNT_W'(main_in[i] == tracked) + CNT_W'(main_out[i] == tracked)
+                       + CNT_W'(heap_buf_in[i] == tracked) + CNT_W'(heap_buf_out[i] == tracked);
+    end
+    for (int k = 0; k < TREE_COUNT; k++) begin
+      queue_count   += tree_count[k];
+      queue_tracked += tree_tracked[k];
+    end
+  end
+
+  // Low in the first cycle after reset, when $past still reads reset values.
+  logic has_past;
+  always_ff @(posedge i_CLK or negedge i_RSTn)
+    if (!i_RSTn) has_past <= 1'b0;
+    else         has_past <= 1'b1;
+
+  // ---- stage 1: per-tree, per-buffer and transfer facts ----------------------------------------
+
+  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree_facts
+    // The model holds model_cnt elements sorted largest first, then zeros.
+    logic model_sorted;
+    always_comb begin
+      model_sorted = 1'b1;
+      for (int i = 0; i < TREE_SIZE; i++) begin
+        model_sorted &= (model[k][i] != '0) == (i < model_cnt[k]);
+        if (i + 1 < TREE_SIZE) model_sorted &= model[k][i] >= model[k][i + 1];
+      end
+    end
+    // Each model stays sorted.
+    a_model_shape : assert property (@(posedge i_CLK) disable iff (!i_RSTn) model_sorted);
+    // No tree's top is the reserved all-ones value.
+    a_model_no_ones : assert property (@(posedge i_CLK) disable iff (!i_RSTn) model[k][0] != '1);
+    // A tree that owes a pop takes no write until the pop, so its top stays the value taken.
     a_owed_no_write : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.owed[k] |-> !hybrid_systolic_heap.heap_write[k]);
-
-    // With no top moved since it was registered, the max over tree tops is its tree's exact top:
-    // what a pull or evict takes is what the tree pops.
-    a_max_is_top : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.max_v_q && !hybrid_systolic_heap.top_moved_any
-        && hybrid_systolic_heap.max_idx_q == k && !hybrid_systolic_heap.owed[k]
-        |-> hybrid_systolic_heap.max_q == hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[0]);
-
-    // The model holds its cnt elements sorted, largest first, and zeros after them.
-    logic model_ok;
-    always_comb begin
-      model_ok = 1'b1;
-      for (int i = 0; i < TQ; i++) begin
-        model_ok &= (hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i] != '0)
-                    == (i < hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt);
-        if (i + 1 < TQ)
-          model_ok &= hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i]
-                      >= hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i + 1];
-      end
-    end
-    a_model_shape : assert property (@(posedge i_CLK) disable iff (!i_RSTn) model_ok);
+        owed[k] |-> !tree_write[k]);
     // A top taken but not yet popped is still in its tree.
     a_taken_held : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.owed[k] || hybrid_systolic_heap.heap_read[k]
-        |-> hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt != '0);
-    // Only a tree with more than its top can be busy when taken from, so an owed tree keeps one.
+        owed[k] || tree_read[k] |-> model_cnt[k] != '0);
+    // Only a tree with more than its top can be busy when taken from, so an owing tree keeps one.
     a_owed_deep : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.owed[k]
-        |-> hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt > 1);
-    a_model_no_ones : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[0] != '1);
+        owed[k] |-> model_cnt[k] > 1);
+    // With no top moved since it was registered, the registered max is its tree's exact top:
+    // what a pull or evict takes is what the tree pops.
+    a_max_is_top : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+        max_valid && !any_top_moved && max_tree == k && !owed[k] |-> max_top == model[k][0]);
+    // A pop in flight on a tree's last element follows a pull or evict that left the top in the
+    // heap buffer.
+    a_taken_elsewhere : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+        tree_read[k] |-> model_cnt[k] > 1 || heap_buf_count != '0);
 
     // A pull or evict from a busy tree, settled by a later pop; unreachable when the trees are
     // too small to be busy when taken from, so such a size cannot pass.
-    c_owed_pop : cover property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.owed[k] && hybrid_systolic_heap.heap_read[k]);
+    c_owed_pop : cover property (@(posedge i_CLK) disable iff (!i_RSTn) owed[k] && tree_read[k]);
   end
 
-  logic past_ok;
-  always_ff @(posedge i_CLK or negedge i_RSTn)
-    if (!i_RSTn) past_ok <= 1'b0;
-    else         past_ok <= 1'b1;
+  // A buffer's count changes by exactly what its commands insert and remove. A write lands on an
+  // accepted enqueue or replace; a dequeue or replace on a non-empty buffer removes the head,
+  // which the readies keep exact; a spill removes the main buffer's tail.
+  wire main_inserts = main_enqueue_ok
+                      || (main_write && main_read && (main_read_ready || main_empty));
+  wire main_pops    = main_read && !main_empty && main_read_ready;
+  wire heap_buf_inserts = heap_buf_enqueue_ok
+                          || (heap_buf_write && heap_buf_read
+                              && (heap_buf_read_ready || heap_buf_empty));
+  wire heap_buf_pops    = heap_buf_read && !heap_buf_empty && heap_buf_read_ready;
 
-  // Per tree: its count changes by the write that arrives, less the top a pull or evict took
-  // last cycle.
-  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree_conserve
-    wire take = (hybrid_systolic_heap.pull_fire || hybrid_systolic_heap.evict_fire)
-                && hybrid_systolic_heap.max_node_idx == k;
-    wire put  = hybrid_systolic_heap.heap_write[k] && hybrid_systolic_heap.heap_input[k] != '0;
-    a_tree_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        past_ok |-> t_all[k] == $past(t_all[k]) + NW'(put) - NW'($past(take)));
-    a_tree_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        past_ok |-> t_tv[k] == $past(t_tv[k]) + NW'(put && hybrid_systolic_heap.heap_input[k] == tv)
-                               - NW'($past(take && hybrid_systolic_heap.max_q == tv)));
-  end
-
-  logic [NW-1:0] n_tv, n_all;
+  logic [BUF_CNT_W-1:0] main_count_next, main_tracked_next;
+  logic [BUF_CNT_W-1:0] heap_buf_count_next, heap_buf_tracked_next;
   always_comb begin
-    n_tv  = '0;
-    n_all = '0;
-    for (int i = 0; i < H; i++) begin
-      n_tv  += NW'(hybrid_systolic_heap.IB[i] == tv) + NW'(hybrid_systolic_heap.OB[i] == tv)
-             + NW'(hybrid_systolic_heap.heap_IB[i] == tv) + NW'(hybrid_systolic_heap.heap_OB[i] == tv);
-      n_all += NW'(hybrid_systolic_heap.IB[i] != '0) + NW'(hybrid_systolic_heap.OB[i] != '0)
-             + NW'(hybrid_systolic_heap.heap_IB[i] != '0) + NW'(hybrid_systolic_heap.heap_OB[i] != '0);
-    end
-    for (int k = 0; k < TREE_COUNT; k++) begin
-      n_tv  += t_tv[k];
-      n_all += t_all[k];
-    end
+    main_count_next       = main_count + BUF_CNT_W'(main_inserts) - BUF_CNT_W'(main_pops)
+                            - BUF_CNT_W'(spill);
+    main_tracked_next     = main_tracked + BUF_CNT_W'(main_inserts && main_data == tracked)
+                            - BUF_CNT_W'(main_pops && main_out[0] == tracked)
+                            - BUF_CNT_W'(spill && main_tail == tracked);
+    heap_buf_count_next   = heap_buf_count + BUF_CNT_W'(heap_buf_inserts)
+                            - BUF_CNT_W'(heap_buf_pops);
+    heap_buf_tracked_next = heap_buf_tracked
+                            + BUF_CNT_W'(heap_buf_inserts && heap_buf_data == tracked)
+                            - BUF_CNT_W'(heap_buf_pops && heap_buf_out[0] == tracked);
   end
 
-  // Per buffer: its copies change by exactly what its commands insert and remove. A write lands
-  // on an accepted enqueue or replace; a dequeue or replace on a non-empty buffer removes the head
-  // slot, which the readies keep exact; a spill removes the main buffer's tail.
-  localparam int BW = $clog2(SYSTOLIC_QUEUE_SIZE + 1) + 1;
-  logic [BW-1:0] m_tv, h_tv, m_all, h_all;
-  always_comb begin
-    m_tv = '0; h_tv = '0; m_all = '0; h_all = '0;
-    for (int i = 0; i < H; i++) begin
-      m_tv  += BW'(hybrid_systolic_heap.IB[i] == tv) + BW'(hybrid_systolic_heap.OB[i] == tv);
-      h_tv  += BW'(hybrid_systolic_heap.heap_IB[i] == tv) + BW'(hybrid_systolic_heap.heap_OB[i] == tv);
-      m_all += BW'(hybrid_systolic_heap.IB[i] != '0) + BW'(hybrid_systolic_heap.OB[i] != '0);
-      h_all += BW'(hybrid_systolic_heap.heap_IB[i] != '0) + BW'(hybrid_systolic_heap.heap_OB[i] != '0);
-    end
-  end
-
-  wire m_ins = hybrid_systolic_heap.m_enq_ok
-            || (hybrid_systolic_heap.m_wrt && hybrid_systolic_heap.m_read
-                && (hybrid_systolic_heap.m_rd_rdy || hybrid_systolic_heap.systolic_empty));
-  wire m_pop = hybrid_systolic_heap.m_read && !hybrid_systolic_heap.systolic_empty
-            && hybrid_systolic_heap.m_rd_rdy;
-  wire h_ins = hybrid_systolic_heap.h_enq_ok
-            || (hybrid_systolic_heap.h_wrt && hybrid_systolic_heap.h_read
-                && (hybrid_systolic_heap.h_rd_rdy || hybrid_systolic_heap.heap_systolic_empty));
-  wire h_pop = hybrid_systolic_heap.h_read && !hybrid_systolic_heap.heap_systolic_empty
-            && hybrid_systolic_heap.h_rd_rdy;
-  wire spill = hybrid_systolic_heap.spill_fire;
-  wire [DATA_WIDTH-1:0] m_tail = hybrid_systolic_heap.IB[H-1];
-
-  logic [BW-1:0] m_tv_n, h_tv_n, m_all_n, h_all_n;
-  always_comb begin
-    m_tv_n  = m_tv  + BW'(m_ins && hybrid_systolic_heap.m_data == tv)
-                    - BW'(m_pop && hybrid_systolic_heap.OB[0] == tv) - BW'(spill && m_tail == tv);
-    m_all_n = m_all + BW'(m_ins) - BW'(m_pop) - BW'(spill);
-    h_tv_n  = h_tv  + BW'(h_ins && hybrid_systolic_heap.h_data == tv)
-                    - BW'(h_pop && hybrid_systolic_heap.heap_OB[0] == tv);
-    h_all_n = h_all + BW'(h_ins) - BW'(h_pop);
-  end
-
+  // Each buffer's element count and tracked count follow its commands.
   a_main_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      past_ok |-> m_all == $past(m_all_n));
+      has_past |-> main_count == $past(main_count_next));
   a_main_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      past_ok |-> m_tv == $past(m_tv_n));
+      has_past |-> main_tracked == $past(main_tracked_next));
   a_heap_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      past_ok |-> h_all == $past(h_all_n));
+      has_past |-> heap_buf_count == $past(heap_buf_count_next));
   a_heap_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      past_ok |-> h_tv == $past(h_tv_n));
+      has_past |-> heap_buf_tracked == $past(heap_buf_tracked_next));
 
-  // A dequeue that empties a buffer leaves no forecast head behind.
-  a_main_forecast : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.m_dequeue_pending && hybrid_systolic_heap.systolic_empty
-      |-> hybrid_systolic_heap.m_forecast == '0);
-  a_heap_forecast : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.h_dequeue_pending && hybrid_systolic_heap.heap_systolic_empty
-      |-> hybrid_systolic_heap.h_forecast == '0);
-
-  // A pop in flight on a tree's last element follows a pull or evict that left the top in the
-  // heap buffer; an owed pop leaves the tree non-empty.
-  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_taken_elsewhere
-    a_taken_elsewhere : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        hybrid_systolic_heap.heap_read[k]
-        |-> hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.cnt > 1 || h_all != '0);
-  end
-
-  // Ordering. A buffer that can be read holds its maximum in OB[0]; a read serves a head that
-  // outranks every element anywhere in the queue. A top already taken, with its pop owed or in
-  // flight, is not in the tree.
-  logic m_ob0_max, h_ob0_max, head_max;
+  // A readable buffer holds its maximum at its head, OB[0]; a readable queue's head outranks
+  // every buffer slot and every tree write in flight.
+  logic main_head_is_max, heap_buf_head_is_max, head_beats_buffers;
   always_comb begin
-    m_ob0_max = 1'b1;
-    h_ob0_max = 1'b1;
-    head_max  = 1'b1;
-    for (int i = 0; i < H; i++) begin
-      m_ob0_max &= hybrid_systolic_heap.IB[i] <= hybrid_systolic_heap.OB[0]
-                && hybrid_systolic_heap.OB[i] <= hybrid_systolic_heap.OB[0];
-      h_ob0_max &= hybrid_systolic_heap.heap_IB[i] <= hybrid_systolic_heap.heap_OB[0]
-                && hybrid_systolic_heap.heap_OB[i] <= hybrid_systolic_heap.heap_OB[0];
-      head_max  &= hybrid_systolic_heap.IB[i] <= hybrid_systolic_heap.o_data
-                && hybrid_systolic_heap.OB[i] <= hybrid_systolic_heap.o_data
-                && hybrid_systolic_heap.heap_IB[i] <= hybrid_systolic_heap.o_data
-                && hybrid_systolic_heap.heap_OB[i] <= hybrid_systolic_heap.o_data;
+    main_head_is_max     = 1'b1;
+    heap_buf_head_is_max = 1'b1;
+    head_beats_buffers   = 1'b1;
+    for (int i = 0; i < HALF; i++) begin
+      main_head_is_max     &= main_in[i] <= main_out[0] && main_out[i] <= main_out[0];
+      heap_buf_head_is_max &= heap_buf_in[i] <= heap_buf_out[0]
+                              && heap_buf_out[i] <= heap_buf_out[0];
+      head_beats_buffers   &= main_in[i] <= head && main_out[i] <= head
+                              && heap_buf_in[i] <= head && heap_buf_out[i] <= head;
     end
     for (int k = 0; k < TREE_COUNT; k++)
-      head_max &= !hybrid_systolic_heap.heap_write[k]
-               || hybrid_systolic_heap.heap_input[k] <= hybrid_systolic_heap.o_data;
+      head_beats_buffers &= !tree_write[k] || tree_write_data[k] <= head;
   end
-  logic tree_max [TREE_COUNT];
-  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree_max
-    always_comb begin
-      tree_max[k] = 1'b1;
-      for (int i = 0; i < TQ; i++)
-        if (i != 0 || !(hybrid_systolic_heap.owed[k] || hybrid_systolic_heap.heap_read[k]))
-          tree_max[k] &= hybrid_systolic_heap.g_trees[k].heap_inst.u_contract.m[i]
-                         <= hybrid_systolic_heap.o_data;
-    end
-  end
-  logic trees_max;
-  always_comb begin
-    trees_max = 1'b1;
-    for (int k = 0; k < TREE_COUNT; k++) trees_max &= tree_max[k];
-  end
-
+  // The main buffer's head is its maximum whenever it can be read.
   a_main_head_max : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.m_rd_rdy |-> m_ob0_max);
+      main_read_ready |-> main_head_is_max);
+  // The heap buffer's head is its maximum whenever it can be read.
   a_heap_head_max : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.h_rd_rdy |-> h_ob0_max);
+      heap_buf_read_ready |-> heap_buf_head_is_max);
+  // A readable queue's head outranks both buffers and every tree write in flight.
   a_read_head_max_buffers : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.o_read_ready |-> head_max);
-  a_read_head_max_trees : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.o_read_ready |-> trees_max);
-
-  // No slot, forecast, model entry or tree write holds the reserved all-ones value.
-  logic no_ones;
-  always_comb begin
-    no_ones = hybrid_systolic_heap.m_forecast != '1 && hybrid_systolic_heap.h_forecast != '1;
-    for (int i = 0; i < H; i++)
-      no_ones &= hybrid_systolic_heap.IB[i] != '1 && hybrid_systolic_heap.OB[i] != '1
-              && hybrid_systolic_heap.heap_IB[i] != '1 && hybrid_systolic_heap.heap_OB[i] != '1;
-    for (int k = 0; k < TREE_COUNT; k++)
-      no_ones &= !hybrid_systolic_heap.heap_write[k] || hybrid_systolic_heap.heap_input[k] != '1;
-  end
-  a_no_ones : assert property (@(posedge i_CLK) disable iff (!i_RSTn) no_ones);
+      read_ready |-> head_beats_buffers);
 
   // Every tree index names a tree.
   a_idx_range : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.max_idx_q < TREE_COUNT && hybrid_systolic_heap.spill_tgt < TREE_COUNT
-      && hybrid_systolic_heap.evict_tgt < TREE_COUNT);
-
-  // Each transfer moves a real element, and a tree takes at most one write a cycle.
+      max_tree < TREE_COUNT && spill_target < TREE_COUNT && evict_target < TREE_COUNT);
+  // A spill moves a real element out of the main buffer.
   a_spill_moves : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.spill_fire |-> m_tail != '0);
+      spill |-> main_tail != '0);
+  // An evict moves a real element out of the heap buffer.
   a_evict_moves : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hybrid_systolic_heap.evict_fire |-> hybrid_systolic_heap.h_head != '0);
+      evict |-> heap_buf_head != '0);
   for (genvar k = 0; k < TREE_COUNT; k++) begin : g_one_write
-    wire w_evict = hybrid_systolic_heap.evict_fire && hybrid_systolic_heap.max_node_idx == k
-                   && hybrid_systolic_heap.heap_ready[k];
-    wire w_spill = hybrid_systolic_heap.spill_fire && hybrid_systolic_heap.spill_tgt == k;
-    wire w_owe   = hybrid_systolic_heap.owe_evict && hybrid_systolic_heap.evict_tgt == k;
-    wire w_dw    = hybrid_systolic_heap.dw_fire && hybrid_systolic_heap.evict_tgt == k;
+    wire write_by_evict  = evict && max_tree == k && tree_ready[k];
+    wire write_by_spill  = spill && spill_target == k;
+    wire write_by_owed   = owed_evict && evict_target == k;
+    wire write_by_direct = direct_write && evict_target == k;
+    // A tree is sent at most one write per cycle.
     a_one_write : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-        $onehot0({w_evict, w_spill, w_owe, w_dw}));
+        $onehot0({write_by_evict, write_by_spill, write_by_owed, write_by_direct}));
   end
 
-  // Conservation: every element the spec counts sits in a buffer slot, a tree, or a tree write in
-  // flight, exactly once.
-  a_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      n_tv == NW'(hybrid_systolic_heap.u_spec.cnt));
-  a_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      n_all == NW'(hybrid_systolic_heap.u_spec.occ));
+  // ---- stage 2: per-tree conservation ----------------------------------------------------------
 
-  // The counts, the forecasts and the reserved value depend on one another: proved together.
+  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_tree_conserve
+    wire taken   = (pull || evict) && max_tree == k;  // its top, popped next cycle or owed
+    wire written = tree_write[k] && tree_write_data[k] != '0;
+    // A tree's count changes by the write arriving, less the top taken last cycle.
+    a_tree_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+        has_past |-> tree_count[k] == $past(tree_count[k]) + CNT_W'(written)
+                                      - CNT_W'($past(taken)));
+    // A tree's tracked count changes by a write of tracked, less a taken top equal to tracked.
+    a_tree_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+        has_past |-> tree_tracked[k] == $past(tree_tracked[k])
+                                        + CNT_W'(written && tree_write_data[k] == tracked)
+                                        - CNT_W'($past(taken && max_top == tracked)));
+  end
+
+  // ---- stage 3: the inductive invariant --------------------------------------------------------
+
+  // No buffer slot, forecast or tree write in flight holds the reserved all-ones value.
+  logic no_all_ones;
+  always_comb begin
+    no_all_ones = main_forecast != '1 && heap_buf_forecast != '1;
+    for (int i = 0; i < HALF; i++)
+      no_all_ones &= main_in[i] != '1 && main_out[i] != '1
+                     && heap_buf_in[i] != '1 && heap_buf_out[i] != '1;
+    for (int k = 0; k < TREE_COUNT; k++)
+      no_all_ones &= !tree_write[k] || tree_write_data[k] != '1;
+  end
+  // A dequeue that empties a buffer leaves no forecast head behind.
+  wire main_forecast_clear     = !(main_dequeued && main_empty) || main_forecast == '0;
+  wire heap_buf_forecast_clear = !(heap_buf_dequeued && heap_buf_empty) || heap_buf_forecast == '0;
+
+  // The counts, the forecasts and the reserved value depend on one another across a cycle, so
+  // they are one property; stage 4 restates each part.
   a_queue_inv : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      n_all == NW'(hybrid_systolic_heap.u_spec.occ) && n_tv == NW'(hybrid_systolic_heap.u_spec.cnt)
-      && no_ones
-      && !(hybrid_systolic_heap.m_dequeue_pending && hybrid_systolic_heap.systolic_empty
-           && hybrid_systolic_heap.m_forecast != '0)
-      && !(hybrid_systolic_heap.h_dequeue_pending && hybrid_systolic_heap.heap_systolic_empty
-           && hybrid_systolic_heap.h_forecast != '0));
+      queue_count == CNT_W'(hybrid_systolic_heap.u_spec.occ)
+      && queue_tracked == CNT_W'(hybrid_systolic_heap.u_spec.cnt)
+      && no_all_ones && main_forecast_clear && heap_buf_forecast_clear);
+
+  // ---- stage 4: the parts of the invariant -----------------------------------------------------
+
+  // No all-ones anywhere in the queue.
+  a_no_ones : assert property (@(posedge i_CLK) disable iff (!i_RSTn) no_all_ones);
+  // A dequeue that empties the main buffer leaves no forecast.
+  a_main_forecast : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      main_dequeued && main_empty |-> main_forecast == '0);
+  // A dequeue that empties the heap buffer leaves no forecast.
+  a_heap_forecast : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      heap_buf_dequeued && heap_buf_empty |-> heap_buf_forecast == '0);
+  // Every element the spec counts sits in a buffer slot, a tree or a tree write, exactly once.
+  a_conserve_all : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      queue_count == CNT_W'(hybrid_systolic_heap.u_spec.occ));
+  // Every copy of tracked the spec counts sits in a buffer slot, a tree or a tree write.
+  a_conserve_tracked : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      queue_tracked == CNT_W'(hybrid_systolic_heap.u_spec.cnt));
+
+  // ---- stage 5: ordering against the trees -----------------------------------------------------
+
+  // A readable queue's head outranks every tree element, except a top already taken (owed or
+  // popping), which is no longer in the tree.
+  logic head_beats_tree [TREE_COUNT];
+  for (genvar k = 0; k < TREE_COUNT; k++) begin : g_head_beats_tree
+    always_comb begin
+      head_beats_tree[k] = 1'b1;
+      for (int i = 0; i < TREE_SIZE; i++)
+        if (i != 0 || !(owed[k] || tree_read[k]))
+          head_beats_tree[k] &= model[k][i] <= head;
+    end
+  end
+  logic head_beats_trees;
+  always_comb begin
+    head_beats_trees = 1'b1;
+    for (int k = 0; k < TREE_COUNT; k++) head_beats_trees &= head_beats_tree[k];
+  end
+  // A readable queue's head outranks every element left in every tree.
+  a_read_head_max_trees : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
+      read_ready |-> head_beats_trees);
 endmodule

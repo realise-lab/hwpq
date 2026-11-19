@@ -67,39 +67,53 @@ module hybrid_tree_contract #(
   end
 
   // Caller obligations.
+  // Command only a tree that was ready last cycle and is not held; never the first cycle out of
+  // reset. A command drops o_ready, so this also rules out back-to-back commands to one tree.
   property p_cmd_when_ready;
     @(posedge i_CLK) disable iff (!i_RSTn) cmd |-> live && $past(o_ready) && !held;
   endproperty
+  // No plain insert into a full tree.
   property p_no_enq_full;
     @(posedge i_CLK) disable iff (!i_RSTn) i_wrt && !i_read |-> !o_full;
   endproperty
+  // No plain pop from an empty tree.
   property p_no_deq_empty;
     @(posedge i_CLK) disable iff (!i_RSTn) i_read && !i_wrt |-> !o_empty;
   endproperty
+  // Never write the empty marker.
   property p_no_write_sentinel;
     @(posedge i_CLK) disable iff (!i_RSTn) i_wrt |-> i_data != '0;
   endproperty
 
   // Tree guarantees. The top and count are exact every cycle; o_top_moved marks the cycle after
   // a command; o_next bounds everything below the top once that cycle has passed.
+  // Each constrains only the tree's outputs and leaves some output legal for any command, so
+  // assuming them never restricts the caller. Keep it so when adding one.
+  // Empty exactly when the model is.
   property p_empty;
     @(posedge i_CLK) disable iff (!i_RSTn) o_empty == (cnt == '0);
   endproperty
+  // Full exactly when the model is.
   property p_full;
     @(posedge i_CLK) disable iff (!i_RSTn) o_full == (cnt == CW'(QUEUE_SIZE));
   endproperty
+  // The top is the model's largest element every cycle, even while the heap below still walks.
   property p_data;
     @(posedge i_CLK) disable iff (!i_RSTn) o_data == m[0];
   endproperty
+  // o_top_moved is high exactly the cycle after a command, and the first cycle out of reset.
   property p_moved;
     @(posedge i_CLK) disable iff (!i_RSTn) o_top_moved == (!live || $past(cmd));
   endproperty
+  // A valid o_next, outside the cycle after a command, bounds every element below the top.
   property p_next;
     @(posedge i_CLK) disable iff (!i_RSTn) o_next_ok && !o_top_moved |-> o_next >= m[1];
   endproperty
+  // Never ready in a cycle that carries a command or a hold.
   property p_ready_idle;
     @(posedge i_CLK) disable iff (!i_RSTn) o_ready |-> !cmd && !held;
   endproperty
+  // Once ready, ready until a command or a hold.
   property p_ready_stays;
     @(posedge i_CLK) disable iff (!i_RSTn) live && $past(o_ready) && !cmd && !held |-> o_ready;
   endproperty
@@ -109,6 +123,7 @@ module hybrid_tree_contract #(
     @(posedge i_CLK) disable iff (!i_RSTn)
         live && !$past(cmd) && !cmd && !held && cnt <= CW'(1) |-> o_ready;
   endproperty
+  // Ready again within MAX_BUSY quiet cycles of a command, unless held.
   property p_busy_bounded;
     @(posedge i_CLK) disable iff (!i_RSTn) busy <= BW'(MAX_BUSY);
   endproperty
