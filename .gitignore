@@ -44,3 +44,31 @@ hwpq/register_array/rtl_elaboration/
 obj_dir
 *.vvp
 *.vcd
+
+build/
+
+# Formal scratch. run.sh puts EVERYTHING a run generates under
+# formal/fv_proj/<module>[_selftest][_ungated]/: the tool's own scratch, the
+# console log, and the property summary.
+formal/fv_proj/
+# a tool invoked directly from the repo root creates its own project dir
+fv_proj/
+
+# PRIVATE BACKENDS: local-only, see formal/backend/README.md.
+formal/backend/*
+!formal/backend/README.md
+!formal/backend/stub.tcl
+!formal/backend/stub.sh
+!formal/backend/dryrun.tcl
+!formal/backend/dryrun.sh
+# vendor_sim is the only simulator on the machine that runs the real proofs;
+# iverilog and verilator are not installed there, so running the shared
+# testbenches drops these in whatever directory vendor_sim was invoked from,
+# which is usually the repo root.
+vendor_sim.d/
+vendor_sim.log
+vendor_sim.history
+vendor_sim.key
+vendor_sim_libs/
+.simvision/
+waves.shm/
