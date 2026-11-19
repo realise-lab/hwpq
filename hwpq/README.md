@@ -9,9 +9,11 @@
 | Register Tree            | Yes                      | $O(log\ N)$     | $O(1)$                  |
 | Register Tree Pipelined  | Yes                      | $O(log\ N)$     | $O(2)$                  |
 | Systolic Array           | Yes                      | $O(1)$          | $O(1)$                  |
-| BRAM Tree                | No                       | $N/A$           | $O(8)$                  |
+| BRAM Tree                | No                       | $O(log\ N)$     | $O(8)$                  |
 | BRAM Tree Pipelined      | No                       | $N/A$           | $O(4)$                  |
+| BRAM Tree (Pair)         | No                       | $O(log\ N)$     | $O(log\ N)$             |
 | Hybrid Tree              | No (Working in Progress) | $O(1)$          | $O(1)$                  |
+| Hybrid Systolic BRAM Heap | No                      | $O(1)$          | $O(1)$ to $O(log\ N)$   |
 
 ## Register-based Implementations
 
@@ -41,11 +43,19 @@ An implementation that leverages Block RAM (BRAM) for storing queue elements, re
 
 A pipelined version of the BRAM tree architecture that improves throughput by breaking down one BRAM into mutiples that represent each depth of tree.
 
+### [BRAM Tree (Pair)](./bram_tree_pair/README.md)
+
+A BRAM tree that stores each pair of sibling nodes in one BRAM word, so every step of an operation reads both children at once and moves one level per cycle, in a single simple dual-port BRAM.
+
 ## Hybrid and Advanced Implementations
 
 ### [Hybrid Tree](./hybrid_tree/README.md)
 
 A combined approach that utilizes both registers and memory elements, attempting to balance the performance advantages of registers with the resource efficiency of memory-based storage.
+
+### [Hybrid Systolic BRAM Heap](./hybrid_systolic_bram_heap/README.md)
+
+Two systolic buffers in front of a bank of pair BRAM-trees. Enqueues complete in one cycle, and spreading spills and pulls across many trees hides their BRAM latency; a dequeue or replace waits only for a tree root that is still settling.
 
 ### [Systolic Array](./systolic_array/README.md)
 
