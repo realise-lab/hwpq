@@ -1,8 +1,8 @@
 `default_nettype none
-// bram_tree_pair shim for the shared testbench body (test/common/hwpq_tb_common.svh).
+// bram_tree shim for the shared testbench body (test/common/hwpq_tb_common.svh).
 // Enqueue-capable only, so ENQ_ENA=1 selects the enqueue-enabled program.
 
-module bram_tree_pair_tb;
+module bram_tree_tb;
   localparam int QUEUE_SIZE = 7;   // must be 2^k - 1, k >= 2
   localparam int DATA_WIDTH = 16;
   localparam bit ENQ_ENA    = 1;
@@ -11,7 +11,7 @@ module bram_tree_pair_tb;
 
   `include "hwpq_tb_common.svh"
 
-  bram_tree_pair #(
+  bram_tree #(
       .QUEUE_SIZE(QUEUE_SIZE),
       .DATA_WIDTH(DATA_WIDTH)
   ) u_dut (

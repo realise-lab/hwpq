@@ -1,5 +1,5 @@
 /*******************************************************************************
-  Module Name: bram_tree_pair
+  Module Name: bram_tree
   Description: A binary max-heap priority queue in block RAM that stores each
                pair of sibling nodes in one memory word, so a walk reads and
                writes one pair per level and moves a level per cycle. The root
@@ -20,7 +20,7 @@
                Both readies stay low through the reset fill, one cycle per pair.
 *******************************************************************************/
 
-module bram_tree_pair #(
+module bram_tree #(
     parameter integer QUEUE_SIZE = 7,
     parameter integer DATA_WIDTH = 16
 ) (
@@ -117,7 +117,7 @@ module bram_tree_pair #(
   logic [PAIR_BITS-1:0] ram_dout;
   assign dout = pair_t'(ram_dout);
 
-  bram_tree_pair_ram #(
+  bram_tree_ram #(
       .WIDTH (PAIR_BITS),
       .DEPTH (PAIRS),
       .ADDR_W(PAIR_W)

@@ -1,8 +1,8 @@
 // Simple dual-port block RAM: one write port, one read port with a cycle of latency.
-// A read of the address being written may return either word; bram_tree_pair never uses one.
+// A read of the address being written may return either word; bram_tree never uses one.
 // Words are flat vectors: an array of structs infers a separate RAM for each field.
 (* ram_style = "block" *)
-module bram_tree_pair_ram #(
+module bram_tree_ram #(
     parameter integer WIDTH  = 1,
     parameter integer DEPTH  = 1,
     parameter integer ADDR_W = 1

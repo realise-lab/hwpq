@@ -368,7 +368,7 @@ This fix is a retraction candidate. The sweep reverts it and nothing in the suit
 
 ### 2.4 The flat BRAM tree
 
-These findings concern the flat BRAM tree, which stored one node per word; the library's BRAM tree, `bram_tree_pair`, replaces it, and none of them applies to that design. The flat tree was the enqueue-capable BRAM tree, and the module with the most findings. It maintains two independent occupancy mechanisms: a `queue_size` register, which drives the ready ports, and per-node `capacity` fields, which steer where the descent places elements. That redundancy is the reason its final defect was invisible at the interface.
+These findings concern the flat BRAM tree, which stored one node per word; the library's BRAM tree, `bram_tree`, replaces it, and none of them applies to that design. The flat tree was the enqueue-capable BRAM tree, and the module with the most findings. It maintains two independent occupancy mechanisms: a `queue_size` register, which drives the ready ports, and per-node `capacity` fields, which steer where the descent places elements. That redundancy is the reason its final defect was invisible at the interface.
 
 The findings are given in the order they were fixed, because each one exposed the next.
 

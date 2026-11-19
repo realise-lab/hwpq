@@ -1,4 +1,4 @@
-# BRAM Tree (Pair)
+# BRAM Tree
 
 ## Description
 
@@ -8,4 +8,4 @@ Each node carries a valid bit and the number of free slots in its subtree, which
 
 ## Structure
 
-![bram_tree_pair_structure](../../imgs/bram_tree_pair_structure.png)
+![bram_tree_structure](../../imgs/bram_tree_structure.png)

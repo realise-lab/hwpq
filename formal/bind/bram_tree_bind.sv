@@ -1,4 +1,4 @@
-// Attaches hwpq_spec to bram_tree_pair
+// Attaches hwpq_spec to bram_tree
 
 // Port-map explicitly rather than `.*`, and pass every parameter explicitly.
 
@@ -6,7 +6,7 @@
 // HAS_FULL: !o_write_ready means full, not merely busy.
 // MAX_SETTLE is the longer of the reset fill (PAIRS cycles) and a walk (at most TREE_DEPTH
 // cycles, a level per cycle), from the DUT's own localparams.
-bind bram_tree_pair hwpq_spec #(
+bind bram_tree hwpq_spec #(
     .QUEUE_SIZE (QUEUE_SIZE),
     .DATA_WIDTH (DATA_WIDTH),
     .ENQ_ENA    (1'b1),
@@ -28,7 +28,7 @@ bind bram_tree_pair hwpq_spec #(
 // Reset harness - the elaboration top for this module's proofs. The tool holds
 // the declared reset inactive after init; declaring i_init_RSTn keeps the DUT's
 // i_RSTn free for mid-operation resets.
-module hwpq_rst_bram_tree_pair #(
+module hwpq_rst_bram_tree #(
     parameter int QUEUE_SIZE = 7,
     parameter int DATA_WIDTH = 2
 ) (
@@ -42,7 +42,7 @@ module hwpq_rst_bram_tree_pair #(
     output logic                  o_read_ready,
     output logic [DATA_WIDTH-1:0] o_data
 );
-  bram_tree_pair #(
+  bram_tree #(
       .QUEUE_SIZE(QUEUE_SIZE), .DATA_WIDTH(DATA_WIDTH)
   ) u_dut (
       .i_CLK(i_CLK), .i_RSTn(i_init_RSTn & i_RSTn),

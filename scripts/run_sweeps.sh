@@ -12,7 +12,7 @@ set -eu
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCHS="${*:-register_array register_array_pipelined register_tree register_tree_pipelined
-              systolic_array bram_tree_pipelined bram_tree_pair hybrid_systolic_bram_heap}"
+              systolic_array bram_tree_pipelined bram_tree hybrid_systolic_bram_heap}"
 PROFILE=${PROFILE:-1}; SYNTH=${SYNTH:-1}
 LOGS="${ROOT}/build/sweeps"
 mkdir -p "${LOGS}"

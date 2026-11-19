@@ -67,10 +67,10 @@ ARCHITECTURE_STYLES = {
         "marker": "d", 
         "display_name": "Hybrid Tree"
     },
-    "bram_tree_pair": {
+    "bram_tree": {
         "color": "violet",
         "marker": "P",
-        "display_name": "BRAM Tree Pair",
+        "display_name": "BRAM Tree",
     },
     HYBRID_ARCH: {
         "color": "darkorange",
@@ -82,7 +82,7 @@ ARCHITECTURE_STYLES = {
 # Architectures with no enqueue datapath.
 NO_ENQUEUE = {"bram_tree_pipelined", "hybrid_tree"}
 # Architectures that use block RAM.
-BRAM_ARCHS = {"hybrid_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
+BRAM_ARCHS = {"hybrid_tree", "bram_tree_pipelined", "bram_tree", HYBRID_ARCH}
 
 
 def plot_keys(arch_dir, enq):
