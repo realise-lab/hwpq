@@ -17,6 +17,6 @@ PROFILE_LOAD = ("mix", "uniform")
 HYBRID_ARCH = "hybrid_systolic_bram_heap"
 
 # Architectures built without ENQ_ENA: one variant, whichever enqueue_<n> directory holds it.
-SINGLE_VARIANT = {"systolic_array", "bram_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
+SINGLE_VARIANT = {"systolic_array", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
 # Not plotted: its results predate the current RTL and it has no cycle profile.
 EXCLUDED_ARCHS = {"hybrid_tree"}

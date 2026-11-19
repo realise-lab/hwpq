@@ -194,7 +194,7 @@ check_control() {
 # rows survive a change of tool. Match them CASE-SENSITIVELY and anchored at line
 # start. A tool that echoes the Tcl it runs puts the source of those puts
 # statements, and any prose mentioning the condition, into the log: measured on a
-# clean bram_tree log, "7 multiply-driven signals" appears in echoed prose. The
+# clean log, "7 multiply-driven signals" appears in echoed prose. The
 # empty verdict block is the second conjunct, because one is not enough to hang a
 # row on.
 #

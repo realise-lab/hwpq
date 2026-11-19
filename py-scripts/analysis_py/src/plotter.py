@@ -57,11 +57,6 @@ ARCHITECTURE_STYLES = {
         "marker": "v", 
         "display_name": "Register Tree Pipelined (Enqueue Enabled)",
     },
-    "bram_tree": {
-        "color": "violet",
-        "marker": "s", 
-        "display_name": "BRAM Tree"
-    },
     "bram_tree_pipelined": {
         "color": "purple",
         "marker": "D",
@@ -87,7 +82,7 @@ ARCHITECTURE_STYLES = {
 # Architectures with no enqueue datapath.
 NO_ENQUEUE = {"bram_tree_pipelined", "hybrid_tree"}
 # Architectures that use block RAM.
-BRAM_ARCHS = {"hybrid_tree", "bram_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
+BRAM_ARCHS = {"hybrid_tree", "bram_tree_pipelined", "bram_tree_pair", HYBRID_ARCH}
 
 
 def plot_keys(arch_dir, enq):
@@ -1001,7 +996,7 @@ def create_focused_comparison(data_dict_dict, output_path=None):
         # if k in ["hybrid_tree", "bram_tree", "bram_tree_pipelined"]
         # if k in ["systolic_array", "register_array_enq_enabled", "register_tree_enq_enabled"] # register-based architectures
         # if k in ["systolic_array", "hybrid_tree"]
-        if k in ["register_tree_enq_disabled", "register_array_enq_disabled", "systolic_array", "hybrid_tree", "bram_tree", "bram_tree_pipelined"]
+        if k in ["register_tree_enq_disabled", "register_array_enq_disabled", "systolic_array", "hybrid_tree", "bram_tree_pipelined"]
     }
     
     # if len(focused_archs) < 2:

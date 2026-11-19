@@ -12,9 +12,9 @@
 # state that never existed invalidates the measurement.
 #
 # THE BRAM CONFIGS LIVE IN A SUBFOLDER. formal/{bind,config}/baseline/ holds
-# black-box-only variants, invoked as `formal/run.sh baseline/bram_tree_baseline`.
+# black-box-only variants, invoked as `formal/run.sh baseline/bram_tree_pipelined_baseline`.
 # Its outdir is mkdir -p, so artifacts land away from the main suite, and the
-# subfolder is also why `run.sh --all` still sees exactly 13 configs: its glob
+# subfolder is also why `run.sh --all` sees only the main configs: its glob
 # is not recursive. Keeping variant families in a subfolder is what stops them
 # contaminating that count.
 #
@@ -83,5 +83,3 @@ systolic_array	systolic_array	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_occ_empty_
 systolic_array_gap	systolic_array_gap	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_ready_matches_accept	the ready/accept gap stated white-box: the port advertising what the accept condition would refuse
 systolic_array_clobber	systolic_array_clobber	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_no_clobber,a_no_ghost_cells	A refused write corrupting IB[0], and cells holding data nothing put there
 bram_tree_pipelined	baseline/bram_tree_pipelined_baseline	af089e5	a7fb6c3	293ad2f	NO: black-box only	cex:a_head_not_placeholder,a_occ_bounded,a_read_ready_honest,a_read_ready_live,a_no_loss,a_head_is_max,a_head_present	6 of 8 black-box asserts red (2 proven), 17 covers reachable. ENABLING IS ITSELF A FINDING: without it the harness REFUSES the design, so there is no measurement at all.
-bram_tree	baseline/bram_tree_baseline	af089e5	294def1,b6d05fa	293ad2f	NO: black-box only	cover-unreachable:13	THE BASELINE PROPER. 9 asserts 'proven', 0 cex, 5 covers reachable, FIFTEEN unreachable: the whole assert table green and MEANINGLESS. Do not delete this row in favour of stage 2.
-bram_tree_stage2	baseline/bram_tree_baseline	af089e5	294def1,b6d05fa,81a78bb	293ad2f	NO: black-box only	cex:a_progress,a_occ_bounded,a_read_ready_honest,a_read_ready_live,a_write_ready_honest,a_write_ready_live,a_no_loss,a_head_is_max,a_head_present	NOT THE BASELINE: the baseline once the blocking vacuity defect was cleared. 0 proven, 9 cex, 20 covers all reachable. The enabling commit here is a finding fixed to reveal other findings. Pair with the row above: all-green-and-vacuous -> all-red-and-true, from one ready signal.
