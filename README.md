@@ -42,11 +42,15 @@
 
 - `vivado-synthesis_tcl/` - Tcl scripts for Vivado synthesis.
 
+- `test/` - The shared simulation testbench (`test/run_all_sims.sh` runs every architecture) and the cycle profiler (`test/perf/cycle_profile.sh`).
+
+- `formal/` - Formal verification of the architectures against one shared specification; see [`formal/docs/README.md`](formal/docs/README.md).
+
 ## ❗ Prerequisites
 
 Before running the synthesis and analysis, ensure you have the following installed:
 
-- **Xilinx Vivado**: 2024.2 preferred
+- **Xilinx Vivado**: 2026.1, the version the published results use
 
   - Download here: https://www.xilinx.com/support/download.html
 
@@ -111,22 +115,24 @@ Re-running synthesis is not necessary as all data is already available within ea
 
 ### Analysis
 
-1.  Navigate to the `hwpq` directory:
+Throughput is the maximum achieved frequency divided by the measured cycles per operation. The cycle counts come from the cycle profiler and are stored beside the synthesis results, in each architecture's `cycle_profile_16bit/` directory.
+
+1.  From the repository root, install the required Python packages:
 
     ```bash
-    cd hwpq/vivado-runtime
+    pip install -r py-scripts/requirements.txt
     ```
 
-2.  Install the required Python packages:
+2.  Re-profile an architecture only if you've modified it. `SIM` selects `iverilog` (default), `xrun` or `vcs`:
 
     ```bash
-    pip install -r ../py-scripts/requirements.txt
+    test/perf/cycle_profile.sh <architecture>
     ```
 
-3.  Process and visualize the results using the Python plotting script:
+3.  Process and visualize the results. The plots are written to `vivado-analysis_plots/`:
 
     ```bash
-    python ../py-scripts/analysis_py/src/plotter
+    python3 py-scripts/analysis_py/src/plotter.py
     ```
 
 ## 📐 Current Support Priority Queue Architectures

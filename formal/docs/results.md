@@ -586,9 +586,10 @@ Assumptions currently in force, each of which is a region the proofs do not cove
 
 CH-2 is closed: no configuration assumes the caller is quiet while the DUT is busy. A refused command must have no effect, and each ready must be exact once the caller has been quiet for `MAX_SETTLE` cycles; a continuous stream may hold a ready low. CH-5 is closed, by F-7. CH-6 is retired on both BRAM modules, and is the only hole this effort closed by fixing the design rather than by scoping a property: the reset fill sequencers added under F-25 and F-29 establish the memory contents from arbitrary power-up state, so the assumption that had pinned them stopped being load-bearing and was deleted. Both BRAM modules now prove with their memories entirely free, which is stronger than the assumption ever permitted.
 
+F-33 is fixed: the synthesis sweep reads `hwpq/<arch>/src`, and every published synthesis result is from the current RTL.
+
 Remaining gaps:
 
-- F-33. The synthesis sweep script reads a path that has not existed since `3c72b09`, finds no RTL, and continues without reporting it. Every published area number therefore predates seventeen RTL fixes. Not repaired; deliberately out of scope for this work.
 - F-18. Both BRAM modules are proven at `DATA_WIDTH=2`. `bram_tree_pipelined` at width 3 did not converge in 3600 seconds once the RAM model was sound. This is a standing limit on what those proofs claim.
 - `bram_tree` at `QUEUE_SIZE=15` does not converge, which leaves the deeper-tree consequence of F-32 unresolved.
 - F-13. Expected-counterexample matching in `--ungated` runs is by property name, so a changed defect reads as an unchanged one. Closed as discipline rather than repaired in the tooling.

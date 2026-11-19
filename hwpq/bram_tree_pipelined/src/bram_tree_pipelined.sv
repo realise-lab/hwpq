@@ -2,17 +2,16 @@
   Module Name: bram_tree_pipelined
   Description: A pipelined priority queue implementation using a binary max-heap
                structure stored in block RAM, with the top few levels
-               kept in registers. Supports enqueue, dequeue, and replace
-               operations, trading throughput (one replace every four cycles)
-               for improved scalability over the non-pipelined BRAM tree.
+               kept in registers. Replace-only: supports dequeue and replace,
+               with no enqueue datapath.
   Parameters: QUEUE_SIZE - Maximum number of elements in the priority queue
               DATA_WIDTH - Bit width of data elements
   Inputs: i_CLK - System clock
           i_RSTn - Active-low reset signal
-          i_wrt - Write/insert command (enqueue operation)
-          i_read - Read/pop command (dequeue operation)
-          i_data - Input data to be inserted (or used for replace)
-  Outputs: o_write_ready - High when the queue has room to accept a write
+          i_wrt - With i_read, replace the head; ignored alone
+          i_read - Dequeue command (replace with i_wrt)
+          i_data - Input data for replace
+  Outputs: o_write_ready - High when the queue is idle and can accept a replace
            o_read_ready - High when the queue holds data available to read
            o_data - Output data from the highest priority element
   Constraints: QUEUE_SIZE must be 2^k - 1, the full-tree node count.
