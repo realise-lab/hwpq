@@ -14,7 +14,7 @@ In contrast, the enqueue operation follows a different procedure. It searches fo
 
 ![register_tree_cycle_operation](../../imgs/register_tree_cycle.png)
 
-As illustrated in this figure, both dequeue and replace operations complete in a single cycle, while the enqueue operation requires two cycles to propagate the new entry to its correct position.
+Each cycle sifts two levels. After a dequeue or replace the root outranks every other node within one cycle, so the next read can start while the sink continues below it. A write waits until the sink or climb has reached the bottom of the tree, up to half the tree depth in cycles.
 
 ![register_tree_steps_in_cycle](../../imgs/register_tree_step.png)
 

@@ -25,7 +25,7 @@ set_param general.maxThreads 16
 # Get the current script directory and navigate to project root
 set script_dir [file dirname [file normalize [info script]]]
 set project_root [file normalize [file join $script_dir ".."]]
-set sv_file_path [file join $project_root "hwpq" $architecture_name "rtl" "src"]
+set sv_file_path [file join $project_root "hwpq" $architecture_name "src"]
 set base_log_path [file join $project_root "hwpq" $architecture_name "vivado_analysis_results_16bit_xcau25p"]
 
 # Clock frequency values
