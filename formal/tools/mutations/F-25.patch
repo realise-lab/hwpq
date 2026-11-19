@@ -1,0 +1,31 @@
+# F-25 regression mutation: reset never restored the placeholder fill
+#
+#   git apply formal/tools/mutations/F-25.patch
+#   formal/run.sh bram_tree_pipelined
+#
+# Expect: FAIL, 17 proven / 3 cex:
+#   u_bram_aux.a_reset_restores_fill      the direct white-box statement
+#   u_dut.u_spec.a_head_present           BLACK-BOX, from the portable spec
+#   u_bram_aux.a_size_not_understated     white-box conservation
+# HEAD unmodified is 20 proven / 0 cex.
+#
+# WHY A MUTATION AND NOT A REVERT. Reverting the fixing commit is impossible,
+# not merely awkward: the detecting property is written against `filling`, a
+# signal that only exists BECAUSE of the fix. Rolling the file back to before
+# that commit leaves `filling` undeclared under `u_dut`, so the harness cannot
+# even build. This mutation keeps `filling`, its counter and the $fell(filling)
+# sampling point intact, and removes only the writing: the defect exactly is
+# that nothing rewrites the memory on reset.
+diff --git a/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv b/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
+index d2928c0..46244fe 100644
+--- a/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
++++ b/hwpq/bram_tree_pipelined/src/bram_tree_pipelined.sv
+@@ -458,7 +458,7 @@ module bram_tree_pipelined #(
+       for (lvl_comb = 2; lvl_comb < TREE_DEPTH; lvl_comb++) begin
+         next_addr_a[lvl_comb] = fill_cnt[ADDRESS_WIDTH:0];
+         next_din_a[lvl_comb]  = '1;
+-        next_we_a[lvl_comb]   = (fill_cnt < NODES_NEEDED[$bits(fill_cnt)-1:0]);
++        next_we_a[lvl_comb]   = 1'b0;  // F-25 MUTATION: sweep writes nothing
+         next_we_b[lvl_comb]   = 1'b0;
+       end
+     end
