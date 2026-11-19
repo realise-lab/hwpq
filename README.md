@@ -82,7 +82,6 @@ Re-running synthesis is not necessary as all data is already available within ea
       - register_array
       - register_array_pipelined
       - systolic_array
-      - bram_tree
       - bram_tree_pipelined
       - bram_tree_pair
       - hybrid_systolic_bram_heap
@@ -101,7 +100,6 @@ Re-running synthesis is not necessary as all data is already available within ea
       - register_array
       - register_array_pipelined
       - systolic_array
-      - bram_tree
       - bram_tree_pipelined
       - bram_tree_pair
       - hybrid_systolic_bram_heap
@@ -150,8 +148,6 @@ Throughput is the maximum achieved frequency divided by the measured cycles per 
 - #### [Systolic Array](hwpq/systolic_array/README.md)
 
 ### BRAM Based
-
-- #### [BRAM Tree](hwpq/bram_tree/README.md)
 
 - #### [BRAM Tree Pipelined](hwpq/bram_tree_pipelined/README.md)
 

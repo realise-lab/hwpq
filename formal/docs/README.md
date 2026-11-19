@@ -1,8 +1,8 @@
 # Formal verification suite for HWPQ
 
 One interface-only specification binds unchanged to every architecture in the
-library, so adding a design to the suite costs two short files. Nine
-architectures are proved across sixteen configurations.
+library, so adding a design to the suite costs two short files. Eight
+architectures are proved across fifteen configurations.
 
 This document is the manual: how to run the suite, what a module must do to be
 provable by it, and how to add one. What the suite found, and the justification

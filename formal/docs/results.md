@@ -6,7 +6,7 @@ Findings keep their original `F-n` numbers. They label rows in the regression ma
 
 ## 1. Summary
 
-Nine of the library's ten architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The tenth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The nine are covered by sixteen proof configurations, which differ by `ENQ_ENA` build, by white-box addendum for `systolic_array`, and by proof half for `hybrid_systolic_bram_heap`. All sixteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
+Eight of the library's nine architectures are proven against a shared, interface-only specification that binds to each of them unchanged. The ninth, `hybrid_tree`, does not compile under the open-source toolchain and is out of scope. The eight are covered by fifteen proof configurations, which differ by `ENQ_ENA` build, by white-box addendum for `systolic_array`, and by proof half for `hybrid_systolic_bram_heap`. All fifteen pass. The proofs need a licensed tool and are run on demand through `formal/run.sh --all`; CI runs the simulation suite only.
 
 The design as it stood when verification began does not. Run against the current harness, the pre-verification RTL at `af089e5` gives:
 
@@ -16,7 +16,7 @@ The design as it stood when verification began does not. Run against the current
 | the same four as replace-only (`ENQ_ENA=0`) builds | the documented fill-before-read contract, not a defect (F-1) |
 | `systolic_array`, 3 configurations | five black-box assertions fail; a sixth defect prevents elaboration entirely |
 | `bram_tree_pipelined` | six of eight black-box assertions fail |
-| `bram_tree` | nine assertions report "proven" while fifteen of twenty covers are unreachable |
+| the flat BRAM tree (§2.4) | nine assertions report "proven" while fifteen of twenty covers are unreachable |
 
 Seventeen `fix()` commits were made to the RTL, addressing fifteen distinct findings. Two of those findings were subsequently retracted after measurement, and one further is a retraction candidate; section 4 gives the disposition of each. Eight commits changed the simulation suite, each traceable to a defect the proofs found and simulation could not; these are in section 3.
 
@@ -254,7 +254,7 @@ The module passed its testbench throughout.
 
 #### F-21: the dual-port RAM model was multiply driven, so memory contents were tool-selected
 
-`a7fb6c3`, and `b6d05fa` for the copy under `bram_tree`.
+`a7fb6c3`, and `b6d05fa` for the copy in the flat BRAM tree.
 
 `rams_tdp_rf_rf.sv` is the vendor true-dual-port template, and it assigned the memory array from two `always` blocks, one per port:
 
@@ -366,9 +366,9 @@ This fix is a retraction candidate. The sweep reverts it and nothing in the suit
 
 `o_read_ready` did not test the head for the max-priority placeholder, so a queue that had booted physically full and logically empty advertised a read that would return a reserved value. The gate implements the containment decided for F-1 across the library. It remains under `if (!ENQ_ENA)` deliberately: an unconditional comparator would add area to five enqueue-capable builds where it can never fire, and would move the published synthesis numbers this library exists to compare.
 
-### 2.4 `bram_tree`
+### 2.4 The flat BRAM tree
 
-The enqueue-capable BRAM tree, and the module with the most findings. It maintains two independent occupancy mechanisms: a `queue_size` register, which drives the ready ports, and per-node `capacity` fields, which steer where the descent places elements. That redundancy is the reason its final defect was invisible at the interface.
+These findings concern the flat BRAM tree, which stored one node per word; the library's BRAM tree, `bram_tree_pair`, replaces it, and none of them applies to that design. The flat tree was the enqueue-capable BRAM tree, and the module with the most findings. It maintains two independent occupancy mechanisms: a `queue_size` register, which drives the ready ports, and per-node `capacity` fields, which steer where the descent places elements. That redundancy is the reason its final defect was invisible at the interface.
 
 The findings are given in the order they were fixed, because each one exposed the next.
 
@@ -394,7 +394,7 @@ Removing the term is behaviour-neutral by inspection, since the acceptance path 
 
 `b4872a5`.
 
-The F-25 defect on this module, where it is more serious, because `bram_tree`'s `capacity` fields carry the free-space accounting the descent depends on. Every arm of `ENQUEUE_COMPARE_CHILD` requires a child capacity greater than zero and there is no terminal `else`, so a stale zero capacity leaves the walk in a self-loop, which is what the progress property had been reporting.
+The F-25 defect on this module, where it is more serious, because this module's `capacity` fields carry the free-space accounting the descent depends on. Every arm of `ENQUEUE_COMPARE_CHILD` requires a child capacity greater than zero and there is no terminal `else`, so a stale zero capacity leaves the walk in a self-loop, which is what the progress property had been reporting.
 
 The fix is a sweep, with one complication the pipelined module does not have: the fill value is not constant, since node *i* roots a subtree of `((NODES_NEEDED+1) >> level(i)) - 1` and `level(i)` is `floor(log2(i+1))`. Rather than compute a logarithm per node, the sweep carries the level and steps it at the subtree boundaries:
 
@@ -464,9 +464,9 @@ What is not claimed is that the defect was harmless. The proof establishes no in
 
 ## 3. Changes to the simulation suite
 
-The proofs found defects the simulation suite could not, and in most cases could not have. `bram_tree` is the clearest case: six defects were fixed under proof, and five of them produced byte-identical simulation output at both `QUEUE_SIZE` 7 and 15. Not "the tests still passed", but output a diff cannot distinguish. The sixth changed one line, the total runtime, by five clock periods.
+The proofs found defects the simulation suite could not, and in most cases could not have. The flat BRAM tree is the clearest case: six defects were fixed under proof, and five of them produced byte-identical simulation output at both `QUEUE_SIZE` 7 and 15. Not "the tests still passed", but output a diff cannot distinguish. The sixth changed one line, the total runtime, by five clock periods.
 
-The reason is a single property of the suite as it stood. Every command was gated on the DUT's own ready signals, the reference model derived its occupancy from those same signals, reset happened once before any stimulus, and the only value ever checked was the head. Each is a reasonable choice individually. Together they define a region the suite could not enter, and five `bram_tree` defects were inside it.
+The reason is a single property of the suite as it stood. Every command was gated on the DUT's own ready signals, the reference model derived its occupancy from those same signals, reset happened once before any stimulus, and the only value ever checked was the head. Each is a reasonable choice individually. Together they define a region the suite could not enter, and five of the flat tree's defects were inside it.
 
 Eight commits address this. Each is traceable to a specific defect, and five of the eight were verified to go red against that defect by reverting its fix and observing the check name it. All thirteen simulation configurations pass after each commit, and every check reaches `$fatal` through `error_count`, so `run_sim.sh` reports it.
 
@@ -591,7 +591,6 @@ F-33 is fixed: the synthesis sweep reads `hwpq/<arch>/src`, and every published 
 Remaining gaps:
 
 - F-18. Both BRAM modules are proven at `DATA_WIDTH=2`. `bram_tree_pipelined` at width 3 did not converge in 3600 seconds once the RAM model was sound. This is a standing limit on what those proofs claim.
-- `bram_tree` at `QUEUE_SIZE=15` does not converge, which leaves the deeper-tree consequence of F-32 unresolved.
 - F-13. Expected-counterexample matching in `--ungated` runs is by property name, so a changed defect reads as an unchanged one. Closed as discipline rather than repaired in the tooling.
 - F-21 has a third copy of the multiply-driven RAM model in `hybrid_tree`, which is out of scope and will need it before it can be verified.
 
@@ -607,7 +606,7 @@ The two manifests carry aligned column positions deliberately, so that one drive
 
 Limits on what any of this claims:
 
-- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; `QUEUE_SIZE=7, DATA_WIDTH=2` for the three BRAM modules; and three trees of seven nodes with six-entry buffers at `DATA_WIDTH=3` for `hybrid_systolic_bram_heap`.
+- The proofs are exhaustive at one geometry each and say nothing about others. Those geometries are `QUEUE_SIZE=4, DATA_WIDTH=3` for the `register_array` family; `QUEUE_SIZE=7, DATA_WIDTH=3` for the `register_tree` family; `QUEUE_SIZE=8, DATA_WIDTH=3` for `systolic_array`; `QUEUE_SIZE=7, DATA_WIDTH=2` for both BRAM modules; and three trees of seven nodes with six-entry buffers at `DATA_WIDTH=3` for `hybrid_systolic_bram_heap`.
 - Formal analysis here is two-state. It cannot model X propagation, which is why the F-23 question had to be settled by simulation and synthesis instead.
 - The claims are relative to the shared specification and its addenda. F-32 is the measured demonstration that this matters: a module can satisfy the entire portable interface specification while its internal accounting is wrong.
 - The baseline measures the design as it stood when verification began, once a common interface existed, and not the design as originally written. The uniform six-port interface arrived at `e7c20ad` and is part of this work.
