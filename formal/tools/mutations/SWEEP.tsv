@@ -1,0 +1,73 @@
+#comment-only 6623993 d5f53ef 209cfd6 fce966d
+#
+# Mutation sweep: does the suite still catch each fix's defect at HEAD?
+#
+# Method: worktree at HEAD, revert the fix (or apply mutations/<finding>.patch),
+# run the module, compare against the all-green CONTROL run. Every row MEASURED,
+# nothing predicted.
+#
+# "Baseline" is NOT this. In this project it means the pre-verification RTL;
+# see formal/tools/baseline/MANIFEST.tsv, a different measurement with a different
+# question. Nothing in this file uses the word.
+#
+# class   rtl | harness   WHAT is being mutated.
+#
+#         Most rows mutate the DESIGN and ask whether the instrument still sees
+#         the defect. A harness row mutates the INSTRUMENT and asks whether it
+#         is load-bearing at all; the column exists to keep that distinction
+#         visible rather than to sort the file.
+#
+# head    the HEAD each row's outcome was MEASURED at.
+#
+#         The sweep runs at current HEAD by design: "does the suite still catch
+#         this" is a question about the code as it stands, not a historical
+#         replay. So as HEAD moves past a row's recorded one the driver WARNS but
+#         still runs, and a changed outcome is then a real result rather than
+#         drift. Use `regress.sh --replay ...` to rebuild a row at the HEAD it
+#         was recorded at, which is what makes the numbers below reproducible
+#         rather than merely dated.
+#
+# method  revert | patch
+#
+# expect  cex:<leaf>            named property must be in the counterexample list
+#         cover-unreachable     one or more covers must come back UNREACHABLE (vacuity)
+#         elab-fail             the run must stop at the elaboration gate
+#                               ("ELABORATION FAILED:") with NO property table.
+#                               harness-gate is the same class at the
+#                               multiple-driver gate.
+#         harness-gate          run aborts on the multiple-driver check, no property table
+#         timeout               proof stops converging (weakest: names no property)
+#         none                  NOTHING detects it; see notes. A `none` row is not a
+#                               non-result: it pins a measured green, so a future change
+#                               that starts detecting it reports *** CHANGED ***. Rows
+#                               with this expectation are the tripwire on a retraction:
+#                               the only thing that would notice if a future change
+#                               started detecting a defect the record says is not there.
+#
+# THE DRIVER CHECKS THE expect FIELD ONLY, and that is deliberate. The proven/cex
+# counts in the notes are prose and are not parsed, so a row can drift in its
+# counts and still report CAUGHT. This file is a way to REPRODUCE an issue, not a
+# golden transcript of a run: what a row promises is that the named detector
+# still fires, and pinning the surrounding counts would fail the sweep on
+# unrelated proof progress. Read the counts as context for what you should
+# expect to see, not as an assertion.
+#
+#finding	fix	module	class	head	method	expect	notes
+F-6	3c8cd30	systolic_array	rtl	20fdf6b	revert	elab-fail	Two distinct out-of-range errors; elaboration does not complete, NO property table at all. The row requires the elaboration gate to fire with no property table. Accepted loss: a regression that re-guards one site but not the other still fails elaboration and still reads CAUGHT.
+F-7	baafe9b	systolic_array	rtl	20fdf6b	revert	cex:a_occ_full_agrees	6 proven/3 cex, all black-box: a_occ_empty_agrees a_occ_full_agrees a_head_present
+F-8	4656397	systolic_array	rtl	20fdf6b	revert	cex:a_no_loss	4 proven/5 cex, all black-box: + a_occ_empty_agrees a_occ_full_agrees a_head_is_max a_head_present
+F-1b	df82ed2	bram_tree_pipelined	rtl	20fdf6b	revert	cex:a_head_not_placeholder	19 proven/1 cex
+F-1c	94526ac	register_array_enq0	rtl	20fdf6b	patch	cex:a_head_not_placeholder	8 proven/1 cex; fires only on the replace-only build
+F-22	7bb8d9c	bram_tree_pipelined	rtl	20fdf6b	patch	cex:a_read_ready_is_acceptable	15 proven/5 cex, + 4 black-box
+F-25	d84465e	bram_tree_pipelined	rtl	20fdf6b	patch	cex:a_head_present	17 proven/3 cex: a_reset_restores_fill, a_head_present (BLACK-BOX, portable spec), a_size_not_understated. Revert is IMPOSSIBLE: the detecting property watches `filling`, a signal the fix introduced; rolling back leaves it undeclared and the harness cannot elaborate.
+F-29	b4872a5	bram_tree	rtl	20fdf6b	revert	cex:a_reset_restores_fill	2 proven/9 cex, SEVEN black-box. Reverts cleanly: this module's bind never watches `filling`
+F-31	42133b6	bram_tree	rtl	20fdf6b	revert	cex:a_no_enq_when_full	2 proven, 9 cex; 8 of the 9 are portable-spec asserts
+F-32	64edf79	bram_tree	rtl	20fdf6b	revert	cex:a_root_capacity_agrees	10 proven/1 cex. The ONLY red is a white-box addendum; every black-box assert passes and all 23 covers stay reachable. Measured proof the portable spec cannot see this defect.
+F-28	81a78bb	bram_tree	rtl	20fdf6b	patch	cover-unreachable	11 proven, 0 cex, 13 UNREACHABLE covers. NO assert fires; the cover set is the only detector.
+F-21	a7fb6c3	bram_tree_pipelined	rtl	20fdf6b	revert	harness-gate	no property table; aborts at the multiple-driver gate
+F-21b	b6d05fa	bram_tree	rtl	20fdf6b	revert	harness-gate	same; 42 multiply-driven bits at DATA_WIDTH=2 (7 signals x 6 bits)
+F-30	7eb9f2c	bram_tree	rtl	20fdf6b	revert	timeout:600	TIMEOUT at 600s. NOT a sizing artifact: identical config, and the control run's slowest property proves in 174s (roughly 3.5x headroom at the 600s ceiling). That headroom is the reason the ceiling must not go lower: below ~2x, 'did not converge' stops being distinguishable from 'slow'. CI goes red but no property is named.
+F-23	5b7dff4	bram_tree_pipelined	rtl	20fdf6b	revert	none	GREEN 20/0, mutation verified real (3 guards removed). Guards KEPT. Not a formal-only blind spot: the sim half is also blind, and was measured. At QUEUE_SIZE=15, instrumented identically, the deepest level is entered 1452 times in BOTH builds and X reaches the comparator inputs 0 times guarded / 2159 times unguarded: reachable, heavily exercised, genuinely injecting X, and the suite is green anyway because X never reaches o_data and every check watches the port. The RTL settles why: an explicit `parent_lvl == TREE_DEPTH-1` override at the end of the same combinational arm zeroes next_parent_lvl/next_parent_idx and forces both write enables low, so nothing tainted is ever committed. The walk terminates BY DESIGN, not by accident. Synthesis agrees where there is no X at all: out-of-context synthesis gives near-identical LUT/FF/CARRY8/RAM utilization guarded vs unguarded, with the guarded build using slightly more decode logic for identical state, which points away from a write-aliasing hazard. Not a proven equivalence: different netlists, no formal equivalence check. Two level_1[parent_idx] sites are in range only by an invariant the walk maintains, not by construction: a_level1_index_in_range in hwpq_bram_aux.sv asserts it and PROVES; c_deepest_level_walked separately shows the deepest level is reached, so the guards are a decision about reachable cycles rather than a hypothetical.
+F-24	e0cec3a	bram_tree_pipelined	rtl	20fdf6b	revert	none	GREEN 20/0, guard verified removed. NOT a hole: a_no_placeholder_at_capacity PROVES, so the overflow state cannot occur. With a sound RAM model, a_occ_bounded and a_queue_size_bounded both PROVE while c_root_placeholder_nonempty still covers.
+F-26	07dff2b	bram_tree_pipelined	rtl	20fdf6b	revert	none	GREEN 20 proven/0 cex/35 covers, byte-identical to unmodified HEAD. NOTHING detects it. Not merely unexercised: the precondition is REACHABLE (c_walk_runs_during_fill and c_walk_dirties_fill both cover in 2 cycles on the reverted design); the corruption simply does not survive to $fell(filling) at QUEUE_SIZE=7, DATA_WIDTH=2.
+F-14	621fd20	register_array	harness	20fdf6b	patch	cover-unreachable	THE ONLY HARNESS-CLASS ROW. 9 asserts proven and 0 cex, IDENTICAL to a clean run, beside c_reset_reasserted UNREACHABLE. The whole finding is the one cover. Mutates the INSTRUMENT, not the design: it is the only row that tests whether the harness is load-bearing. Revert is wrong: the fixing commit rewrites eleven other proof configs and adds a new spec file; the patch restores the pre-harness elaborate/reset pair on ONE module.

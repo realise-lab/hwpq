@@ -1,0 +1,87 @@
+# Baseline runs: what each module looked like BEFORE any formal-driven fix,
+# measured with TODAY's harness.
+#
+# Method, four lines, nothing to remember:
+#
+#   W=$(mktemp -d) && git worktree add $W --detach <baseline> && cd $W
+#   git checkout <harness> -- formal/        # today's harness onto the old RTL
+#   git cherry-pick --no-commit <enabling...>   # in the order this table lists
+#   formal/run.sh <config>                   # BRAM: baseline/<config>
+#
+# Cherry-pick ONLY the named commits, in order. Never hand-edit: an assembled
+# state that never existed invalidates the measurement.
+#
+# THE BRAM CONFIGS LIVE IN A SUBFOLDER. formal/{bind,config}/baseline/ holds
+# black-box-only variants, invoked as `formal/run.sh baseline/bram_tree_baseline`.
+# Its outdir is mkdir -p, so artifacts land away from the main suite, and the
+# subfolder is also why `run.sh --all` still sees exactly 13 configs: its glob
+# is not recursive. Keeping variant families in a subfolder is what stops them
+# contaminating that count.
+#
+# NOTE ON LABELLING: a red row is a SHORTCOMING, not necessarily a defect. Some
+# are contract questions where the disposition was containment, not repair. The
+# manifest records what the run showed and the disposition separately.
+#
+# BASELINE is the last commit before the first formal-driven RTL fix. Every
+# module already carries the uniform six-port interface.
+#
+# HONESTY CAVEAT: this is NOT "the design as originally written". 
+# The modules once exposed o_full/o_empty before the uniform interface arrived
+# which is the formal effort's own work. The claim this table supports is "the design 
+# as it stood when verification began, once a common interface existed".
+#
+# enabling: comma-separated commits, IN CHERRY-PICK ORDER. "-" means none.
+# whitebox: whether the aux addenda can bind at baseline at all. BLACK-BOX ONLY IS
+#   A DELIBERATE SCOPE DECISION for this table. Where the aux happens to bind
+#   (the register family) it is included because it costs nothing; where it cannot
+#   (the BRAM modules, whose aux watches signals the fixes created) the row says so.
+#
+# ENABLING COMMITS come in three kinds, and the write-up should distinguish them:
+#   infrastructure  - parameterisation so the proof can be sized
+#   measurability   - elaboration and multiple-driver fixes: each is ITSELF a
+#                     finding in its own right
+#   unblocking      - a finding fixed to make OTHER findings visible. A row
+#                     carrying this is no longer "the baseline"; it is the
+#                     baseline after the blocking defect was cleared. Label it.
+#
+#
+# COLUMN POSITIONS ARE ALIGNED WITH mutations/SWEEP.tsv ON PURPOSE: field 1 is the
+# CLI key, field 5 is the ref --replay rebuilds at, field 7 is the machine-checked
+# expectation, field 8 is prose. That alignment is what lets regress.sh share its
+# dispatch, control runs, drift warning and verdict parsing across both manifests
+# instead of growing a second slightly-different copy of them.
+#
+# ref (field 5) MEANS SOMETHING DIFFERENT PER MANIFEST, and this is the one place
+# the two modes diverge:
+#   SWEEP    the commit the worktree is CHECKED OUT at   (the design moved)
+#   BASELINE the commit formal/ is OVERLAID from         (the instrument moved)
+# In baseline mode the checkout is ALWAYS pinned to the baseline commit in field 3.
+# If it ever follows field 5 instead, the row silently measures TODAY's RTL while
+# claiming to measure the pre-verification design: it runs, it looks plausible,
+# and it is silently wrong.
+#
+# expect vocabulary (same as SWEEP, plus one extension):
+#   clean                    0 cex and 0 unreachable covers; a verdict block MUST exist
+#   cex:a,b,c                ALL named leaves must fire, not "at least one"
+#   cover-unreachable:<n>    vacuity, pinned to a count
+#
+# WHY cex TAKES A LIST HERE. A baseline row's whole value is the BREADTH of what
+# the harness still sees. Pinning one leaf would let systolic_array quietly drop
+# from five counterexamples to one and still report CAUGHT, which is precisely the
+# weakened-spec case this table exists to detect.
+#
+#row	config	baseline	enabling	harness	whitebox	expect	notes
+register_array	register_array	af089e5	-	20fdf6b	aux n/a	clean	No defect at baseline. Also clean --ungated.
+register_array_enq0	register_array_enq0	af089e5	-	20fdf6b	aux n/a	cex:a_head_not_placeholder	NOT a defect: fill-before-read is a documented CONTRACT, and the disposition here is containment. What fires is the PORT contradicting that contract.
+register_array_pipelined	register_array_pipelined	af089e5	-	20fdf6b	aux n/a	clean	9 proven, 20 covers
+register_array_pipelined_enq0	register_array_pipelined_enq0	af089e5	-	20fdf6b	aux n/a	cex:a_head_not_placeholder	same port/contract disagreement
+register_tree	register_tree	af089e5	-	20fdf6b	aux BINDS	clean	11 proven, 24 covers; the white-box heap invariant binds and proves at baseline
+register_tree_enq0	register_tree_enq0	af089e5	-	20fdf6b	aux BINDS	cex:a_head_not_placeholder	same port/contract disagreement
+register_tree_pipelined	register_tree_pipelined	af089e5	-	20fdf6b	aux BINDS	clean	11 proven, 24 covers
+register_tree_pipelined_enq0	register_tree_pipelined_enq0	af089e5	-	20fdf6b	aux BINDS	cex:a_head_not_placeholder	same port/contract disagreement
+systolic_array	systolic_array	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_occ_empty_agrees,a_occ_full_agrees,a_no_loss,a_head_is_max,a_head_present	Two defects present at once, all five black-box. ENABLING IS ITSELF A FINDING: without it nothing elaborates. NOTE: one defect's signature alone is a strict SUBSET of the other's, so this row cannot tell the two apart; only the one-at-a-time sweep can.
+systolic_array_gap	systolic_array_gap	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_ready_matches_accept	the ready/accept gap stated white-box: the port advertising what the accept condition would refuse
+systolic_array_clobber	systolic_array_clobber	af089e5	3c8cd30	20fdf6b	aux BINDS	cex:a_no_clobber,a_no_ghost_cells	A refused write corrupting IB[0], and cells holding data nothing put there
+bram_tree_pipelined	baseline/bram_tree_pipelined_baseline	af089e5	a7fb6c3	20fdf6b	NO: black-box only	cex:a_head_not_placeholder,a_occ_bounded,a_occ_empty_agrees,a_no_loss,a_head_is_max,a_head_present	6 of 8 black-box asserts red (2 proven), 17 covers reachable. ENABLING IS ITSELF A FINDING: without it the harness REFUSES the design, so there is no measurement at all.
+bram_tree	baseline/bram_tree_baseline	af089e5	294def1,b6d05fa	20fdf6b	NO: black-box only	cover-unreachable:15	THE BASELINE PROPER. 9 asserts 'proven', 0 cex, 5 covers reachable, FIFTEEN unreachable: the whole assert table green and MEANINGLESS. Do not delete this row in favour of stage 2.
+bram_tree_stage2	baseline/bram_tree_baseline	af089e5	294def1,b6d05fa,81a78bb	20fdf6b	NO: black-box only	cex:a_progress,a_no_enq_when_full,a_no_deq_when_empty,a_occ_bounded,a_occ_empty_agrees,a_occ_full_agrees,a_no_loss,a_head_is_max,a_head_present	NOT THE BASELINE: the baseline once the blocking vacuity defect was cleared. 0 proven, 9 cex, 20 covers all reachable. The enabling commit here is a finding fixed to reveal other findings. Pair with the row above: all-green-and-vacuous -> all-red-and-true, from one ready signal.
