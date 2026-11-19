@@ -1,8 +1,8 @@
 import bram_tree_pkg::*;
 
 // Max-heap: larger value = higher priority. A node is just its value; 0 means "empty".
-// Ports and behaviour match bram_tree. Siblings share one memory word, so every level of a walk
-// is one pair read and one pair write: the walk moves a level per cycle.
+// Siblings share one memory word, so every level of a walk is one pair read and one pair write:
+// the walk moves a level per cycle.
 module bram_tree_pair (
     input  logic                  i_CLK,
     input  logic                  i_RSTn,

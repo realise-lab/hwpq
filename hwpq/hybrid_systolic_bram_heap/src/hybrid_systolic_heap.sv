@@ -1,8 +1,8 @@
 `default_nettype none
 import bram_tree_pkg::*;
 
-// The tree module: bram_tree_pair (sibling pairs, a level per cycle) or bram_tree. Defined here,
-// not in the package file, since a tool may compile each file as its own unit.
+// The tree module, bram_tree_pair; a proof substitutes its own. Defined here, not in the package
+// file, since a tool may compile each file as its own unit.
 `ifndef HYBRID_TREE_MODULE
   `define HYBRID_TREE_MODULE bram_tree_pair
 `endif
