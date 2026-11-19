@@ -60,6 +60,7 @@ def parse_metrics(file_path):
     Returns:
         dict: Dictionary containing extracted metrics including:
             - queue_size: Size of the queue extracted from file name
+            - capacity: Elements held, where the header records it (the hybrid)
             - max_achieved_frequency: Maximum achieved clock frequency in MHz
             - power: Power consumption in Watts (if available)
             - luts_used: Number of CLB LUTs used
@@ -73,6 +74,8 @@ def parse_metrics(file_path):
 
     # Find the maximum achieved freqency and the given frequency for that
     given_frequencies, achieved_frequencies = parse_achieved_frequencies(file_path)
+    if not achieved_frequencies:
+        return None  # The build never completed a target, e.g. it does not fit the device.
     max_freq = np.max(achieved_frequencies)
     max_freq_index = achieved_frequencies.index(max_freq)
     max_freq_given = given_frequencies[max_freq_index]
@@ -93,6 +96,10 @@ def parse_metrics(file_path):
 
     # Initialize metrics dictionary with queue size and max frequency
     metrics = {"queue_size": queue_size, "max_achieved_frequency": max_freq}
+    with open(file_path, "r") as f:
+        capacity_match = re.search(r"CAPACITY = (\d+)", f.readline())
+    if capacity_match:
+        metrics["capacity"] = int(capacity_match.group(1))
 
     # Get all metrics for this queue size when the frequency is the maximum
     with open(file_path, "r") as f:
@@ -283,10 +290,10 @@ def process_directory(log_dir):
     """
     # Check if this directory has enqueue_0/enqueue_1 subdirectories
     contents = os.listdir(log_dir)
-    if "enqueue_0" in contents and "enqueue_1" in contents:
-        # Process both subdirectories
-        enqueue_disabled_data = _process_files(os.path.join(log_dir, "enqueue_0"))
-        enqueue_enabled_data = _process_files(os.path.join(log_dir, "enqueue_1"))
+    if "enqueue_0" in contents or "enqueue_1" in contents:
+        # A build not swept (yet) has no directory and comes back empty.
+        enqueue_disabled_data = _process_files(os.path.join(log_dir, "enqueue_0")) if "enqueue_0" in contents else {}
+        enqueue_enabled_data = _process_files(os.path.join(log_dir, "enqueue_1")) if "enqueue_1" in contents else {}
         return (enqueue_disabled_data, enqueue_enabled_data)
     else:
         # Process files in the main directory
@@ -313,9 +320,59 @@ def _process_files(log_dir):
 
             # Get other metrics
             metrics = parse_metrics(file_path)
+            if metrics is None:
+                print(f"No achieved frequency, skipped: {file_path}")
+                continue
 
             # Store metrics in dictionary
             data_dict[queue_size] = metrics
 
     return data_dict
 
+
+
+def parse_cycle_profile(file_path):
+    """
+    Parses one cycle_profile_on_queue_size_<qs>.txt from test/perf/cycle_profile.sh.
+
+    Returns:
+        tuple: (header, costs). header maps the "# arch key=value ..." fields to ints; costs maps
+        (load, order), e.g. ("mix", "uniform"), to {cost name: cycles}, e.g. {"enq": 1.0}.
+    """
+    header, costs = {}, {}
+    with open(file_path, "r") as f:
+        for line in f:
+            fields = line.split()
+            if not fields:
+                continue
+            if fields[0] == "#":
+                for kv in fields[2:]:
+                    k, v = kv.split("=")
+                    header[k] = int(v)
+            elif len(fields) >= 2:
+                costs[(fields[0], fields[1])] = {
+                    k: float(v) for k, v in (kv.split("=") for kv in fields[2:])
+                }
+    return header, costs
+
+
+def load_cycle_profiles(profile_dir, arch, name):
+    """
+    Returns {enqueue (0 or 1): {queue_size: (header, costs)}} for one architecture, read from
+    <profile_dir>/<arch>/<name>/enqueue_<n>/; empty if it was not profiled.
+    """
+    profiles = {}
+    arch_dir = os.path.join(profile_dir, arch, name)
+    if not os.path.isdir(arch_dir):
+        return profiles
+    for enq in (0, 1):
+        enq_dir = os.path.join(arch_dir, f"enqueue_{enq}")
+        if not os.path.isdir(enq_dir):
+            continue
+        for name in os.listdir(enq_dir):
+            m = re.fullmatch(r"cycle_profile_on_queue_size_(\d+)\.txt", name)
+            if m:
+                profiles.setdefault(enq, {})[int(m.group(1))] = parse_cycle_profile(
+                    os.path.join(enq_dir, name)
+                )
+    return profiles

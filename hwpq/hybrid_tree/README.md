@@ -11,7 +11,3 @@ To reduce communication and buffering overhead, each level $i$ of the BRAM-tree 
 ## Strcuture
 
 ![hybrid_tree_structure](../../imgs/hybrid_tree_structure.png)
-
-## Performance
-
-![bram_based_arch_perf_comp](../../imgs/bram_based_arch_perf_comp.png)

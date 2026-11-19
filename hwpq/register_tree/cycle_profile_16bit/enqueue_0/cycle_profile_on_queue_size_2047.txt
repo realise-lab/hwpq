@@ -1,0 +1,7 @@
+# register_tree queue_size=2047 capacity=2047 enqueue=0 data_width=16
+mix uniform all=2.000 rep=2.000 rep_max=2
+mix nondecreasing all=2.000 rep=2.000 rep_max=2
+mix nonincreasing all=2.000 rep=2.000 rep_max=2
+stream uniform fill=5.998 fill_max=6 rep=2.000 rep_max=2 drain=2.000 drain_max=2
+stream nondecreasing fill=5.998 fill_max=6 rep=2.000 rep_max=2 drain=2.000 drain_max=2
+stream nonincreasing fill=5.998 fill_max=6 rep=2.000 rep_max=2 drain=2.000 drain_max=2

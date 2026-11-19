@@ -1,0 +1,7 @@
+# register_tree_pipelined queue_size=15 capacity=15 enqueue=1 data_width=16
+mix uniform all=3.549 enq=4.000 enq_max=4 deq=3.334 deq_max=4 rep=3.331 rep_max=4
+mix nondecreasing all=3.553 enq=4.000 enq_max=4 deq=3.341 deq_max=4 rep=3.332 rep_max=4
+mix nonincreasing all=3.553 enq=4.000 enq_max=4 deq=3.341 deq_max=4 rep=3.332 rep_max=4
+stream uniform fill=3.800 fill_max=4 rep=3.067 rep_max=4 drain=3.000 drain_max=3
+stream nondecreasing fill=3.800 fill_max=4 rep=3.067 rep_max=4 drain=3.000 drain_max=3
+stream nonincreasing fill=3.800 fill_max=4 rep=3.067 rep_max=4 drain=3.000 drain_max=3

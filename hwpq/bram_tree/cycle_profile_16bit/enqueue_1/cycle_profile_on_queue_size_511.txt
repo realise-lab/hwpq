@@ -1,0 +1,7 @@
+# bram_tree queue_size=511 capacity=511 enqueue=1 data_width=16
+mix uniform all=11.290 enq=11.235 enq_max=17 deq=11.342 deq_max=17 rep=11.296 rep_max=17
+mix nondecreasing all=11.041 enq=11.026 enq_max=17 deq=11.062 deq_max=17 rep=11.035 rep_max=17
+mix nonincreasing all=16.471 enq=16.460 enq_max=17 deq=16.479 deq_max=17 rep=16.474 rep_max=17
+stream uniform fill=14.008 fill_max=16 rep=11.265 rep_max=17 drain=15.546 drain_max=17
+stream nondecreasing fill=14.008 fill_max=16 rep=2.027 rep_max=16 drain=15.534 drain_max=17
+stream nonincreasing fill=14.008 fill_max=16 rep=16.997 rep_max=17 drain=15.564 drain_max=17

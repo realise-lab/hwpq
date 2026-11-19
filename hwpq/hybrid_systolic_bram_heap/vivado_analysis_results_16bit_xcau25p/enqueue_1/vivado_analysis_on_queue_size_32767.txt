@@ -1,0 +1,5 @@
+Analysis for QUEUE_SIZE = 32767, ENQ_ENA = 1, CAPACITY = 524300
+
+Synthesis: 68s
+
+Not completed after two attempts
