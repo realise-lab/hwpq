@@ -1,4 +1,4 @@
-# bram_tree_pair queue_size=4095 capacity=4095 enqueue=1 data_width=16
+# bram_tree queue_size=4095 capacity=4095 enqueue=1 data_width=16
 mix uniform all=8.507 enq=8.462 enq_max=12 deq=8.521 deq_max=12 rep=8.540 rep_max=12
 mix nondecreasing all=7.656 enq=7.622 enq_max=12 deq=7.663 deq_max=12 rep=7.683 rep_max=12
 mix nonincreasing all=11.539 enq=11.548 enq_max=12 deq=11.533 deq_max=12 rep=11.538 rep_max=12
