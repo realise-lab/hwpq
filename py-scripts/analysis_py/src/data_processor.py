@@ -3,8 +3,31 @@ Data processing functions for Vivado analysis results.
 """
 
 import numpy as np
-from math import log2
-from config import PERFORMANCE_FACTORS
+from config import PROFILE_LOAD
+
+# Measured cycle costs, {plot key: {queue_size: costs}} as parsers.parse_cycle_profile returns
+# them; set by the plotter before computing throughput.
+_cycle_costs = {}
+_OP_COST = {"enqueue": "enq", "dequeue": "deq", "replace": "rep"}
+
+
+def set_cycle_costs(costs):
+    global _cycle_costs
+    _cycle_costs = costs
+
+
+def perf_factor(arch, operation, queue_size):
+    """Ops per cycle, from the measured cost of the op; a missing profile is an error."""
+    arch_lower = arch.lower()
+    costs = _cycle_costs.get(arch_lower, {}).get(queue_size, {})
+    cost = costs.get(PROFILE_LOAD, {}).get(_OP_COST[operation])
+    if not cost and operation == "dequeue":
+        # A replace-only build's mix never dequeues; its stream's drain does.
+        cost = costs.get(("stream", PROFILE_LOAD[1]), {}).get("drain")
+    if not cost:
+        raise ValueError(f"no measured {operation} cost for {arch_lower} at {queue_size}: "
+                         "run test/perf/cycle_profile.sh for it")
+    return 1 / cost
 
 
 def sort_xy(x, y):
@@ -224,26 +247,12 @@ def compute_performance(data_dict, arch, operation):
     queue_sizes = []
     performance_values = []
 
-    # Safety Percaution: convert arch to lowercase for case-insensitive lookup
-    arch_lower = arch.lower()
-
     for queue_size, metrics in data_dict.items():
         # Extract the maximum achieved frequency
         if "max_achieved_frequency" in metrics:
             max_freq = metrics["max_achieved_frequency"]
 
-            # Calculate performance based on architecture and operation
-            if operation == "enqueue" and arch_lower == "register_tree_enq_enabled":
-                # Special case for register tree enqueue where performance scales with log2(queue_size)
-                perf_factor = 1 / log2(queue_size)
-            elif operation == "enqueue" and arch_lower == "register_tree_pipelined_enq_enabled":
-                # Special case for register tree cycled enqueue where performance scales with log2(queue_size)
-                perf_factor = 1 / (log2(queue_size) + 1)
-            else:
-                # For other architectures/operations, use predefined performance factors
-                perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)
-
-            performance = max_freq * perf_factor
+            performance = max_freq * perf_factor(arch, operation, queue_size)
 
             # Add to our lists
             queue_sizes.append(queue_size)
@@ -290,9 +299,6 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
     queue_sizes = []
     efficiency_values = []
     
-    # Convert arch to lowercase for case-insensitive lookup
-    arch_lower = arch.lower()
-
     for queue_size, metrics in data_dict.items():
         if "max_achieved_frequency" in metrics:
             max_freq = metrics["max_achieved_frequency"]
@@ -302,17 +308,7 @@ def compute_resource_utilization_efficiency(data_dict, arch, operation):
 
             total_util = np.max([lut_utilization, reg_utilization, bram_utilization])
 
-            # Get performance factor
-            if operation == "enqueue" and arch_lower == "register_tree_enq_enabled":
-                perf_factor = 1 / log2(queue_size)
-            elif operation == "enqueue" and arch_lower == "register_tree_pipelined_enq_enabled":
-                perf_factor = 1 / (log2(queue_size) + 1)  # Assuming pipelined adds one cycle
-            else:
-                # For other architectures/operations, use predefined performance factors
-                perf_factor = PERFORMANCE_FACTORS.get(operation, {}).get(arch_lower, 1)
-
-            # Calculate performance
-            performance = max_freq * perf_factor
+            performance = max_freq * perf_factor(arch, operation, queue_size)
 
             # Calculate resource utilization efficiency (performance/resource)
             # Higher is better: more performance achieved with less resource

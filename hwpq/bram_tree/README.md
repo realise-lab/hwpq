@@ -2,14 +2,10 @@
 
 ## Description
 
-In contrast to the pipelined BRAM-tree, this flat BRAM-tree stores all elements of the priority queue in a single contiguous BRAM block, eliminating level-based partitioning. Each node is indexed using a binary heap layout, where the parent-child relationships are determined by fixed index calculations: for a node at index $i$, its left and right children reside at $2i + 1$ and $2i + 2$, respectively. This layout simplifies memory addressing and enables the entire structure to be managed within a single memory module.
+The BRAM-tree is a binary max-heap in block RAM that stores each pair of sibling nodes in a single BRAM word. Pair $p$ holds nodes $2p + 1$ and $2p + 2$, the two children of node $p$, so one read returns both candidates for a compare-and-swap and one write stores the result. The root is kept in a register, and the root's two children are mirrored in registers, so a new command decides the first level of the tree in the same cycle it arrives.
 
-The flat BRAM-tree reduces memory overhead associated with maintaining multiple BRAM instances and allows more efficient utilization of BRAM capacity. However, since all memory operations are funneled through a single BRAM, concurrent access is serialized, resulting in higher latency for compare-and-swap operations. As a result, each replace operation may take multiple clock cycles depending on the memory access scheduling.
+Each node carries a valid bit and the number of free slots in its subtree, which lets an enqueue walk directly toward free space. Every step of a walk reads one pair, compares and writes it back, moving one level per clock cycle. As a result, an operation takes at most $log_2(N+1)$ cycles, while the whole queue occupies a single simple dual-port BRAM. Because the RAM has no reset port, both readies stay low after reset while the tree is refilled with empty nodes, one pair per cycle.
 
-## Strcuture
+## Structure
 
 ![bram_tree_structure](../../imgs/bram_tree_structure.png)
-
-## Performance
-
-![bram_based_arch_perf_comp](../../imgs/bram_based_arch_perf_comp.png)

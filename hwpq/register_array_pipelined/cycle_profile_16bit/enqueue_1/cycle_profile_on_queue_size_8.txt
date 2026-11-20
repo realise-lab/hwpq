@@ -1,0 +1,7 @@
+# register_array_pipelined queue_size=8 capacity=8 enqueue=1 data_width=16
+mix uniform all=1.333 enq=1.319 enq_max=2 deq=1.343 deq_max=2 rep=1.338 rep_max=2
+mix nondecreasing all=1.162 enq=1.169 enq_max=2 deq=1.169 deq_max=2 rep=1.151 rep_max=2
+mix nonincreasing all=1.822 enq=1.732 enq_max=2 deq=1.860 deq_max=2 rep=1.869 rep_max=2
+stream uniform fill=1.562 fill_max=2 rep=1.625 rep_max=2 drain=1.812 drain_max=2
+stream nondecreasing fill=1.000 fill_max=1 rep=1.000 rep_max=1 drain=1.875 drain_max=2
+stream nonincreasing fill=1.625 fill_max=2 rep=2.000 rep_max=2 drain=2.000 drain_max=2

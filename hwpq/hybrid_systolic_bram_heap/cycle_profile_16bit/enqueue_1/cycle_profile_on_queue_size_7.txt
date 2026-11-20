@@ -1,0 +1,7 @@
+# hybrid_systolic_bram_heap queue_size=7 capacity=140 enqueue=1 data_width=16
+mix uniform all=1.455 enq=1.000 enq_max=3 deq=1.678 deq_max=7 rep=1.685 rep_max=9
+mix nondecreasing all=1.437 enq=1.000 enq_max=1 deq=1.649 deq_max=11 rep=1.659 rep_max=9
+mix nonincreasing all=1.989 enq=1.000 enq_max=5 deq=2.472 deq_max=10 rep=2.492 rep_max=10
+stream uniform fill=1.025 fill_max=4 rep=2.961 rep_max=4 drain=2.661 drain_max=5
+stream nondecreasing fill=1.018 fill_max=3 rep=1.997 rep_max=2 drain=2.662 drain_max=3
+stream nonincreasing fill=1.004 fill_max=2 rep=3.757 rep_max=4 drain=2.773 drain_max=3

@@ -1,0 +1,7 @@
+# bram_tree_pipelined queue_size=65535 capacity=65535 enqueue=0 data_width=16
+mix uniform all=57.527 rep=57.527 rep_max=66
+mix nondecreasing all=6.000 rep=6.000 rep_max=6
+mix nonincreasing all=62.043 rep=62.043 rep_max=66
+stream uniform fill=64.974 fill_max=66 rep=44.794 rep_max=66 drain=62.002 drain_max=66
+stream nondecreasing fill=62.001 fill_max=66 rep=6.000 rep_max=6 drain=62.001 drain_max=66
+stream nonincreasing fill=63.320 fill_max=66 rep=24.744 rep_max=66 drain=62.001 drain_max=66

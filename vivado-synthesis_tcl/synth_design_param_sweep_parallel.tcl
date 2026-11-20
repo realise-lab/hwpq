@@ -19,13 +19,13 @@ set queue_size [lindex $argv 3]
 set running_device xcau25p-ffvb676-1-e
 
 # NOTE - Set the number of threads to use
-set_param general.maxThreads 16
+set_param general.maxThreads 4
 
 # NOTE - File paths - change accordingly for design under test - use absolute path
 # Get the current script directory and navigate to project root
 set script_dir [file dirname [file normalize [info script]]]
 set project_root [file normalize [file join $script_dir ".."]]
-set sv_file_path [file join $project_root "hwpq" $architecture_name "rtl" "src"]
+set sv_file_path [file join $project_root "hwpq" $architecture_name "src"]
 set base_log_path [file join $project_root "hwpq" $architecture_name "vivado_analysis_results_16bit_xcau25p"]
 
 # Clock frequency values
@@ -46,6 +46,17 @@ close_project -quiet -delete
 
 # Recursively read all Verilog files under the src directory
 set sv_files [glob -nocomplain -directory $sv_file_path -types f *.sv *.v]
+# The hybrid is sized by macros rather than generics; QUEUE_SIZE is the node count of each of its
+# hybrid_trees trees, and its result file records the total capacity. Its package is read first.
+set hybrid [string equal $architecture_name hybrid_systolic_bram_heap]
+set hybrid_trees 16
+set hybrid_systolic 16
+if {$hybrid} {
+  set sv_files {}
+  foreach f {hybrid_typedef.sv bram_tree_reset.sv bram_tree_for_hybrid.sv hybrid_systolic_heap.sv} {
+    lappend sv_files [file join $sv_file_path $f]
+  }
+}
 foreach file $sv_files {
     puts "\nReading Verilog file: $file\n"
     read_verilog -sv $file
@@ -56,11 +67,38 @@ set log_file "${log_dir}/vivado_analysis_on_queue_size_${queue_size}.txt"
 
 # Initialize or clear log file
 set fileId [open $log_file "w"]
-puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}\n"
+if {$hybrid} {
+  set capacity [expr {$hybrid_trees * $queue_size + 2 * ($hybrid_systolic - 2)}]
+  puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}, CAPACITY = ${capacity}\n"
+} else {
+  puts $fileId "Analysis for QUEUE_SIZE = ${queue_size}, ENQ_ENA = ${enq_ena}\n"
+}
 close $fileId
 
-# Now iterate through clock frequencies for this specific ENQ_ENA and QUEUE_SIZE combination
-foreach clock_freq $clock_freq_values {
+# Synthesis precedes the clock constraint, so its netlist is the same for every target: synthesize
+# once and implement each target from the checkpoint.
+set synth_start_time [clock seconds]
+# NOTE - Run synthesis - Adjust the top module name accordingly
+if {$hybrid} {
+  synth_design -top hybrid_systolic_heap -part $running_device -flatten_hierarchy full \
+    -verilog_define HYBRID_DATA_WIDTH=$data_width \
+    -verilog_define HYBRID_BRAM_TREE_QUEUE_SIZE=$queue_size \
+    -verilog_define HYBRID_TREE_COUNT=$hybrid_trees \
+    -verilog_define HYBRID_SYSTOLIC_QUEUE_SIZE=$hybrid_systolic
+} else {
+  synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
+}
+set synth_duration [expr {[clock seconds] - $synth_start_time}]
+set synth_dcp [file join [pwd] "synth_${architecture_name}_enq${enq_ena}_qs${queue_size}.dcp"]
+write_checkpoint -force $synth_dcp
+close_design
+set fileId [open $log_file "a+"]
+puts $fileId "Synthesis: ${synth_duration}s\n"
+close $fileId
+
+# Implements the checkpoint at one clock target, appends its results, and returns the WNS.
+proc implement_at {clock_freq} {
+  global synth_dcp log_file enq_ena queue_size
   # Calculate the clock period in ns
   set clock_period [expr {1000.0 / $clock_freq}]
 
@@ -71,24 +109,7 @@ foreach clock_freq $clock_freq_values {
   puts "  Clock Frequency = ${clock_freq} MHz (period = ${clock_period} ns)"
   puts "==========================================================\n"
 
-  # Record start time for synthesis
-  set synth_start_time [clock seconds]
-
-  # NOTE - Run synthesis - Adjust the top module name accordingly
-  synth_design -top $architecture_name -part $running_device -generic ENQ_ENA=$enq_ena -generic DATA_WIDTH=$data_width -generic QUEUE_SIZE=$queue_size -flatten_hierarchy full
-
-  # Record end time for synthesis
-  set synth_end_time [clock seconds]
-
-  # Calculate the synthesis duration
-  set synth_duration [expr $synth_end_time - $synth_start_time]
-  if {$synth_duration > 60} {
-    set minutes [expr int($synth_duration / 60)]
-    set seconds [expr $synth_duration % 60]
-    set synth_duration_str "${minutes}m ${seconds}s"
-  } else {
-    set synth_duration_str "${synth_duration}s"
-  }
+  open_checkpoint $synth_dcp
 
   # Create a system clock with the specified frequency
   create_clock -period $clock_period [get_ports i_CLK] -name sys_clk
@@ -170,7 +191,6 @@ foreach clock_freq $clock_freq_values {
   set fileId [open $log_file "a+"]
 
   # Print the results in the same format as vivado_analysis_cycled.tcl
-  puts $fileId "Frequency: ${clock_freq} MHz -> Synthesis: ${synth_duration_str} -> ${synth_duration}s"
   puts $fileId "Frequency: ${clock_freq} MHz -> Implementation: ${impl_duration_str} -> ${impl_duration}s"
   if {$match} {
     puts $fileId "Frequency: ${clock_freq} MHz -> Power: ${total_on_chip_power} W"
@@ -192,18 +212,33 @@ foreach clock_freq $clock_freq_values {
   puts $fileId "Frequency: ${clock_freq} MHz -> Achieved Frequency: ${achieved_frequency} MHz"
   puts $fileId "\n"
 
-  # Break the frequency loop if WNS is less than -1 ns
+  close $fileId
+  close_design -quiet
+  return $wns
+}
+
+set first_miss 0
+foreach clock_freq $clock_freq_values {
+  set wns [implement_at $clock_freq]
+  if {$wns < 0 && $first_miss == 0} { set first_miss $clock_freq }
+  # Stop once WNS is below -1 ns
   if {$wns < -1.0} {
+    set fileId [open $log_file "a+"]
     puts $fileId "WNS exceeded -1 ns, finished\n"
     close $fileId
     break
   }
-
-  close $fileId
-  close_design -quiet
 }
+# One more target halfway into the step where timing first failed, so every size gets an attempt
+# within 25 MHz of its Fmax.
+if {$first_miss > 0} { implement_at [expr {$first_miss - 25}] }
+file delete -force $synth_dcp
 
 # Close the project to clean up
 close_project -delete -quiet
 
 puts "\nAnalysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}"
+# The sweep driver skips a build whose result file carries this line.
+set fileId [open $log_file "a+"]
+puts $fileId "Analysis completed for ENQ_ENA=${enq_ena}, QUEUE_SIZE=${queue_size}"
+close $fileId
