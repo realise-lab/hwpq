@@ -1,5 +1,5 @@
-// White-box helpers for the hybrid's bram_tree_pair in hwpq_hybrid_tree_pair: the node memory
-// holds exactly the contract model's contents, with the largest on top. Reads the tree, its reset
+// White-box helpers for bram_tree_for_hybrid in hwpq_bram_tree_for_hybrid: the node memory holds
+// exactly the contract model's contents, with the largest on top. Reads the tree, its reset
 // block and its contract model by hierarchical reference.
 //
 // Terms:
@@ -13,8 +13,8 @@
 //   model      the contract's reference contents, sorted largest first
 //   tracked    a free constant value; counting its copies proves the count for every value
 //
-// Helper stages are listed in hybrid_tree_pair.cfg: every property except a_tree_inv first, then
-// a_tree_inv with those assumed.
+// Helper stages are listed in bram_tree_for_hybrid.cfg: every property except a_tree_inv first,
+// then a_tree_inv with those assumed.
 module hwpq_hybrid_tree_aux
   import bram_tree_pkg::*;
 (
@@ -36,31 +36,31 @@ module hwpq_hybrid_tree_aux
 
   // ---- aliases into the harness ----------------------------------------------------------------
 
-  wire held = hwpq_hybrid_tree_pair.filling || hwpq_hybrid_tree_pair.gen_pending;
-  wire [GEN_W-1:0]       gen        = hwpq_hybrid_tree_pair.gen;
-  wire [1:0]             state      = hwpq_hybrid_tree_pair.u_tree.state;
-  wire [DATA_WIDTH-1:0]  top        = hwpq_hybrid_tree_pair.u_tree.top_level.value;
-  wire                   top_active = hwpq_hybrid_tree_pair.u_tree.top_level.active;
-  wire [ADDRESS_WIDTH-1:0] walk_node = hwpq_hybrid_tree_pair.u_tree.curr.position;
-  wire [DATA_WIDTH-1:0]  carry      = hwpq_hybrid_tree_pair.u_tree.curr.value;
-  wire [MODEL_CNT_W-1:0] model_cnt  = hwpq_hybrid_tree_pair.u_contract.cnt;
+  wire held = hwpq_bram_tree_for_hybrid.filling || hwpq_bram_tree_for_hybrid.gen_pending;
+  wire [GEN_W-1:0]       gen        = hwpq_bram_tree_for_hybrid.gen;
+  wire [1:0]             state      = hwpq_bram_tree_for_hybrid.u_tree.state;
+  wire [DATA_WIDTH-1:0]  top        = hwpq_bram_tree_for_hybrid.u_tree.top_level.value;
+  wire                   top_active = hwpq_bram_tree_for_hybrid.u_tree.top_level.active;
+  wire [ADDRESS_WIDTH-1:0] walk_node = hwpq_bram_tree_for_hybrid.u_tree.curr.position;
+  wire [DATA_WIDTH-1:0]  carry      = hwpq_bram_tree_for_hybrid.u_tree.curr.value;
+  wire [MODEL_CNT_W-1:0] model_cnt  = hwpq_bram_tree_for_hybrid.u_contract.cnt;
   logic [DATA_WIDTH-1:0] model [BRAM_TREE_QUEUE_SIZE];
   always_comb
     for (int i = 0; i < BRAM_TREE_QUEUE_SIZE; i++)
-      model[i] = hwpq_hybrid_tree_pair.u_contract.m[i];
+      model[i] = hwpq_bram_tree_for_hybrid.u_contract.m[i];
   // Memory words, one per pair, and the tree's registered copies of words it read.
   localparam int PAIR_BITS = 2 * $bits(bram_tree_mem_t);
   logic [PAIR_BITS-1:0] mem [PAIRS];
   always_comb
-    for (int p = 0; p < PAIRS; p++) mem[p] = hwpq_hybrid_tree_pair.u_tree.bram_inst.ram[p];
-  wire [PAIR_BITS-1:0] read_data   = hwpq_hybrid_tree_pair.u_tree.ram_out;
-  wire [PAIR_BITS-1:0] parent_pair = hwpq_hybrid_tree_pair.u_tree.par;
+    for (int p = 0; p < PAIRS; p++) mem[p] = hwpq_bram_tree_for_hybrid.u_tree.bram_inst.ram[p];
+  wire [PAIR_BITS-1:0] read_data   = hwpq_bram_tree_for_hybrid.u_tree.ram_out;
+  wire [PAIR_BITS-1:0] parent_pair = hwpq_bram_tree_for_hybrid.u_tree.par;
 
   wire walking  = state != IDLE;
   wire sifting  = state == SIFT;
   wire inserting = state == INSERT;
   wire [ADDRESS_WIDTH-1:0] hole = walk_node;                     // during a SIFT
-  wire carrying = inserting || (sifting && !hwpq_hybrid_tree_pair.u_tree.deq);
+  wire carrying = inserting || (sifting && !hwpq_bram_tree_for_hybrid.u_tree.deq);
 
   // ---- the tree as nodes -----------------------------------------------------------------------
 
@@ -105,8 +105,8 @@ module hwpq_hybrid_tree_aux
 
   // The root-children copy matches pair 0 of memory.
   a_tree_child_mirror : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      !held |-> mirrors(hwpq_hybrid_tree_pair.u_tree.child.l, mem_root_left)
-                && mirrors(hwpq_hybrid_tree_pair.u_tree.child.r, mem_root_right));
+      !held |-> mirrors(hwpq_bram_tree_for_hybrid.u_tree.child.l, mem_root_left)
+                && mirrors(hwpq_bram_tree_for_hybrid.u_tree.child.r, mem_root_right));
   // During a walk, the read data is the children pair of the walk's node.
   a_tree_read_fresh : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
       walking && walk_has_children |-> read_data == mem[walk_node]);
@@ -135,7 +135,7 @@ module hwpq_hybrid_tree_aux
   always_comb
     for (int n = 1; n <= NODES; n++) begin
       automatic int cap = (sifting && hole == ADDRESS_WIDTH'(n))
-                          ? int'(hwpq_hybrid_tree_pair.u_tree.curr.capacity)
+                          ? int'(hwpq_bram_tree_for_hybrid.u_tree.curr.capacity)
                           : (node[n].gen == gen ? int'(node[n].capacity) : subtree_size(n));
       automatic int used = int'(carrying && in_subtree(n, int'(walk_node)));
       for (int m = 1; m <= NODES; m++) used += int'(occupied[m] && in_subtree(n, m));
@@ -162,7 +162,7 @@ module hwpq_hybrid_tree_aux
       !held |-> tree_tracked == model_tracked);
   // The tree's own count matches the model's.
   a_tree_size : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
-      hwpq_hybrid_tree_pair.u_tree.queue_size == model_cnt);
+      hwpq_bram_tree_for_hybrid.u_tree.queue_size == model_cnt);
   // An insert's walk node is always an occupied memory node.
   a_tree_insert_live : assert property (@(posedge i_CLK) disable iff (!i_RSTn)
       !held && inserting
@@ -215,16 +215,16 @@ module hwpq_hybrid_tree_aux
   // While held after a reset, every node will be unoccupied once gen settles: inactive, stamped
   // with another generation, or still ahead of the fill. A pending advance from the last
   // generation wraps gen and starts a fill, which rewrites every node.
-  wire [GEN_W-1:0] gen_after = hwpq_hybrid_tree_pair.gen_pending ? gen + 1'b1 : gen;
+  wire [GEN_W-1:0] gen_after = hwpq_bram_tree_for_hybrid.gen_pending ? gen + 1'b1 : gen;
   logic all_retired;
   always_comb begin
     all_retired = 1'b1;
     for (int n = 1; n <= NODES; n++)
       all_retired &= !node[n].active || node[n].gen != gen_after
-                     || (hwpq_hybrid_tree_pair.filling
-                         && hwpq_hybrid_tree_pair.tree_reset.fill_cnt
+                     || (hwpq_bram_tree_for_hybrid.filling
+                         && hwpq_bram_tree_for_hybrid.tree_reset.fill_cnt
                             <= ADDRESS_WIDTH'(2*((n-1)/2) + 1));
-    all_retired |= hwpq_hybrid_tree_pair.gen_pending && &gen;
+    all_retired |= hwpq_bram_tree_for_hybrid.gen_pending && &gen;
   end
 
   // The tree and the model hold the same multiset, compared value by value. Needed because a

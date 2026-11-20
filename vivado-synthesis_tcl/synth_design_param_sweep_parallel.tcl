@@ -53,7 +53,7 @@ set hybrid_trees 16
 set hybrid_systolic 16
 if {$hybrid} {
   set sv_files {}
-  foreach f {hybrid_typedef.sv bram_tree_reset.sv bram_tree_pair.sv hybrid_systolic_heap.sv} {
+  foreach f {hybrid_typedef.sv bram_tree_reset.sv bram_tree_for_hybrid.sv hybrid_systolic_heap.sv} {
     lappend sv_files [file join $sv_file_path $f]
   }
 }

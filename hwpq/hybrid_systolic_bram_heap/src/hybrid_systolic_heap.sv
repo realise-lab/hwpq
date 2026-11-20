@@ -1,10 +1,10 @@
 `default_nettype none
 import bram_tree_pkg::*;
 
-// The tree module, bram_tree_pair; a proof substitutes its own. Defined here, not in the package
-// file, since a tool may compile each file as its own unit.
+// The tree module, bram_tree_for_hybrid; a proof substitutes its own. Defined here, not in the
+// package file, since a tool may compile each file as its own unit.
 `ifndef HYBRID_TREE_MODULE
-  `define HYBRID_TREE_MODULE bram_tree_pair
+  `define HYBRID_TREE_MODULE bram_tree_for_hybrid
 `endif
 
 // Max-priority queue: larger value = higher priority. A node is just its value; 0 means "empty".

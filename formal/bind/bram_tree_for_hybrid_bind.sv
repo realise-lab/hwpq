@@ -1,6 +1,6 @@
-// Proof harness for the hybrid's bram_tree_pair against hybrid_tree_contract, sized by the
-// bram_tree_pkg macros. One tree and the shared reset block, driven as the hybrid drives them.
-module hwpq_hybrid_tree_pair (
+// Proof harness for bram_tree_for_hybrid against hybrid_tree_contract, sized by the bram_tree_pkg
+// macros. One tree and the shared reset block, driven as the hybrid drives them.
+module hwpq_bram_tree_for_hybrid (
     input logic                                 i_CLK,
     input logic                                 i_init_RSTn,
     input logic                                 i_RSTn,
@@ -23,7 +23,7 @@ module hwpq_hybrid_tree_pair (
       .o_filling(filling), .o_fill_addr(fill_addr), .o_fill_cap(fill_cap)
   );
 
-  bram_tree_pair u_tree (
+  bram_tree_for_hybrid u_tree (
       .i_CLK(i_CLK), .i_RSTn(rstn), .i_wrt(i_wrt), .i_read(i_read), .i_data(i_data),
       .i_gen(gen), .i_gen_pending(gen_pending), .i_filling(filling),
       .i_fill_addr(fill_addr), .i_fill_cap(fill_cap),
@@ -57,4 +57,4 @@ module hwpq_hybrid_tree_pair (
 endmodule
 
 // White-box helpers for this harness.
-bind hwpq_hybrid_tree_pair hwpq_hybrid_tree_aux u_aux (.i_CLK(i_CLK), .i_RSTn(rstn));
+bind hwpq_bram_tree_for_hybrid hwpq_hybrid_tree_aux u_aux (.i_CLK(i_CLK), .i_RSTn(rstn));

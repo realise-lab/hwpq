@@ -3,7 +3,7 @@ import bram_tree_pkg::*;
 // Max-heap: larger value = higher priority. A node is just its value; 0 means "empty".
 // Siblings share one memory word, so every level of a walk is one pair read and one pair write:
 // the walk moves a level per cycle.
-module bram_tree_pair (
+module bram_tree_for_hybrid (
     input  logic                  i_CLK,
     input  logic                  i_RSTn,
     // Inputs
@@ -40,7 +40,7 @@ module bram_tree_pair (
   typedef struct packed {
     bram_tree_mem_t l;
     bram_tree_mem_t r;
-  } bram_tree_pair_t;
+  } bram_tree_for_hybrid_t;
   localparam integer PAIRS       = (NODES_NEEDED - 1) / 2;
   localparam integer PAIR_W      = (PAIRS > 1) ? $clog2(PAIRS) : 1;
   localparam integer LAST_PARENT = (NODES_NEEDED - 3) / 2;
@@ -69,17 +69,17 @@ module bram_tree_pair (
   logic [QUEUE_COUNT_WIDTH-1:0] queue_size, next_queue_size;
   logic            deq, next_deq;
   // The pair holding a SIFT's hole, written once the hole is refilled.
-  bram_tree_pair_t par, next_par;
+  bram_tree_for_hybrid_t par, next_par;
 
   // Memory signals
   logic            we;
   logic [PAIR_W-1:0] wr_addr, rd_addr, rd_addr_q;
-  bram_tree_pair_t din, ram_out, dout;
+  bram_tree_for_hybrid_t din, ram_out, dout;
   // Pair 0 (the root's children) mirrored in registers, so a command decides its first level at
   // once. Every write to pair 0 must update the copy.
-  bram_tree_pair_t child;
+  bram_tree_for_hybrid_t child;
 
-  bram_tree_pair_ram #(.DEPTH(PAIRS), .ADDR_W(PAIR_W)) bram_inst (
+  bram_tree_for_hybrid_ram #(.DEPTH(PAIRS), .ADDR_W(PAIR_W)) bram_inst (
     .clk(i_CLK), .we(we), .wr_addr(wr_addr), .din(din), .rd_addr(rd_addr), .dout(ram_out)
   );
 
@@ -153,12 +153,12 @@ module bram_tree_pair (
   end
 
   // One level of each walk, shared by IDLE (pair 0 from the copy) and the walk states (from memory).
-  bram_tree_pair_t lvl;            // children of the node being decided
+  bram_tree_for_hybrid_t lvl;            // children of the node being decided
   logic [ADDRESS_WIDTH-1:0] at;    // that node
   logic [DATA_WIDTH-1:0] carry;
   logic                  sift_deq;
   // insert: place the carry in a free child, or keep the larger of carry and child and go down
-  bram_tree_pair_t       ins_pair;
+  bram_tree_for_hybrid_t       ins_pair;
   logic                  ins_done, ins_left;
   logic [DATA_WIDTH-1:0] ins_carry;
   // sift: stop with the carry, or promote the larger child into the hole and go down
@@ -333,7 +333,7 @@ endmodule
 // port with a cycle of latency. A read of the address being written may return either word; the
 // tree never uses one.
 (* ram_style = "block"*)
-module bram_tree_pair_ram #(
+module bram_tree_for_hybrid_ram #(
     parameter integer DEPTH  = 1,
     parameter integer ADDR_W = 1
 ) (

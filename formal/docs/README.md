@@ -18,7 +18,7 @@ element is lost or duplicated. White-box addenda add per-module claims the
 interface cannot see.
 
 The hybrid is proved in two halves that share `spec/hybrid_tree_contract.sv`.
-`hybrid_tree_pair` proves its pair tree meets the contract, and
+`bram_tree_for_hybrid` proves the hybrid's tree meets the contract, and
 `hybrid_systolic_heap_standin` proves the hybrid over stand-in trees that assume it.
 Both run at the same tree size, so together they cover the whole design.
 
